@@ -22,7 +22,11 @@ import httpx
 # Configuration
 # ============================================================
 WALLET_ADDRESS = "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef"
-DATA_DIR = Path.home() / "crypto-empire" / "data"
+# Use /tmp on Vercel (serverless), otherwise use home dir
+if os.environ.get("VERCEL"):
+    DATA_DIR = Path("/tmp") / "crypto-empire-data"
+else:
+    DATA_DIR = Path.home() / "crypto-empire" / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
