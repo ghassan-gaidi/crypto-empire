@@ -1,0 +1,9 @@
+{
+  "buildCommand": "pip install -r requirements.txt",
+  "outputDirectory": "/tmp",
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12"
+    }
+  }
+}

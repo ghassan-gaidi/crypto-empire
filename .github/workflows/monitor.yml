@@ -1,0 +1,20 @@
+name: Crypto Empire Monitor
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - run: python scripts/monitor.py
+        env:
+          WALLET_ADDRESS: "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef"
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
