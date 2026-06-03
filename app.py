@@ -498,8 +498,8 @@ def index():
     fg_data = fetch_sync("https://api.alternative.me/fng/?limit=1")
     if fg_data and "data" in fg_data and fg_data["data"]:
         fear_greed = {
-            "value": fg_data["data"][0].get("value"),
-            "classification": fg_data["data"][0].get("value_classification"),
+            "value": int(fg_data["data"][0].get("value", 50)),
+            "classification": fg_data["data"][0].get("value_classification", "Neutral"),
         }
 
     # News
