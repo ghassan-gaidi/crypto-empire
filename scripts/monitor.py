@@ -5,7 +5,7 @@ import json
 import os
 from datetime import datetime
 
-wallet = os.environ.get("WALLET", "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef")
+wallet = os.environ.get("WALLET") or os.environ.get("WALLET_ADDRESS") or "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef"
 etherscan_key = os.environ.get("ETHERSCAN_API_KEY", "")
 
 print(f"Crypto Empire Monitor - {datetime.utcnow().isoformat()}")
