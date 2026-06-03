@@ -1,0 +1,17 @@
+[Unit]
+Description=Crypto Empire Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=leo
+WorkingDirectory=/home/leo/crypto-empire
+EnvironmentFile=/home/leo/crypto-empire/.env
+ExecStart=/tmp/crypto-env/bin/python /home/leo/crypto-empire/bot.py
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
