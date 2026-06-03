@@ -328,6 +328,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="#news">News</a>
                 <a href="#features">Features</a>
                 <a href="/docs">API</a>
+                <a href="/wallet-check">Wallet</a>
                 <a href="https://github.com/ghassan-gaidi/crypto-empire" target="_blank">GitHub</a>
                 <a class="btn btn-sm" href="#donate">☕ Support</a>
             </nav>
@@ -662,9 +663,159 @@ def docs():
 
 
 # ============================================================
-# Main
+# Wallet Check Page
 # ============================================================
-if __name__ == "__main__":
+
+WALLET_CHECK_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Checker — Crypto Empire</title>
+    <style>
+        :root { --bg: #0a0b0e; --card: #13151a; --border: #1e2030; --accent: #00d4aa; --text: #e2e8f0; --muted: #64748b; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h1 { color: var(--accent); margin-bottom: 8px; }
+        p { color: var(--muted); margin-bottom: 20px; }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: monospace;
+            font-size: 14px;
+            outline: none;
+        }
+        input[type="text"]:focus { border-color: var(--accent); }
+        button {
+            background: var(--accent); color: #000; border: none;
+            padding: 12px 24px; border-radius: 8px; font-weight: 600;
+            cursor: pointer; font-size: 14px; margin-top: 8px;
+        }
+        button:hover { opacity: 0.9; }
+        .result { margin-top: 24px; }
+        .chain-row {
+            display: flex; justify-content: space-between;
+            align-items: center;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 8px; padding: 14px 18px; margin-bottom: 8px;
+        }
+        .chain-name { font-weight: 600; }
+        .chain-bal { font-family: monospace; color: var(--accent); font-size: 16px; }
+        .chain-usd { color: var(--muted); font-size: 12px; }
+        .total { font-size: 24px; font-weight: 700; color: var(--accent); text-align: center; padding: 20px; }
+        .error { color: var(--danger); text-align: center; padding: 20px; }
+        .loading { text-align: center; color: var(--muted); padding: 20px; }
+        nav a { color: var(--muted); text-decoration: none; font-size: 14px; }
+        nav a:hover { color: var(--accent); }
+        @media (max-width: 640px) { .chain-row { flex-direction: column; gap: 4px; text-align: center; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav style="margin-bottom: 20px;"><a href="/">← Back to Dashboard</a> &nbsp; <a href="/docs">API</a></nav>
+        <h1>🔍 Wallet Checker</h1>
+        <p>Check the ETH balances of any wallet across Ethereum, Arbitrum, Base, and Polygon.</p>
+        <input type="text" id="address" placeholder="0x... or ENS name" value="0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef">
+        <br>
+        <button onclick="checkWallet()">Check Wallet</button>
+        <div id="results" class="result"></div>
+    </div>
+    <script>
+    async function checkWallet() {
+        const addr = document.getElementById('address').value.trim();
+        const el = document.getElementById('results');
+        if (!addr || !addr.startsWith('0x')) { el.innerHTML = '<div class="error">Invalid address</div>'; return; }
+        el.innerHTML = '<div class="loading">⏳ Checking...</div>';
+        try {
+            const r = await fetch('/api/check-wallet/' + encodeURIComponent(addr));
+            const data = await r.json();
+            if (data.error) { el.innerHTML = '<div class="error">' + data.error + '</div>'; return; }
+            let html = '<div class="total">Total: ' + data.total_usd_formatted + ' USD</div>';
+            for (const chain of data.chains) {
+                html += '<div class="chain-row">' +
+                    '<span class="chain-name">' + chain.name + '</span>' +
+                    '<span><span class="chain-bal">' + chain.balance_formatted + '</span> <span class="chain-usd">$' + chain.usd_value.toFixed(2) + '</span></span>' +
+                    '</div>';
+            }
+            html += '<div style="text-align:center;margin-top:16px;"><a href="https://debank.com/profile/' + addr + '" target="_blank" style="color:var(--accent);">View on DeBank →</a></div>';
+            el.innerHTML = html;
+        } catch(e) {
+            el.innerHTML = '<div class="error">Request failed</div>';
+        }
+    }
+    // Auto-check on load
+    checkWallet();
+    </script>
+</body>
+</html>"""
+
+@app.route("/wallet-check")
+def wallet_check():
+    return render_template_string(WALLET_CHECK_HTML)
+
+
+@app.route("/api/check-wallet/<address>")
+def api_check_wallet(address):
+    """Check wallet balances across multiple chains"""
+    chains = {
+        "ethereum": {"name": "Ethereum", "rpc": "https://ethereum-rpc.publicnode.com", "coingecko": "ethereum"},
+        "arbitrum": {"name": "Arbitrum", "rpc": "https://arb1.arbitrum.io/rpc", "coingecko": "ethereum"},
+        "base": {"name": "Base", "rpc": "https://mainnet.base.org", "coingecko": "ethereum"},
+        "polygon": {"name": "Polygon", "rpc": "https://polygon-rpc.com", "coingecko": "matic-network"},
+    }
+    
+    # Get ETH price in USD
+    eth_price = 0
+    price_data = fetch_sync(f"{COINGECKO_API}/simple/price?ids=ethereum,matic-network&vs_currencies=usd")
+    if price_data:
+        eth_price = (price_data.get("ethereum", {}) or {}).get("usd", 0)
+    
+    matic_price = 0
+    if price_data:
+        matic_price = (price_data.get("matic-network", {}) or {}).get("usd", 0)
+    
+    results = []
+    total_usd = 0
+    
+    for key, cfg in chains.items():
+        try:
+            r = requests.post(cfg["rpc"], json={
+                "jsonrpc": "2.0", "method": "eth_getBalance",
+                "params": [address, "latest"], "id": 1
+            }, timeout=8)
+            data = r.json()
+            if "result" in data:
+                bal = int(data["result"], 16) / 1e18
+                price = eth_price if cfg["coingecko"] == "ethereum" else matic_price
+                usd = bal * price
+                total_usd += usd
+                results.append({
+                    "chain": key,
+                    "name": cfg["name"],
+                    "balance": bal,
+                    "balance_formatted": f"{bal:.6f}" if bal >= 0.001 else f"{bal:.8f}",
+                    "usd_value": usd,
+                })
+            else:
+                results.append({"chain": key, "name": cfg["name"], "balance": 0, "balance_formatted": "0", "usd_value": 0})
+        except:
+            results.append({"chain": key, "name": cfg["name"], "balance": None, "balance_formatted": "error", "usd_value": 0})
+    
+    return jsonify({
+        "address": address,
+        "chains": results,
+        "total_usd": total_usd,
+        "total_usd_formatted": f"${total_usd:,.2f}",
+    })
+
+
+# ============================================================
+# Main
     port = int(os.environ.get("PORT", 8080))
     debug = os.environ.get("FLASK_DEBUG", "0") == "1"
     print(f"⚡ Crypto Empire Dashboard starting on port {port}")
