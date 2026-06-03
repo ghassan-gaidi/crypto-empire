@@ -105,6 +105,9 @@ INDEX_HTML = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Empire — Autonomous Crypto Intelligence</title>
+    <meta name="description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data for Ethereum, Bitcoin, Arbitrum, Polygon & Base.">
+    <meta name="keywords" content="crypto dashboard, wallet checker, gas tracker, Ethereum gas, Bitcoin price, crypto prices, portfolio tracker, blockchain tools">
+    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/">
     <style>
         :root {
             --bg: #0a0b0e;
@@ -327,6 +330,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="#gas">Gas</a>
                 <a href="#news">News</a>
                 <a href="#features">Features</a>
+                <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
                 <a href="https://github.com/ghassan-gaidi/crypto-empire" target="_blank">GitHub</a>
@@ -815,7 +819,269 @@ def api_check_wallet(address):
 
 
 # ============================================================
+# SEO: Blog Content
+# ============================================================
+
+BLOG_POSTS = [
+    {
+        "slug": "best-crypto-wallet-balance-checker-2026",
+        "title": "Best Crypto Wallet Balance Checker 2026 — Track Any Address Across 4 Chains",
+        "date": "2026-06-03",
+        "tags": ["wallet checker", "crypto tools", "portfolio tracker"],
+        "content": """
+<h2>Check Any Ethereum Wallet Balance Across Multiple Chains</h2>
+<p>Crypto Empire's <a href="/wallet-check">Wallet Checker</a> lets you instantly view ETH, MATIC, and ERC-20 token balances across Ethereum, Arbitrum, Base, and Polygon — all from one page. No signup, no API key, no wallet connection needed.</p>
+
+<h3>Why Use a Multi-Chain Wallet Checker?</h3>
+<p>Modern crypto users hold assets across multiple Layer 2 solutions. Instead of checking each chain's block explorer separately, our tool aggregates balances from Ethereum, Arbitrum, Base, and Polygon into a single USD value.</p>
+
+<h3>Features</h3>
+<ul>
+<li><strong>Instant balance lookup</strong> — Enter any 0x address and see balances in seconds</li>
+<li><strong>Multi-chain support</strong> — Ethereum, Arbitrum, Base, Polygon</li>
+<li><strong>USD conversion</strong> — Real-time prices via CoinGecko</li>
+<li><strong>ENS support</strong> — Enter ENS names directly</li>
+<li><strong>Free & open source</strong> — No ads, no tracking</li>
+</ul>
+
+<h3>How to Use</h3>
+<p>Visit the <a href="/wallet-check">Wallet Checker</a> page, enter any Ethereum address, and click "Check Wallet". The tool queries live RPC endpoints and returns balances with USD values.</p>
+
+<p>If you find this tool useful, consider supporting development by sending a donation to the project wallet.</p>
+"""
+    },
+    {
+        "slug": "ethereum-gas-tracker-live-prices",
+        "title": "Ethereum Gas Tracker — Live ETH Gas Prices for Polygon, Arbitrum & Base 2026",
+        "date": "2026-06-02",
+        "tags": ["gas tracker", "ETH gas", "Layer 2 fees"],
+        "content": """
+<h2>Live Gas Price Tracker for Ethereum and L2s</h2>
+<p>Our <a href="/">Gas Tracker</a> provides real-time gas prices for Ethereum, Polygon, Arbitrum, and Base. Optimize your transaction timing and reduce fees.</p>
+
+<h3>Current Gas Prices</h3>
+<p>The dashboard displays live gas prices in Gwei for the four major EVM chains. Prices update every 30 seconds with color-coded indicators (green = cheap, yellow = moderate, red = expensive).</p>
+
+<h3>When to Transact</h3>
+<ul>
+<li><strong>Low gas (&lt;5 Gwei ETH)</strong> — Best time for transfers and DeFi interactions</li>
+<li><strong>Medium gas (5-30 Gwei ETH)</strong> — Normal conditions, fine for standard transactions</li>
+<li><strong>High gas (&gt;30 Gwei ETH)</strong> — Expensive, consider waiting or using L2s</li>
+</ul>
+
+<h3>Chain Comparison</h3>
+<p>Polygon typically offers the lowest fees (&lt;100 Gwei MATIC), while Ethereum mainnet can spike during high-demand periods. Arbitrum and Base offer a middle ground with Ethereum-level security and reduced fees.</p>
+
+<p>Bookmark our <a href="/">dashboard</a> for quick access to live gas data across all major chains.</p>
+"""
+    },
+    {
+        "slug": "crypto-portfolio-tracker-free-tools",
+        "title": "Free Crypto Portfolio Tracker Tools — Track Without Connecting Your Wallet",
+        "date": "2026-06-01",
+        "tags": ["portfolio tracker", "crypto tools", "DeFi"],
+        "content": """
+<h2>Track Your Crypto Portfolio Without Connecting Your Wallet</h2>
+<p>Privacy-focused crypto tracking is possible with on-chain data tools. Here are the best free options for monitoring your portfolio in 2026.</p>
+
+<h3>1. Crypto Empire Wallet Checker</h3>
+<p>Our <a href="/wallet-check">Wallet Checker</a> lets you check any Ethereum address across 4 chains instantly. No wallet connection, no data collection, just pure on-chain balance queries.</p>
+
+<h3>2. Live Market Data</h3>
+<p>Our <a href="/">dashboard</a> shows the top 20 cryptocurrencies with real-time prices, 24h and 7d changes, market cap, and volume. Updated directly from CoinGecko's API.</p>
+
+<h3>3. Multi-Chain Balance API</h3>
+<p>Developers can use our free <a href="/docs">API</a> to query wallet balances programmatically. No authentication required up to 100 requests/day.</p>
+
+<h3>Why Portfolio Tracking Matters</h3>
+<p>Regular portfolio monitoring helps you track gains, optimize tax reporting, and spot unusual activity. Using read-only tools preserves your privacy and security.</p>
+
+<p>Support these free tools by donating to the project wallet. Your contribution helps keep the service running and ad-free.</p>
+"""
+    },
+    {
+        "slug": "top-cryptocurrencies-today",
+        "title": "Top 20 Cryptocurrencies by Market Cap — Live Prices & Charts June 2026",
+        "date": "2026-06-01",
+        "tags": ["crypto prices", "market cap", "Bitcoin", "Ethereum"],
+        "content": """
+<h2>Top 20 Cryptocurrencies by Market Cap — Live Prices</h2>
+<p>Our <a href="/">dashboard</a> displays the top 20 cryptocurrencies ranked by market capitalization, with live prices from CoinGecko.</p>
+
+<h3>Today's Top Coins</h3>
+<p>Bitcoin (BTC) remains the largest cryptocurrency by market cap, followed by Ethereum (ETH), Tether (USDT), and BNB (BNB). The rankings update automatically with each page reload.</p>
+
+<h3>Understanding Market Metrics</h3>
+<ul>
+<li><strong>Market Cap</strong> — Total value of all coins in circulation (price × circulating supply)</li>
+<li><strong>24h Change</strong> — Price movement over the last 24 hours</li>
+<li><strong>7d Change</strong> — Price trend over the last week</li>
+<li><strong>Volume (24h)</strong> — Total trading volume across all markets in the last day</li>
+</ul>
+
+<h3>Market Sentiment</h3>
+<p>Our dashboard also includes the Fear & Greed Index, a popular market sentiment indicator. Values below 25 indicate fear (potential buying opportunity), while values above 75 suggest greed (potential overvaluation).</p>
+
+<p>Check back daily for updated prices and market data. Support the project by sending a donation to the wallet address below.</p>
+"""
+    },
+]
+
+@app.route("/blog")
+def blog_index():
+    return render_template_string("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Empire Blog — Crypto Tools, Guides & Market Analysis</title>
+    <meta name="description" content="Free crypto tools, wallet checker, gas tracker, and market data. Guides and analysis for cryptocurrency traders and investors.">
+    <meta name="keywords" content="crypto tools, wallet checker, gas tracker, Bitcoin, Ethereum, cryptocurrency prices">
+    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog">
+    <style>
+        :root { --bg: #0a0b0e; --card: #13151a; --border: #1e2030; --accent: #00d4aa; --text: #e2e8f0; --muted: #64748b; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        h1 { color: var(--accent); margin-bottom: 8px; font-size: 28px; }
+        .subtitle { color: var(--muted); margin-bottom: 32px; }
+        .post { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+        .post:hover { border-color: var(--accent); }
+        .post h2 { font-size: 18px; margin-bottom: 6px; }
+        .post h2 a { color: var(--text); text-decoration: none; }
+        .post h2 a:hover { color: var(--accent); }
+        .post .meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+        .post .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+        .post .tag { background: rgba(0,212,170,0.1); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .donation-box { background: linear-gradient(135deg, rgba(0,212,170,0.05), rgba(124,58,237,0.05)); border: 1px solid var(--accent); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center; }
+        .wallet-addr { background: var(--bg); padding: 10px 16px; border-radius: 8px; font-family: monospace; font-size: 13px; color: var(--accent); word-break: break-all; cursor: pointer; border: 1px solid var(--border); display: inline-block; max-width: 100%; user-select: all; }
+        nav a { color: var(--muted); text-decoration: none; font-size: 14px; }
+        nav a:hover { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav style="margin-bottom: 24px;"><a href="/">← Dashboard</a> &nbsp; <a href="/docs">API</a> &nbsp; <a href="/wallet-check">Wallet Checker</a></nav>
+        <h1>📝 Crypto Empire Blog</h1>
+        <p class="subtitle">Free crypto tools, guides, and market analysis. Check wallet balances, track gas fees, and monitor live prices.</p>
+        
+        {% for post in posts %}
+        <div class="post">
+            <h2><a href="/blog/{{ post.slug }}">{{ post.title }}</a></h2>
+            <div class="meta">{{ post.date }} · {{ post.tags|join(', ') }}</div>
+            <div class="tags">{% for tag in post.tags %}<span class="tag">{{ tag }}</span>{% endfor %}</div>
+        </div>
+        {% endfor %}
+        
+        <div class="donation-box">
+            <h3>☕ Support These Free Tools</h3>
+            <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">If you find these tools useful, send a tip in ETH, USDC, or any ERC-20 token.</p>
+            <div class="wallet-addr">{{ wallet }}</div>
+            <p style="color: var(--muted); font-size: 11px; margin-top: 6px;">Click to copy</p>
+        </div>
+        
+        <footer style="text-align:center;padding:24px 0;color:var(--muted);font-size:12px;border-top:1px solid var(--border);">
+            <p><a href="/">Crypto Empire Dashboard</a> · <a href="/sitemap.xml">Sitemap</a></p>
+        </footer>
+    </div>
+</body>
+</html>""", posts=BLOG_POSTS, wallet=WALLET_ADDRESS)
+
+
+@app.route("/blog/<slug>")
+def blog_post(slug):
+    post = None
+    for p in BLOG_POSTS:
+        if p["slug"] == slug:
+            post = p
+            break
+    if not post:
+        return "Not found", 404
+    return render_template_string("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} — Crypto Empire</title>
+    <meta name="description" content="{{ title }}. Free crypto tools, wallet checker, gas tracker, and live prices.">
+    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog/{{ slug }}">
+    <style>
+        :root { --bg: #0a0b0e; --card: #13151a; --border: #1e2030; --accent: #00d4aa; --text: #e2e8f0; --muted: #64748b; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        h1 { color: var(--accent); font-size: 26px; margin-bottom: 8px; }
+        h2 { color: var(--accent); font-size: 20px; margin: 24px 0 12px; }
+        h3 { font-size: 17px; margin: 20px 0 10px; }
+        p { margin-bottom: 14px; color: var(--muted); }
+        ul { margin: 0 0 14px 20px; color: var(--muted); }
+        li { margin-bottom: 6px; }
+        a { color: var(--accent); }
+        .meta { color: var(--muted); font-size: 12px; margin-bottom: 24px; }
+        .donation-box { background: linear-gradient(135deg, rgba(0,212,170,0.05), rgba(124,58,237,0.05)); border: 1px solid var(--accent); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center; }
+        .wallet-addr { background: var(--bg); padding: 10px 16px; border-radius: 8px; font-family: monospace; font-size: 13px; color: var(--accent); word-break: break-all; cursor: pointer; border: 1px solid var(--border); display: inline-block; max-width: 100%; user-select: all; }
+        nav a { color: var(--muted); text-decoration: none; font-size: 14px; }
+        nav a:hover { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav style="margin-bottom: 24px;"><a href="/">← Dashboard</a> &nbsp; <a href="/blog">Blog</a></nav>
+        <h1>{{ title }}</h1>
+        <div class="meta">{{ date }} · Tags: {{ tags|join(", ") }}</div>
+        <div>{{ content|safe }}</div>
+        
+        <div class="donation-box">
+            <h3>☕ Support These Free Tools</h3>
+            <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">If you found this guide useful, send a tip in ETH, USDC, or any ERC-20 token.</p>
+            <div class="wallet-addr">{{ wallet }}</div>
+            <p style="color: var(--muted); font-size: 11px; margin-top: 6px;">Click to copy</p>
+        </div>
+        
+        <footer style="text-align:center;padding:24px 0;color:var(--muted);font-size:12px;border-top:1px solid var(--border);">
+            <p><a href="/blog">← More articles</a></p>
+        </footer>
+    </div>
+</body>
+</html>""", title=post["title"], slug=post["slug"], date=post["date"], tags=post["tags"], content=post["content"], wallet=WALLET_ADDRESS)
+
+
+@app.route("/sitemap.xml")
+def sitemap():
+    pages = [
+        {"loc": "/", "priority": "1.0", "changefreq": "hourly"},
+        {"loc": "/blog", "priority": "0.9", "changefreq": "daily"},
+        {"loc": "/docs", "priority": "0.7", "changefreq": "weekly"},
+        {"loc": "/wallet-check", "priority": "0.8", "changefreq": "daily"},
+    ]
+    for post in BLOG_POSTS:
+        pages.append({"loc": f"/blog/{post['slug']}", "priority": "0.6", "changefreq": "monthly"})
+
+    urls = ""
+    for p in pages:
+        urls += f"""  <url>
+    <loc>https://crypto-empire-ten.vercel.app{p['loc']}</loc>
+    <priority>{p['priority']}</priority>
+    <changefreq>{p['changefreq']}</changefreq>
+  </url>\n"""
+    sitemap_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{urls}
+</urlset>"""
+    return sitemap_xml, 200, {"Content-Type": "application/xml"}
+
+
+@app.route("/robots.txt")
+def robots():
+    return """User-agent: *
+Allow: /
+Sitemap: https://crypto-empire-ten.vercel.app/sitemap.xml
+""", 200, {"Content-Type": "text/plain"}
+
+
+# ============================================================
 # Main
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     debug = os.environ.get("FLASK_DEBUG", "0") == "1"
     print(f"⚡ Crypto Empire Dashboard starting on port {port}")

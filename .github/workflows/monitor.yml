@@ -1,6 +1,5 @@
 name: Crypto Empire Monitor
-
-on:
+"on":
   schedule:
     - cron: '*/30 * * * *'
   workflow_dispatch:
