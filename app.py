@@ -62,6 +62,22 @@ init_db()
 COINGECKO_API = "https://api.coingecko.com/api/v3"
 CACHE_TTL = 60
 
+def render_sparkline(prices, width=80, height=24):
+    """Render price array as inline SVG sparkline"""
+    if not prices or len(prices) < 2:
+        return ""
+    min_p = min(prices)
+    max_p = max(prices)
+    rng = max_p - min_p if max_p > min_p else 1
+    step = width / (len(prices) - 1)
+    pts = []
+    for i, p in enumerate(prices):
+        x = round(i * step, 1)
+        y = round(height - ((p - min_p) / rng * (height - 4) + 2), 1)
+        pts.append(f"{x},{y}")
+    color = "var(--green)" if prices[-1] >= prices[0] else "var(--red)"
+    return f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}"><polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="1.5"/></svg>'
+
 def fetch_sync(url):
     try:
         resp = requests.get(url, timeout=10, headers={"Accept": "application/json"})
@@ -304,9 +320,14 @@ INDEX_HTML = """<!DOCTYPE html>
             <div class="stat-card">
                 <div class="label">FEAR & GREED</div>
                 <div class="value" style="color:{{ 'var(--green)' if fear_greed.value > 50 else 'var(--red)' if fear_greed.value < 25 else 'var(--yellow)' }};">{{ fear_greed.value }}</div>
-                <div class="sub" style="color:var(--dim);">{{ fear_greed.classification|upper }}</div>
+                <div class="sub" style="color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-size:10px;">{{ fear_greed.classification|upper }}</div>
             </div>
             {% endif %}
+            <div class="stat-card" id="tvl-card" style="display:none;">
+                <div class="label">ETH TVL</div>
+                <div class="value" id="tvl-value">--</div>
+                <div class="sub" style="color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-size:10px;">DefiLlama</div>
+            </div>
         </div>
 
         <!-- Gas Tracker -->
@@ -323,7 +344,7 @@ INDEX_HTML = """<!DOCTYPE html>
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th>#</th><th>Name</th><th>Price</th><th>24h</th><th>7d</th><th>Market Cap</th><th>Volume 24h</th></tr>
+                    <tr><th>#</th><th>Name</th><th>Price</th><th>24h</th><th>7d</th><th>Chart</th><th>Market Cap</th><th>Volume 24h</th></tr>
                 </thead>
                 <tbody>
                     {% for coin in market_data %}
@@ -333,6 +354,7 @@ INDEX_HTML = """<!DOCTYPE html>
                         <td>${{ "%.2f"|format(coin.current_price) if coin.current_price < 1000 else "%.0f"|format(coin.current_price) }}</td>
                         <td class="{{ 'up' if coin.price_change_percentage_24h >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_24h) }}%</td>
                         <td class="{{ 'up' if coin.price_change_percentage_7d_in_currency >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_7d_in_currency) }}%</td>
+                        <td>{{ coin.sparkline_svg|safe }}</td>
                         <td class="mc">${{ "{:,.0f}".format(coin.market_cap) }}</td>
                         <td class="vol">${{ "{:,.0f}".format(coin.total_volume) }}</td>
                     </tr>
@@ -353,6 +375,20 @@ INDEX_HTML = """<!DOCTYPE html>
                 {% endfor %}
             </ul>
         </div>
+
+        <!-- DEX Volume -->
+        <h2 class="section-title" id="dexs">Top DEXes by Volume</h2>
+        <div class="table-wrap" id="dex-section">
+            <table>
+                <thead><tr><th>#</th><th>DEX</th><th>Volume 24h</th><th>Volume 7d</th><th>24h Change</th><th>Chains</th></tr></thead>
+                <tbody id="dex-tbody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Trending Coins -->
+        <h2 class="section-title" id="trending">Trending Coins</h2>
+        <div class="gas-grid" id="trending-grid"></div>
 
         <!-- Features -->
         <h2 class="section-title" id="features">Everything You Need</h2>
@@ -422,8 +458,58 @@ INDEX_HTML = """<!DOCTYPE html>
                 }
             } catch(e) {}
         }
+        async function fetchDEXs() {
+            try {
+                var r = await fetch('/api/dexs');
+                var data = await r.json();
+                var tbody = document.getElementById('dex-tbody');
+                if (!tbody) return;
+                var html = '';
+                for (var i = 0; i < data.length; i++) {
+                    var d = data[i];
+                    var vol24 = d.volume24h >= 1000000 ? '$' + (d.volume24h / 1000000).toFixed(1) + 'M' : '$' + (d.volume24h / 1000).toFixed(0) + 'K';
+                    var vol7 = d.volume7d >= 1000000 ? '$' + (d.volume7d / 1000000).toFixed(1) + 'M' : '$' + (d.volume7d / 1000).toFixed(0) + 'K';
+                    var cls = d.change1d >= 0 ? 'up' : 'down';
+                    html += '<tr><td class="rank">' + (i+1) + '</td><td><span class="coin-name">' + d.name + '</span></td><td>' + vol24 + '</td><td>' + vol7 + '</td><td class="' + cls + '">' + d.change1d + '%</td><td><span class="coin-symbol">' + (d.chains||[]).join(', ') + '</span></td></tr>';
+                }
+                tbody.innerHTML = html;
+            } catch(e) {}
+        }
+        async function fetchTrending() {
+            try {
+                var r = await fetch('/api/trending');
+                var data = await r.json();
+                var grid = document.getElementById('trending-grid');
+                if (!grid || !data.trending) return;
+                var html = '';
+                for (var i = 0; i < Math.min(data.trending.length, 10); i++) {
+                    var c = data.trending[i];
+                    html += '<div class="gas-card"><div class="chain" style="font-size:12px;">' + c.name + '</div><div class="gwei" style="font-size:16px;color:var(--dim);">' + (c.symbol||'').toUpperCase() + '</div><div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Rank ' + (c.market_cap_rank||'--') + '</div></div>';
+                }
+                grid.innerHTML = html;
+            } catch(e) {}
+        }
+        async function fetchTVL() {
+            try {
+                var r = await fetch('/api/tvl');
+                var data = await r.json();
+                var card = document.getElementById('tvl-card');
+                var val = document.getElementById('tvl-value');
+                if (card && val && data.tvl) {
+                    var tvl = data.tvl >= 1000000000 ? '$' + (data.tvl / 1000000000).toFixed(1) + 'B' : '$' + (data.tvl / 1000000).toFixed(0) + 'M';
+                    val.textContent = tvl;
+                    card.style.display = '';
+                }
+            } catch(e) {}
+        }
         fetchGas();
+        fetchDEXs();
+        fetchTrending();
+        fetchTVL();
         setInterval(fetchGas, 30000);
+        setInterval(fetchDEXs, 120000);
+        setInterval(fetchTrending, 120000);
+        setInterval(fetchTVL, 120000);
         setTimeout(function() { location.reload(); }, 180000);
     </script>
 </body>
@@ -443,11 +529,15 @@ def index():
         if data and coin_id in data:
             top_coins[coin_id] = data[coin_id]
 
-    # Market data with 7d change
+    # Market data with 7d change and sparklines
     market_raw = fetch_sync(
-        f"{COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=7d"
+        f"{COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=7d&sparkline=true"
     )
-    market_data = market_raw if market_raw else []
+    market_data = []
+    if market_raw:
+        for coin in market_raw:
+            coin['sparkline_svg'] = render_sparkline(coin.get('sparkline_in_7d', {}).get('price'))
+            market_data.append(coin)
 
     # Fear & Greed index
     fear_greed = None
@@ -531,6 +621,35 @@ def api_fear_greed():
 def api_news():
     news = fetch_rss("https://cointelegraph.com/rss")
     return jsonify(news)
+
+
+@app.route("/api/tvl")
+def api_tvl():
+    """Ethereum total value locked from DeFiLlama"""
+    data = fetch_sync("https://api.llama.fi/v2/historicalChainTvl/Ethereum")
+    if data and len(data) > 0:
+        latest = data[-1]
+        return jsonify({"chain": "ethereum", "tvl": round(latest.get("tvl", 0)), "date": latest.get("date", 0)})
+    return jsonify({"error": "unavailable"}), 500
+
+
+@app.route("/api/dexs")
+def api_dexs():
+    """Top DEXes by 24h volume from DeFiLlama"""
+    data = fetch_sync("https://api.llama.fi/overview/dexs")
+    if data and "protocols" in data:
+        top = sorted(data["protocols"], key=lambda x: x.get("total24h", 0) or 0, reverse=True)[:10]
+        dexs = []
+        for d in top:
+            dexs.append({
+                "name": d.get("displayName", d.get("name", "")),
+                "volume24h": round(d.get("total24h", 0)),
+                "volume7d": round(d.get("total7d", 0)),
+                "change1d": round(d.get("change_1d", 0) or 0, 2),
+                "chains": (d.get("chains") or [""])[:3],
+            })
+        return jsonify(dexs)
+    return jsonify({"error": "unavailable"}), 500
 
 
 @app.route("/api/wallet")
@@ -629,6 +748,17 @@ def docs():
         <div style="border:2px solid var(--border);padding:16px;margin-bottom:24px;">
             <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/health</code></p>
             <p style="color:var(--dim);font-size:11px;margin-top:4px;">Service health check.</p>
+        </div>
+
+        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/tvl</code></p>
+            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Ethereum total value locked from DeFiLlama.</p>
+            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/tvl</pre>
+        </div>
+        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/dexs</code></p>
+            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Top 10 DEXes by 24h volume from DeFiLlama.</p>
+            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/dexs</pre>
         </div>
 
         <p style="font-size:11px;color:var(--dim);margin-bottom:24px;">Support: <code style="color:var(--white);">{{ wallet }}</code></p>
