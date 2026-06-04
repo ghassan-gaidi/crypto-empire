@@ -7,3 +7,4 @@ data/
 out/
 cache/
 .vercel
+.telegram_token

@@ -1132,6 +1132,18 @@ Sitemap: https://crypto-empire-ten.vercel.app/sitemap.xml
 
 
 # ============================================================
+# Telegram Bot Webhook
+# ============================================================
+
+@app.route("/telegram/webhook", methods=["POST"])
+def telegram_webhook():
+    from telegram_bot import handle_update
+    data = request.get_json(silent=True) or {}
+    result = handle_update(data)
+    return jsonify(result)
+
+
+# ============================================================
 # Main
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
