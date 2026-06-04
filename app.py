@@ -30,6 +30,16 @@ app = Flask(__name__)
 CORS(app)
 app.secret_key = os.environ.get("FLASK_SECRET", "crypto-empire-secret-key-2026")
 
+# Premium API Keys (comma-separated in env var)
+PREMIUM_API_KEYS = set()
+_api_keys_raw = os.environ.get("PREMIUM_API_KEYS", "")
+if _api_keys_raw:
+    PREMIUM_API_KEYS = set(k.strip() for k in _api_keys_raw.split(",") if k.strip())
+
+# Sponsored coin config
+SPONSORED_COIN_ID = os.environ.get("SPONSORED_COIN_ID", "bitcoin")
+SPONSORED_COIN_MSG = os.environ.get("SPONSORED_COIN_MSG", "Bitcoin — The Original Asset")
+
 # ============================================================
 # Database
 # ============================================================
@@ -411,6 +421,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
+                <a href="/api-keys">Keys</a>
                 <a class="premium" href="#premium">Premium</a>
             </div>
         </div>
@@ -448,12 +459,24 @@ INDEX_HTML = """<!DOCTYPE html>
 
         <!-- Affiliate Strip -->
         <div class="aff-strip">
-            <span class="aff-label">TRADE</span>
+            <span class="aff-label">EXCHANGES</span>
             <div class="aff-links">
                 <a class="aff-link" href="https://www.binance.com/en/register?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Binance</a>
                 <a class="aff-link" href="https://www.coinbase.com/join/CRYPTOEMPIRE" target="_blank" rel="noopener">Coinbase</a>
                 <a class="aff-link" href="https://exchange.kraken.com/register?referrer=CRYPTOEMPIRE" target="_blank" rel="noopener">Kraken</a>
+                <a class="aff-link" href="https://www.bybit.com/en/sign-up?affiliate_id=CRYPTOEMPIRE" target="_blank" rel="noopener">Bybit</a>
+                <a class="aff-link" href="https://www.okx.com/join/CRYPTOEMPIRE" target="_blank" rel="noopener">OKX</a>
+                <a class="aff-link" href="https://www.kucoin.com/ucenter/signup?rcode=CRYPTOEMPIRE" target="_blank" rel="noopener">KuCoin</a>
+                <a class="aff-link" href="https://www.gate.io/signup/CRYPTOEMPIRE" target="_blank" rel="noopener">Gate.io</a>
                 <a class="aff-link" href="https://app.uniswap.org/?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Uniswap</a>
+            </div>
+        </div>
+        <div class="aff-strip">
+            <span class="aff-label">TOOLS</span>
+            <div class="aff-links">
+                <a class="aff-link" href="https://shop.ledger.com/?r=CRYPTOEMPIRE" target="_blank" rel="noopener">Ledger</a>
+                <a class="aff-link" href="https://crypto.com/exch/CRYPTOEMPIRE" target="_blank" rel="noopener">Crypto.com</a>
+                <a class="aff-link" href="https://www.trezor.io/affiliate/CRYPTOEMPIRE" target="_blank" rel="noopener">Trezor</a>
             </div>
         </div>
 
@@ -496,10 +519,14 @@ INDEX_HTML = """<!DOCTYPE html>
 
         <div class="divider"></div>
 
-        <!-- Sponsored Slot -->
+        <!-- Sponsored Coin Spotlight (paid placement) -->
         <div class="sponsor-box">
-            <span class="sponsor-label">SPONSORED — <em>YOUR PROJECT HERE</em></span>
-            <a class="sponsor-slot" href="#premium">Advertise here →</a>
+            <span class="sponsor-label">SPONSORED SPOTLIGHT — <span id="sponsored-name" style="color:var(--green);">--</span></span>
+            <div class="aff-links">
+                <span id="sponsored-price" style="font-size:11px;color:var(--white);font-weight:700;">--</span>
+                <span id="sponsored-change" style="font-size:9px;">--</span>
+                <a class="aff-link" href="#premium">Your project here →</a>
+            </div>
         </div>
 
         <div class="divider"></div>
@@ -518,6 +545,14 @@ INDEX_HTML = """<!DOCTYPE html>
         <!-- Trending Coins -->
         <div class="s-title" id="trending">TRENDING COINS</div>
         <div class="gas-row" id="trending-grid"></div>
+
+        <div class="divider"></div>
+
+        <!-- Market Movers -->
+        <div class="s-title" id="movers">MARKET MOVERS</div>
+        <div class="gas-row" id="movers-grid">
+            <div class="gas-item" style="grid-column:1/-1;"><div style="font-size:9px;color:var(--text-dim);">LOADING...</div></div>
+        </div>
 
         <div class="divider"></div>
 
@@ -545,6 +580,21 @@ INDEX_HTML = """<!DOCTYPE html>
             <div class="feat-item"><div class="feat-icon">[04]</div><h4>Telegram Bot</h4><p>Live data via <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="color:var(--white);">@Crypt0Emp1reBot</a></p></div>
             <div class="feat-item"><div class="feat-icon">[05]</div><h4>Self-Custodial</h4><p>Your keys, your coins. No exchange risk</p></div>
             <div class="feat-item"><div class="feat-icon">[06]</div><h4>Premium API</h4><p>10K requests/day + arbitrage signals</p></div>
+        </div>
+
+        <!-- Alert Signup (Lead Gen) -->
+        <div class="prem-box" id="alerts">
+            <h3>// PRICE ALERTS (BETA)</h3>
+            <p>Get notified when a coin hits your target price.<br>Enter coin symbol + target. We'll message you on Telegram.</p>
+            <div style="max-width:480px;margin:0 auto;text-align:left;">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                    <input type="text" id="alert-coin" placeholder="Coin (e.g. BTC)" style="flex:1;min-width:80px;background:var(--surface);color:var(--white);border:1px solid var(--border);padding:8px 10px;font-size:10px;font-family:inherit;outline:none;text-transform:uppercase;letter-spacing:1px;">
+                    <input type="text" id="alert-price" placeholder="Target price (e.g. 100000)" style="flex:1;min-width:100px;background:var(--surface);color:var(--white);border:1px solid var(--border);padding:8px 10px;font-size:10px;font-family:inherit;outline:none;">
+                    <input type="text" id="alert-tg" placeholder="Your Telegram @username" style="flex:1;min-width:120px;background:var(--surface);color:var(--white);border:1px solid var(--border);padding:8px 10px;font-size:10px;font-family:inherit;outline:none;">
+                </div>
+                <button onclick="submitAlert()" style="width:100%;border:1px solid var(--white);color:var(--white);background:transparent;padding:8px;font-size:9px;font-family:inherit;text-transform:uppercase;letter-spacing:2px;cursor:pointer;">Set Alert</button>
+                <div id="alert-msg" style="text-align:center;font-size:9px;color:var(--text-dim);margin-top:6px;"></div>
+            </div>
         </div>
 
         <!-- Telegram CTA -->
@@ -689,13 +739,108 @@ INDEX_HTML = """<!DOCTYPE html>
         fetchDEXs();
         fetchTrending();
         fetchTVL();
+        fetchMovers();
+        fetchSponsored();
         setInterval(fetchGas,30000);
         setInterval(fetchDEXs,120000);
         setInterval(fetchTrending,120000);
         setInterval(fetchTVL,120000);
+        setInterval(fetchMovers,120000);
+        setInterval(fetchSponsored,60000);
+
+        async function fetchMovers(){
+            try{
+                var r=await fetch('/api/movers');
+                var data=await r.json();
+                var grid=document.getElementById('movers-grid');
+                if(!grid||!data.top_gainers)return;
+                var html='';
+                var gainers=data.top_gainers.slice(0,5);
+                var losers=data.top_losers.slice(0,5);
+                html+='<div style="grid-column:1/-1;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding:4px 8px;margin-bottom:4px;">TOP GAINERS</div>';
+                for(var i=0;i<gainers.length;i++){
+                    var c=gainers[i];
+                    html+='<div class="gas-item" style="text-align:left;display:flex;justify-content:space-between;align-items:center;">' +
+                        '<div><div class="gas-chain" style="font-size:10px;">'+(c.symbol||c.name).toUpperCase()+'</div>' +
+                        '<div style="font-size:8px;color:var(--text-dim);">$'+(c.price||'--')+'</div></div>' +
+                        '<div style="text-align:right;"><div class="up" style="font-size:13px;font-weight:700;">+'+(c.change||0).toFixed(2)+'%</div></div></div>';
+                }
+                html+='<div style="grid-column:1/-1;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding:4px 8px;margin-bottom:4px;margin-top:8px;">TOP LOSERS</div>';
+                for(var i=0;i<losers.length;i++){
+                    var c=losers[i];
+                    html+='<div class="gas-item" style="text-align:left;display:flex;justify-content:space-between;align-items:center;">' +
+                        '<div><div class="gas-chain" style="font-size:10px;">'+(c.symbol||c.name).toUpperCase()+'</div>' +
+                        '<div style="font-size:8px;color:var(--text-dim);">$'+(c.price||'--')+'</div></div>' +
+                        '<div style="text-align:right;"><div class="down" style="font-size:13px;font-weight:700;">'+(c.change||0).toFixed(2)+'%</div></div></div>';
+                }
+                grid.innerHTML=html;
+            }catch(e){}
+        }
+
+        async function fetchSponsored(){
+            try{
+                var r=await fetch('/api/sponsored');
+                var data=await r.json();
+                var nameEl=document.getElementById('sponsored-name');
+                var priceEl=document.getElementById('sponsored-price');
+                var chgEl=document.getElementById('sponsored-change');
+                if(nameEl)nameEl.textContent=data.name;
+                if(priceEl)priceEl.textContent='$'+data.price;
+                if(chgEl){
+                    chgEl.textContent=data.change_24h+'%';
+                    chgEl.className=data.change_24h>=0?'up':'down';
+                }
+            }catch(e){}
+        }
+
+        function submitAlert(){
+            var coin=document.getElementById('alert-coin');
+            var price=document.getElementById('alert-price');
+            var tg=document.getElementById('alert-tg');
+            var msg=document.getElementById('alert-msg');
+            if(!coin||!price||!tg)return;
+            if(!coin.value.trim()||!price.value.trim()||!tg.value.trim()){
+                msg.textContent='Fill all fields';
+                return;
+            }
+            try{
+                var r=new XMLHttpRequest();
+                r.open('POST','/api/alerts',true);
+                r.setRequestHeader('Content-Type','application/json');
+                r.onload=function(){
+                    msg.textContent='Alert set! We\\'ll notify you at '+tg.value.trim();
+                    coin.value='';price.value='';tg.value='';
+                };
+                r.onerror=function(){msg.textContent='Error setting alert';};
+                r.send(JSON.stringify({coin:coin.value.trim(),target:price.value.trim(),telegram:tg.value.trim()}));
+            }catch(e){msg.textContent='Error setting alert';}
+        }
     </script>
 </body>
 </html>"""
+
+# ============================================================
+# Premium API Key Middleware
+# ============================================================
+
+@app.before_request
+def check_premium_key():
+    if request.path.startswith('/api/'):
+        key = request.headers.get("X-API-Key") or request.args.get("api_key", "")
+        request.is_premium = key in PREMIUM_API_KEYS
+
+@app.after_request
+def add_premium_headers(resp):
+    if request.path.startswith('/api/'):
+        is_premium = getattr(request, 'is_premium', False)
+        if is_premium:
+            resp.headers['X-Premium'] = 'true'
+            resp.headers['X-Rate-Limit'] = '10000/day'
+        else:
+            resp.headers['X-Rate-Limit'] = '100/day'
+            resp.headers['X-Premium-Upgrade'] = 'https://crypto-empire-ten.vercel.app/api-keys'
+    return resp
+
 
 # ============================================================
 # Routes
@@ -832,6 +977,182 @@ def api_dexs():
             })
         return jsonify(dexs)
     return jsonify({"error": "unavailable"}), 500
+
+
+@app.route("/api/movers")
+def api_movers():
+    """Top gainers and losers in last 24h"""
+    data = fetch_sync(
+        f"{COINGECKO_API}/coins/markets?vs_currency=usd&order=volume_desc&per_page=100&page=1&price_change_percentage=24h&sparkline=false"
+    )
+    if not data:
+        return jsonify({"top_gainers": [], "top_losers": []})
+    sorted_data = sorted(data, key=lambda x: x.get("price_change_percentage_24h", 0) or 0, reverse=True)
+    gainers = []
+    losers = []
+    for coin in sorted_data:
+        chg = coin.get("price_change_percentage_24h") or 0
+        entry = {
+            "id": coin.get("id"),
+            "name": coin.get("name"),
+            "symbol": coin.get("symbol"),
+            "price": f"{coin.get('current_price', 0):,.2f}" if coin.get('current_price') else "0",
+            "change": round(chg, 2),
+        }
+        if chg >= 0:
+            if len(gainers) < 10:
+                gainers.append(entry)
+        else:
+            if len(losers) < 10:
+                losers.append(entry)
+    return jsonify({"top_gainers": gainers, "top_losers": losers})
+
+
+@app.route("/api/sponsored")
+def api_sponsored():
+    """Live price for the sponsored coin"""
+    data = fetch_sync(f"{COINGECKO_API}/simple/price?ids={SPONSORED_COIN_ID}&vs_currencies=usd&include_24hr_change=true")
+    price = 0
+    change_24h = 0
+    if data and SPONSORED_COIN_ID in data:
+        price = data[SPONSORED_COIN_ID].get("usd", 0)
+        change_24h = round(data[SPONSORED_COIN_ID].get("usd_24h_change", 0) or 0, 2)
+    return jsonify({
+        "id": SPONSORED_COIN_ID,
+        "name": SPONSORED_COIN_MSG,
+        "price": f"{price:,.2f}" if price else "0",
+        "change_24h": change_24h,
+    })
+
+
+@app.route("/api-keys")
+def api_keys_page():
+    """API key management and premium info page"""
+    return render_template_string("""<!DOCTYPE html>
+<html lang="en">
+<head>""" + SHARED_HEAD + """
+    <title>API Keys — Crypto Empire Premium</title>
+    <meta name="description" content="Get premium API keys for Crypto Empire. 10K requests/day, arbitrage signals, priority support. Unlock by sending ETH.">
+    <meta name="robots" content="noindex, follow">
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="sweep"></div>
+    <div class="container">
+        <div class="top-bar">
+            <div class="brand">
+                <div class="prompt">><span class="cr"></span></div>
+                <div>
+                    <div class="site-title">API Keys</div>
+                    <div class="site-sub">Premium access management</div>
+                </div>
+            </div>
+            <div class="top-nav">
+                <a href="/">Dashboard</a>
+                <a href="/docs">API Docs</a>
+                <a href="/blog">Blog</a>
+            </div>
+        </div>
+        <div class="status-line">
+            <span><span class="dot"></span> API KEYS</span>
+            <span id="live-clock">--</span>
+        </div>
+        <div class="bnav"><a href="/">Dashboard</a></div>
+        <div class="s-title">PREMIUM API KEYS</div>
+
+        <div class="post">
+            <h3 style="font-size:12px;color:var(--white);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">Free Tier</h3>
+            <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
+                <span style="color:var(--green);">&#10003;</span> No API key required<br>
+                <span style="color:var(--green);">&#10003;</span> All endpoints accessible<br>
+                <span style="color:var(--text-dim);">&#10007;</span> 100 req/day rate limit<br>
+                <span style="color:var(--text-dim);">&#10007;</span> Standard response headers
+            </p>
+        </div>
+
+        <div class="prem-box" style="text-align:left;border-color:var(--white);">
+            <h3 style="font-size:12px;margin-bottom:12px;">PREMIUM TIER — 0.005 ETH</h3>
+            <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
+                <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">10,000 requests/day</strong><br>
+                <span style="color:var(--green);">&#10003;</span> Priority rate limit on all endpoints<br>
+                <span style="color:var(--green);">&#10003;</span> Dedicated API key with <code style="color:var(--white);">X-Premium: true</code> header<br>
+                <span style="color:var(--green);">&#10003;</span> Arbitrage signal access (coming soon)<br>
+                <span style="color:var(--green);">&#10003;</span> Priority support via Telegram
+            </p>
+        </div>
+
+        <div class="prem-box">
+            <h3>HOW TO GET YOUR KEY</h3>
+            <ol style="text-align:left;font-size:10px;color:var(--text-dim);line-height:2;max-width:400px;margin:0 auto;">
+                <li>Send <strong style="color:var(--white);">0.005 ETH</strong> to the wallet below</li>
+                <li>Send a message to <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="color:var(--white);">@Crypt0Emp1reBot</a> with your tx hash</li>
+                <li>We'll issue your API key within 24 hours</li>
+            </ol>
+            <div class="waddr" onclick="copyWallet(this)" style="margin-top:12px;">{{ wallet }}</div>
+            <div style="font-size:8px;color:var(--text-dim);margin-top:4px;text-transform:uppercase;letter-spacing:1px;">Click to copy — Any EVM chain</div>
+        </div>
+
+        <div class="post">
+            <p style="font-size:10px;color:var(--text-dim);">Use your premium API key via <code style="color:var(--white);">X-API-Key</code> header or <code style="color:var(--white);">?api_key=</code> query param.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;margin-top:8px;">curl -H "X-API-Key: your_key_here" \\
+  https://crypto-empire-ten.vercel.app/api/price/bitcoin</pre>
+        </div>
+
+        <footer>
+            <p>Crypto Empire — Wallet: <code style="font-size:8px;">{{ wallet }}</code></p>
+        </footer>
+    </div>
+    <div class="b-bar">
+        <span><span class="dot"></span> API KEYS</span>
+        <span>v1.0</span>
+    </div>
+    <script>
+        (function(){
+            function u(){
+                var n=new Date();
+                var y=n.getUTCFullYear();
+                var m=String(n.getUTCMonth()+1).padStart(2,'0');
+                var d=String(n.getUTCDate()).padStart(2,'0');
+                var h=String(n.getUTCHours()).padStart(2,'0');
+                var i=String(n.getUTCMinutes()).padStart(2,'0');
+                var s=String(n.getUTCSeconds()).padStart(2,'0');
+                var e=document.getElementById('live-clock');
+                if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+            }
+            u();setInterval(u,1000);
+        })();
+        function copyWallet(el){
+            navigator.clipboard.writeText(el.textContent).then(function(){
+                var t=document.getElementById('toast');
+                t.classList.add('show');
+                setTimeout(function(){t.classList.remove('show');},2000);
+            });
+        }
+    </script>
+</body>
+</html>""", wallet=WALLET_ADDRESS)
+
+
+@app.route("/api/alerts", methods=["POST"])
+def api_alerts():
+    """Save a price alert subscription"""
+    data = request.get_json(silent=True) or {}
+    coin = data.get("coin", "").strip().upper()
+    target = data.get("target", "").strip()
+    telegram = data.get("telegram", "").strip()
+    if not coin or not target or not telegram:
+        return jsonify({"error": "Missing fields"}), 400
+    try:
+        float(target)
+    except ValueError:
+        return jsonify({"error": "Invalid target price"}), 400
+    # Persist alert to DB
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("CREATE TABLE IF NOT EXISTS alerts (coin TEXT, target REAL, telegram TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    conn.execute("INSERT INTO alerts (coin, target, telegram) VALUES (?, ?, ?)", (coin, float(target), telegram))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok", "message": f"Alert set for {coin} at ${target}"})
 
 
 @app.route("/api/wallet")
@@ -1435,6 +1756,7 @@ def sitemap():
         {"loc": "/blog", "priority": "0.9", "changefreq": "daily"},
         {"loc": "/docs", "priority": "0.7", "changefreq": "weekly"},
         {"loc": "/wallet-check", "priority": "0.8", "changefreq": "daily"},
+        {"loc": "/api-keys", "priority": "0.6", "changefreq": "weekly"},
     ]
     for post in BLOG_POSTS:
         pages.append({"loc": f"/blog/{post['slug']}", "priority": "0.6", "changefreq": "monthly"})
