@@ -113,7 +113,7 @@ def fetch_rss(url):
     return []
 
 # ============================================================
-# Shared CSS — Terminal Brutalist B&W
+# Shared CSS — Professional Terminal Aesthetic
 # ============================================================
 SHARED_HEAD = """<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -122,430 +122,253 @@ SHARED_HEAD = """<meta charset="UTF-8">
   *{margin:0;padding:0;box-sizing:border-box;border-radius:0!important;-webkit-border-radius:0!important;}
   :root{
     --bg:#000;
-    --surface:#0a0a0a;
-    --border:#333;
-    --text:#c0c0c0;
-    --muted:#555;
-    --dim:#444;
+    --surface:#050505;
+    --border:#181818;
+    --text:#b0b0b0;
+    --text-dim:#555;
+    --text-muted:#282828;
     --green:#0f0;
     --red:#f00;
-    --yellow:#ff0;
     --white:#fff;
-    --glow:0 0 6px rgba(255,255,255,.15);
+    --glow:0 0 8px rgba(255,255,255,.10);
+    --glow-green:0 0 8px rgba(0,255,0,.12);
   }
   body{
     font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
-    background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;
+    background:var(--bg);color:var(--text);font-size:12px;line-height:1.7;
     min-height:100vh;position:relative;overflow-x:hidden;
   }
-  /* ===== CRT EFFECTS ===== */
-  /* Screen flicker (subtle, CRT-like) */
-  @keyframes screen-flicker{
-    0%,100%{opacity:1}
-    50%{opacity:0.997}
-  }
-  body{
-    animation:screen-flicker 0.15s infinite;
-  }
-  /* CRT Scanlines — finer, faster */
+  ::selection{background:var(--white);color:var(--bg);}
+  a{color:var(--text);text-decoration:none;}
+  a:hover{color:var(--white);}
+
+  /* ===== CRT MINIMAL ===== */
   body::after{
     content:'';position:fixed;top:0;left:0;right:0;bottom:0;
-    background:repeating-linear-gradient(0deg,
-      transparent,transparent 1px,
-      rgba(255,255,255,.008) 1px,rgba(255,255,255,.008) 2px);
+    background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(255,255,255,.002) 2px,rgba(255,255,255,.002) 3px);
     pointer-events:none;z-index:9999;
-    animation:scanline-scroll 6s linear infinite;
   }
-  @keyframes scanline-scroll{
-    0%{background-position:0 0}
-    100%{background-position:0 100vh}
-  }
-  /* CRT Vignette + Curvature */
   body::before{
     content:'';position:fixed;top:0;left:0;right:0;bottom:0;
-    background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.6) 80%,rgba(0,0,0,.85) 100%);
+    background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.5) 100%);
     pointer-events:none;z-index:9998;
   }
-  /* Sweeping scan line */
-  @keyframes scan-line{
-    0%{top:-5%}
-    100%{top:105%}
+  @keyframes sweep{0%{top:-2%}100%{top:102%}}
+  .sweep{
+    position:fixed;left:0;right:0;height:3px;
+    background:linear-gradient(to bottom,transparent,rgba(255,255,255,.03),transparent);
+    pointer-events:none;z-index:9996;animation:sweep 12s linear infinite;
   }
-  .scan-line{
-    position:fixed;left:0;right:0;height:6px;
-    background:linear-gradient(to bottom,transparent,rgba(255,255,255,.06),transparent);
-    pointer-events:none;z-index:9996;
-    animation:scan-line 8s linear infinite;
-  }
-  /* Grid background */
   .grid-bg{
     position:fixed;top:0;left:0;right:0;bottom:0;
-    background-image:
-      linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
-    background-size:30px 30px;
-    pointer-events:none;z-index:-1;
+    background-image:linear-gradient(rgba(255,255,255,.008) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.008) 1px,transparent 1px);
+    background-size:40px 40px;pointer-events:none;z-index:-1;
   }
-  ::selection{background:var(--white);color:var(--bg);}
-  .container{max-width:1100px;margin:0 auto;padding:20px;}
-  a{color:var(--text);text-decoration:underline;}
-  a:hover{color:var(--white);text-shadow:var(--glow);}
-  hr{border:none;border-top:1px dashed var(--border);margin:40px 0;}
-
-  /* ===== ASCII DIVIDER ===== */
-  .ascii-divider{
-    text-align:center;color:var(--dim);font-size:10px;
-    letter-spacing:4px;margin:36px 0 20px;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;
-  }
-  .ascii-divider::before{content:'---[';color:var(--muted);}
-  .ascii-divider::after{content:']---';color:var(--muted);}
-
-  /* ===== HEADER ===== */
-  header{
-    border-bottom:2px solid var(--border);padding:20px 0;margin-bottom:28px;
-    position:relative;
-  }
-  header .container{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
-  .logo{
-    font-size:22px;font-weight:800;color:var(--white);text-decoration:none;
-    text-transform:uppercase;letter-spacing:6px;
-  }
-  .logo:hover{text-shadow:0 0 20px rgba(255,255,255,.4);}
-  .logo:before{content:'> ';color:var(--muted);}
-  .logo:after{content:'_';animation:blink 1s step-end infinite;color:var(--white);}
-  @keyframes blink{50%{opacity:0}}
-
-  .subtitle{
-    font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:4px;
-    margin-top:4px;overflow:hidden;white-space:nowrap;
-    animation:typewrite 3s steps(40) forwards;
-    width:0;
-  }
-  @keyframes typewrite{
-    0%{width:0}
-    100%{width:42ch}
-  }
-
-  nav{display:flex;gap:2px;flex-wrap:wrap;}
-  nav a{
-    color:var(--muted);text-decoration:none;padding:8px 16px;
-    border:1px solid var(--border);font-size:10px;text-transform:uppercase;
-    letter-spacing:2px;transition:.1s;background:transparent;
-  }
-  nav a:hover{color:var(--white);border-color:var(--white);text-shadow:var(--glow);}
-  .nav-btn{
-    display:inline-block;border:2px solid var(--white);color:var(--white);
-    padding:8px 18px;font-size:10px;text-transform:uppercase;
-    letter-spacing:3px;text-decoration:none;transition:.1s;background:transparent;
-    cursor:pointer;
-  }
-  .nav-btn:hover{background:var(--white);color:var(--bg);}
-
-  /* ===== SECTION LABELS ===== */
-  .section-title{
-    font-size:10px;color:var(--muted);text-transform:uppercase;
-    letter-spacing:4px;margin-bottom:14px;margin-top:0;
-    padding-bottom:0;border:none;
-  }
-  .section-title::before{content:'$ ';color:var(--white);font-weight:700;}
-  .section-title::after{content:'_';animation:blink 1s step-end infinite;color:var(--white);}
+  .container{max-width:1100px;margin:0 auto;padding:24px 20px 60px;}
+  hr{border:none;border-top:1px solid var(--border);margin:28px 0;}
 
   /* ===== TOP BAR ===== */
   .top-bar{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
-    margin-bottom:28px;border:2px solid var(--border);position:relative;
+    display:flex;justify-content:space-between;align-items:center;
+    border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:20px;
+    flex-wrap:wrap;gap:12px;
   }
-  .stat-card{
-    padding:16px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
-    position:relative;transition:background .15s;
+  .brand{display:flex;align-items:center;gap:14px;}
+  .prompt{color:var(--green);font-size:16px;font-weight:700;display:flex;align-items:center;}
+  .prompt .cr{display:inline-block;width:9px;height:15px;background:var(--green);margin-left:3px;animation:blink 1s step-end infinite;vertical-align:middle;}
+  @keyframes blink{50%{opacity:0}}
+  .site-title{font-size:18px;font-weight:800;color:var(--white);letter-spacing:5px;text-transform:uppercase;}
+  .site-sub{font-size:9px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+  .top-nav{display:flex;gap:1px;flex-wrap:wrap;}
+  .top-nav a{
+    padding:6px 14px;font-size:9px;text-transform:uppercase;letter-spacing:2px;
+    color:var(--text-dim);border:1px solid var(--border);transition:.15s;
   }
-  .stat-card:hover{background:rgba(255,255,255,.02);}
-  .stat-card:hover .value{text-shadow:var(--glow);}
-  .stat-card .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;}
-  .stat-card .value{font-size:20px;font-weight:700;margin-top:4px;color:var(--white);transition:.2s;}
-  .stat-card .sub{font-size:9px;margin-top:2px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);}
-  .up{color:var(--green);}
-  .down{color:var(--red);}
+  .top-nav a:hover{color:var(--white);border-color:var(--white);}
+  .top-nav a.premium{border-color:var(--green);color:var(--green);}
+  .top-nav a.premium:hover{background:var(--green);color:var(--bg);}
+
+  /* ===== STATUS LINE ===== */
+  .status-line{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:24px;
+    font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;
+  }
+  .dot{width:5px;height:5px;background:var(--green);display:inline-block;margin-right:5px;animation:pulse-dot 2s ease-in-out infinite;}
+  @keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 4px var(--green)}50%{opacity:.5;box-shadow:0 0 10px var(--green)}}
+
+  /* ===== ASCII DIVIDER ===== */
+  .divider{text-align:center;color:var(--text-muted);font-size:9px;letter-spacing:2px;margin:28px 0 16px;text-transform:uppercase;}
+  .divider::before{content:'--[ ';color:var(--text-muted);}
+  .divider::after{content:' ]--';color:var(--text-muted);}
+
+  /* ===== SECTION TITLE ===== */
+  .s-title{
+    font-size:9px;color:var(--text-dim);text-transform:uppercase;
+    letter-spacing:3px;margin-bottom:10px;border:none;
+  }
+  .s-title::before{content:'> ';color:var(--green);font-weight:700;}
+
+  /* ===== STAT ROW ===== */
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;border:1px solid var(--border);margin-bottom:24px;}
+  .stat-item{padding:12px 14px;background:var(--surface);transition:.15s;}
+  .stat-item:hover{background:rgba(255,255,255,.01);}
+  .stat-label{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
+  .stat-value{font-size:20px;font-weight:700;color:var(--white);margin-top:3px;}
+  .stat-sub{font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+  .up{color:var(--green);}.down{color:var(--red);}
 
   /* ===== GAS ===== */
-  .gas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:28px;border:2px solid var(--border);}
-  .gas-card{
-    padding:16px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
-    transition:background .15s;
-  }
-  .gas-card:hover{background:rgba(255,255,255,.02);}
-  .gas-card .chain{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}
-  .gas-card .gwei{font-size:24px;font-weight:700;letter-spacing:1px;}
-  .gas-card:hover .gwei{text-shadow:var(--glow);}
-  .low{color:var(--green);}.medium{color:var(--yellow);}.high{color:var(--red);}
+  .gas-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid var(--border);margin-bottom:24px;}
+  .gas-item{padding:10px;text-align:center;background:var(--surface);transition:.15s;}
+  .gas-item:hover{background:rgba(255,255,255,.01);}
+  .gas-chain{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
+  .gas-gwei{font-size:22px;font-weight:700;letter-spacing:1px;margin-top:3px;}
+  .gas-gwei.low{color:var(--green);}.gas-gwei.med{color:var(--white);}.gas-gwei.high{color:var(--red);}
 
   /* ===== TABLE ===== */
-  .table-wrap{border:2px solid var(--border);margin-bottom:28px;overflow-x:auto;position:relative;}
-  table{width:100%;border-collapse:collapse;min-width:650px;}
-  th,td{padding:10px 16px;text-align:left;font-size:11px;white-space:nowrap;border-bottom:1px solid var(--border);}
-  th{color:var(--muted);font-weight:500;font-size:9px;text-transform:uppercase;letter-spacing:2px;background:var(--surface);}
+  .tbl{border:1px solid var(--border);margin-bottom:24px;overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:600px;}
+  th,td{padding:7px 12px;text-align:left;font-size:11px;white-space:nowrap;border-bottom:1px solid var(--border);}
+  th{color:var(--text-dim);font-weight:500;font-size:8px;text-transform:uppercase;letter-spacing:2px;background:var(--surface);}
   tr:last-child td{border-bottom:none;}
   tr:hover td{background:rgba(255,255,255,.02);}
-  tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--white);}
-  .rank{color:var(--muted);width:30px;}
-  .coin-name{font-weight:500;color:var(--white);}
-  .coin-symbol{color:var(--dim);font-size:9px;}
-  .mc,.vol{color:var(--dim);font-size:11px;}
+  tr:hover td:first-child{box-shadow:inset 2px 0 0 var(--green);}
+  .rank{color:var(--text-dim);width:20px;}
+  .cname{font-weight:500;color:var(--white);}
+  .csym{color:var(--text-muted);font-size:9px;}
+  .mc,.vol{color:var(--text-dim);font-size:10px;}
+
+  /* ===== AFFILIATE STRIP ===== */
+  .aff-strip{
+    border:1px solid var(--border);padding:10px 16px;margin-bottom:24px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+    background:var(--surface);
+  }
+  .aff-label{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
+  .aff-links{display:flex;gap:6px;flex-wrap:wrap;}
+  .aff-link{
+    border:1px solid var(--border);padding:4px 12px;font-size:9px;
+    text-transform:uppercase;letter-spacing:1px;color:var(--text);transition:.15s;
+  }
+  .aff-link:hover{border-color:var(--white);color:var(--white);}
+
+  /* ===== SPONSORED ===== */
+  .sponsor-box{
+    border:1px solid var(--border);padding:10px 16px;margin-bottom:24px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+    background:var(--surface);
+  }
+  .sponsor-label{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
+  .sponsor-label em{color:var(--green);font-style:normal;}
+  .sponsor-slot{
+    border:1px dashed var(--text-muted);padding:4px 14px;font-size:9px;
+    color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;transition:.15s;
+  }
+  .sponsor-slot:hover{border-color:var(--white);color:var(--white);}
 
   /* ===== NEWS ===== */
   .news-list{list-style:none;}
-  .news-list li{padding:10px 14px;border-bottom:1px solid var(--border);transition:background .15s;}
+  .news-list li{padding:7px 12px;border-bottom:1px solid var(--border);transition:.15s;}
   .news-list li:last-child{border-bottom:none;}
   .news-list li:hover{background:rgba(255,255,255,.02);}
-  .news-list a{color:var(--text);text-decoration:none;font-size:12px;display:block;}
-  .news-list a:hover{color:var(--white);text-shadow:var(--glow);}
-  .news-date{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:1px;}
+  .news-list a{color:var(--text);font-size:11px;display:block;}
+  .news-list a:hover{color:var(--white);}
+  .n-date{font-size:8px;color:var(--text-dim);margin-top:1px;text-transform:uppercase;letter-spacing:1px;}
 
   /* ===== FEATURES ===== */
-  .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;margin-bottom:28px;border:2px solid var(--border);}
-  .feature-card{
-    padding:20px 14px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
-    transition:background .15s;cursor:default;
-  }
-  .feature-card:hover{background:rgba(255,255,255,.02);}
-  .feature-card .icon{font-size:13px;margin-bottom:6px;color:var(--white);font-weight:700;}
-  .feature-card h4{font-size:11px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;color:var(--white);}
-  .feature-card p{font-size:10px;color:var(--dim);line-height:1.5;}
+  .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;border:1px solid var(--border);margin-bottom:24px;}
+  .feat-item{padding:16px 12px;text-align:center;background:var(--surface);transition:.15s;}
+  .feat-item:hover{background:rgba(255,255,255,.01);}
+  .feat-icon{font-size:12px;margin-bottom:4px;color:var(--green);font-weight:700;}
+  .feat-item h4{font-size:10px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;color:var(--white);}
+  .feat-item p{font-size:9px;color:var(--text-dim);line-height:1.5;}
 
-  /* ===== DONATION ===== */
-  .donation-box{border:2px solid var(--border);padding:28px;margin-bottom:28px;text-align:center;position:relative;}
-  .donation-box h3{font-size:13px;margin-bottom:10px;text-transform:uppercase;letter-spacing:3px;color:var(--white);}
-  .donation-box h3::before{content:'$ ';color:var(--dim);}
-  .wallet-addr{
-    border:2px solid var(--border);padding:12px 20px;
-    font-family:monospace;font-size:11px;color:var(--white);
-    word-break:break-all;cursor:pointer;background:var(--surface);
-    display:inline-block;max-width:100%;user-select:all;margin:14px 0;
-    transition:border-color .2s;
+  /* ===== PREMIUM BOX ===== */
+  .prem-box{border:1px solid var(--border);padding:24px;margin-bottom:24px;text-align:center;background:var(--surface);}
+  .prem-box h3{font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:3px;color:var(--white);}
+  .prem-box h3::before{content:'$ ';color:var(--text-dim);}
+  .prem-box p{font-size:10px;color:var(--text-dim);margin-bottom:10px;}
+  .waddr{
+    border:1px solid var(--border);padding:8px 16px;font-family:monospace;
+    font-size:10px;color:var(--white);word-break:break-all;cursor:pointer;
+    background:var(--bg);display:inline-block;max-width:100%;user-select:all;transition:.15s;
   }
-  .wallet-addr:hover{border-color:var(--white);box-shadow:0 0 8px rgba(255,255,255,.1);}
-  .chain-tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0;}
-  .chain-tag{border:1px solid var(--border);padding:4px 12px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
-  .chain-tag:hover{border-color:var(--white);color:var(--white);}
+  .waddr:hover{border-color:var(--white);}
+  .ctags{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:8px 0;}
+  .ctag{border:1px solid var(--border);padding:2px 10px;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
 
   /* ===== FOOTER ===== */
-  footer{text-align:center;padding:28px 0;border-top:2px solid var(--border);color:var(--muted);font-size:10px;}
-  footer a{color:var(--muted);}
-  footer a:hover{color:var(--white);text-shadow:var(--glow);}
+  footer{text-align:center;padding:20px 0;border-top:1px solid var(--border);color:var(--text-dim);font-size:9px;}
+
+  /* ===== BOTTOM BAR ===== */
+  .b-bar{
+    position:fixed;bottom:0;left:0;right:0;background:var(--surface);
+    border-top:1px solid var(--border);padding:3px 20px;font-size:8px;color:var(--text-dim);
+    display:flex;justify-content:space-between;align-items:center;
+    text-transform:uppercase;letter-spacing:1px;z-index:9990;
+  }
+  .b-bar .sp{color:var(--text-muted);margin:0 6px;}
 
   /* ===== TOAST ===== */
   .toast{
-    position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
-    background:var(--white);color:var(--bg);padding:10px 24px;
-    font-size:11px;font-weight:700;opacity:0;transition:opacity .2s;
-    pointer-events:none;z-index:10000;text-transform:uppercase;letter-spacing:3px;
+    position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+    background:var(--white);color:var(--bg);padding:7px 18px;font-size:10px;
+    font-weight:700;opacity:0;transition:opacity .2s;
+    pointer-events:none;z-index:10000;text-transform:uppercase;letter-spacing:2px;
   }
   .toast.show{opacity:1;}
 
-  /* ===== BACK NAV ===== */
-  .back-nav{margin-bottom:24px;}
-  .back-nav a{color:var(--muted);text-decoration:none;font-size:10px;text-transform:uppercase;letter-spacing:2px;}
-  .back-nav a:hover{color:var(--white);}
-  .back-nav a::before{content:'<< ';color:var(--dim);}
-
-  /* ===== BLOG ===== */
-  .post-card{border:2px solid var(--border);padding:24px;margin-bottom:14px;transition:border-color .2s;}
-  .post-card:hover{border-color:var(--white);}
-  .post-card:hover h2 a{text-shadow:var(--glow);}
-  .post-card h2{font-size:15px;margin-bottom:6px;}
-  .post-card h2 a{color:var(--white);text-decoration:none;transition:.2s;}
-  .post-card h2 a:hover{text-decoration:underline;}
-  .post-card .meta{color:var(--dim);font-size:9px;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;}
-  .post-card .tags{display:flex;gap:6px;flex-wrap:wrap;}
-  .post-card .tag{border:1px solid var(--border);padding:3px 10px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
-  .post-card .tag:hover{border-color:var(--white);color:var(--white);}
-
-  /* ===== WALLET ===== */
-  .winput{
-    border:2px solid var(--border);padding:14px 18px;background:var(--surface);
-    color:var(--white);font-family:monospace;font-size:13px;outline:none;width:100%;display:block;
-    transition:border-color .2s;
-  }
-  .winput:focus{border-color:var(--white);box-shadow:0 0 8px rgba(255,255,255,.1);}
-  .wbtn{
-    border:2px solid var(--white);color:var(--white);background:transparent;
-    padding:12px 28px;font-family:monospace;font-size:11px;cursor:pointer;
-    text-transform:uppercase;letter-spacing:3px;margin-top:10px;transition:.1s;
-  }
+  /* ===== WALLET PAGE ===== */
+  .winput{border:1px solid var(--border);padding:10px 14px;background:var(--surface);color:var(--white);font-family:monospace;font-size:13px;outline:none;width:100%;display:block;transition:.15s;}
+  .winput:focus{border-color:var(--white);}
+  .wbtn{border:1px solid var(--white);color:var(--white);background:transparent;padding:8px 22px;font-family:monospace;font-size:10px;cursor:pointer;text-transform:uppercase;letter-spacing:3px;margin-top:8px;transition:.1s;}
   .wbtn:hover{background:var(--white);color:var(--bg);}
-  .chain-row{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);padding:14px 18px;margin-bottom:8px;}
-  .chain-row:hover{background:rgba(255,255,255,.02);}
-  .chain-name{font-weight:500;text-transform:uppercase;letter-spacing:1px;font-size:11px;color:var(--white);}
-  .chain-bal{font-family:monospace;color:var(--white);font-size:13px;}
-  .chain-usd{color:var(--dim);font-size:11px;}
-  .total-val{font-size:28px;font-weight:700;color:var(--white);text-align:center;padding:24px;border:2px solid var(--border);margin-bottom:14px;}
-  .total-val::before{content:'$ ';color:var(--dim);}
-  .error{color:var(--red);text-align:center;padding:20px;font-size:12px;}
-  .loading{text-align:center;color:var(--dim);padding:20px;font-size:11px;animation:loading-pulse .8s ease-in-out infinite;}
-  @keyframes loading-pulse{0%,100%{opacity:.3}50%{opacity:1}}
-
-  /* ===== TELEGRAM CTA ===== */
-  .tg-cta{
-    border:2px solid var(--border);padding:36px;margin-bottom:28px;text-align:center;
-    position:relative;overflow:hidden;
-  }
-  .tg-cta h3{font-size:15px;margin-bottom:10px;text-transform:uppercase;letter-spacing:3px;color:var(--white);}
-  .tg-cta h3::before{content:'// ';color:var(--dim);}
-  .tg-cta p{font-size:11px;color:var(--muted);margin-bottom:18px;}
-  .tg-cta .tg-btn{
-    display:inline-block;border:2px solid var(--white);color:var(--white);
-    padding:14px 36px;font-size:13px;text-transform:uppercase;
-    letter-spacing:4px;text-decoration:none;transition:.1s;font-weight:700;
-  }
-  .tg-cta .tg-btn:hover{background:var(--white);color:var(--bg);}
-  .tg-cta .tg-cmd{
-    border:1px dashed var(--border);padding:10px 18px;margin-top:18px;
-    font-size:12px;color:var(--green);display:inline-block;user-select:all;
-    font-family:monospace;
-  }
+  .ch-row{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);padding:8px 12px;margin-bottom:6px;font-size:11px;}
+  .ch-row:hover{background:rgba(255,255,255,.02);}
+  .ch-name{font-weight:500;text-transform:uppercase;letter-spacing:1px;font-size:10px;color:var(--white);}
+  .ch-bal{font-family:monospace;color:var(--white);font-size:12px;}
+  .ch-usd{color:var(--text-dim);font-size:10px;}
+  .tval{font-size:24px;font-weight:700;color:var(--white);text-align:center;padding:18px;border:1px solid var(--border);margin-bottom:10px;}
+  .tval::before{content:'$ ';color:var(--text-dim);}
+  .error{color:var(--red);text-align:center;padding:14px;font-size:11px;}
+  .loading{text-align:center;color:var(--text-dim);padding:14px;font-size:10px;animation:ld .8s ease-in-out infinite;}
+  @keyframes ld{0%,100%{opacity:.3}50%{opacity:1}}
 
   /* ===== 404 ===== */
-  .error-404{text-align:center;padding:100px 20px;}
-  .error-404 h1{font-size:100px;color:var(--white);font-weight:800;letter-spacing:10px;text-shadow:0 0 20px rgba(255,255,255,.2);}
-  .error-404 p{color:var(--muted);font-size:12px;margin:16px 0 24px;letter-spacing:2px;}
-  .error-404 .glitch{font-size:13px;color:var(--dim);letter-spacing:8px;text-transform:uppercase;}
+  .e404{text-align:center;padding:80px 20px;}
+  .e404 h1{font-size:64px;color:var(--white);font-weight:800;letter-spacing:8px;}
+  .e404 p{color:var(--text-dim);font-size:11px;margin:10px 0 18px;letter-spacing:2px;}
 
-  /* ===== BOOT SCREEN ===== */
-  .boot-screen{
-    position:fixed;top:0;left:0;right:0;bottom:0;
-    background:var(--bg);z-index:99999;
-    display:flex;flex-direction:column;justify-content:center;
-    padding:60px;font-size:12px;color:var(--green);
-    font-family:'JetBrains Mono',monospace;
-    transition:opacity .8s cubic-bezier(.4,0,.2,1);
-  }
-  .boot-screen.hidden{opacity:0;pointer-events:none;}
-  .boot-version{
-    color:var(--white);font-size:14px;font-weight:700;
-    margin-bottom:24px;letter-spacing:4px;
-    border-bottom:1px solid var(--border);padding-bottom:12px;
-  }
-  #boot-lines{text-align:left;max-width:580px;}
-  .boot-line{margin:3px 0;white-space:pre;overflow:hidden;width:0;
-    animation:boot-type .3s forwards;font-size:11px;color:var(--muted);}
-  .boot-line.ok{color:var(--green);}
-  .boot-line.warn{color:var(--yellow);}
-  .boot-line.err{color:var(--red);}
-  .boot-line.highlight{color:var(--white);}
-  @keyframes boot-type{to{width:100%}}
-  .boot-cursor::after{content:'_';animation:blink .6s step-end infinite;color:var(--green);}
+  /* ===== BLOG ===== */
+  .post{border:1px solid var(--border);padding:18px;margin-bottom:10px;transition:.15s;}
+  .post:hover{border-color:var(--white);}
+  .post h2{font-size:12px;margin-bottom:4px;}
+  .post h2 a{color:var(--white);transition:.15s;}
+  .post h2 a:hover{text-shadow:var(--glow);}
+  .post .meta{color:var(--text-dim);font-size:8px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;}
+  .post .tags{display:flex;gap:4px;flex-wrap:wrap;}
+  .post .tag{border:1px solid var(--border);padding:2px 8px;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
 
-  /* ===== ASCII BANNER ===== */
-  .ascii-banner{
-    text-align:center;font-size:6px;line-height:1.2;
-    color:rgba(255,255,255,.06);margin-bottom:20px;
-    font-family:'JetBrains Mono',monospace;white-space:pre;
-    overflow:hidden;animation:ascii-fade 3s ease-out;
-    user-select:none;letter-spacing:0;
-  }
-  @keyframes ascii-fade{
-    0%{opacity:0;transform:translateY(8px)}
-    100%{opacity:1;transform:translateY(0)}
-  }
+  /* ===== BACK NAV ===== */
+  .bnav{margin-bottom:16px;}
+  .bnav a{color:var(--text-dim);font-size:9px;text-transform:uppercase;letter-spacing:2px;}
+  .bnav a:hover{color:var(--white);}
+  .bnav a::before{content:'<< ';color:var(--text-muted);}
 
-  /* ===== TERMINAL CURSOR ===== */
-  @keyframes term-cursor-key{
-    0%,100%{opacity:1}
-    50%{opacity:0}
-  }
-  .term-cursor{
-    display:inline-block;width:9px;height:16px;
-    background:var(--white);vertical-align:middle;
-    animation:term-cursor-key 1s step-end infinite;
-    margin-left:2px;
-  }
-
-  /* ===== GLITCH TEXT ===== */
-  .glitch-wrap{
-    position:relative;display:inline-block;
-  }
-  .glitch-wrap::before,.glitch-wrap::after{
-    content:attr(data-text);position:absolute;top:0;left:0;
-    width:100%;height:100%;opacity:0;pointer-events:none;
-  }
-  .glitch-wrap::before{
-    color:var(--red);z-index:-1;
-    animation:glitch-before 5s infinite;
-  }
-  .glitch-wrap::after{
-    color:var(--green);z-index:-1;
-    animation:glitch-after 5s infinite;
-  }
-  @keyframes glitch-before{
-    0%,90%,94%,100%{opacity:0;transform:translate(0)}
-    91%{opacity:.6;transform:translate(-3px,1px)}
-    93%{opacity:.6;transform:translate(3px,-1px)}
-  }
-  @keyframes glitch-after{
-    0%,92%,96%,100%{opacity:0;transform:translate(0)}
-    93%{opacity:.4;transform:translate(2px,2px)}
-    95%{opacity:.4;transform:translate(-2px,-1px)}
-  }
-
-  /* ===== SYSTEM STATUS BAR ===== */
-  .sys-bar{
-    position:fixed;bottom:0;left:0;right:0;
-    background:rgba(10,10,10,.95);
-    border-top:1px solid var(--border);
-    padding:5px 20px;font-size:9px;color:var(--muted);
-    display:flex;justify-content:space-between;align-items:center;
-    text-transform:uppercase;letter-spacing:1px;z-index:9990;
-    backdrop-filter:blur(4px);
-  }
-  .sys-bar .sys-item{display:inline-flex;align-items:center;gap:5px;}
-  .sys-bar .dot{
-    width:4px;height:4px;background:var(--green);display:inline-block;
-    animation:blink 1.5s step-end infinite;
-  }
-  .sys-bar .sep{color:var(--dim);margin:0 8px;}
-  .sys-bar .sys-clock{font-size:9px;letter-spacing:1px;}
-
-  /* ===== STATUS PULSE ===== */
-  @keyframes status-pulse{
-    0%,100%{box-shadow:0 0 4px var(--green)}
-    50%{box-shadow:0 0 12px var(--green)}
-  }
-  .status-pulse{animation:status-pulse 2s ease-in-out infinite;}
-
-  /* ===== ENHANCED TABLE EFFECT ===== */
-  tr:hover td{text-shadow:0 0 6px rgba(255,255,255,.08);}
-
-  /* ===== SCROLLBAR FINER ===== */
-  ::-webkit-scrollbar{width:4px;height:4px;}
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar{width:3px;height:3px;}
   ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:var(--border);}
-  ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
-
-  /* ===== CORNER DECORATION ===== */
-  .corner-tl,.corner-tr,.corner-bl,.corner-br{
-    position:fixed;width:16px;height:16px;
-    border-color:var(--dim);z-index:9995;pointer-events:none;
-  }
-  .corner-tl{top:8px;left:8px;border-top:1px solid;border-left:1px solid;}
-  .corner-tr{top:8px;right:8px;border-top:1px solid;border-right:1px solid;}
-  .corner-bl{bottom:8px;left:8px;border-bottom:1px solid;border-left:1px solid;}
-  .corner-br{bottom:8px;right:8px;border-bottom:1px solid;border-right:1px solid;}
-
-  /* ===== STATUS BADGE ===== */
-  .status-badge{
-    display:inline-block;border:2px solid var(--green);color:var(--green);
-    padding:4px 12px;font-size:9px;text-transform:uppercase;letter-spacing:2px;
-    margin-bottom:20px;
-  }
-  .status-badge::before{content:'> ';}
+  ::-webkit-scrollbar-thumb{background:var(--text-muted);}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text-dim);}
 
   @media(max-width:640px){
-    .container{padding:12px;}
-    .top-bar{grid-template-columns:repeat(2,1fr);}
-    th,td{padding:6px 8px;font-size:10px;}
-    .chain-row{flex-direction:column;gap:4px;text-align:center;}
-    .logo{font-size:16px;letter-spacing:3px;}
+    .container{padding:10px 10px 60px;}
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+    th,td{padding:5px 7px;font-size:10px;}
+    .ch-row{flex-direction:column;gap:4px;text-align:center;}
+    .site-title{font-size:14px;letter-spacing:3px;}
+    .top-bar{flex-direction:column;align-items:flex-start;gap:8px;}
   }
 </style>"""
 
@@ -560,7 +383,7 @@ INDEX_HTML = """<!DOCTYPE html>
     <meta name="keywords" content="crypto dashboard, wallet checker, gas tracker, Ethereum gas, Bitcoin price, crypto prices, portfolio tracker, blockchain tools">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/">
     <meta property="og:title" content="Crypto Empire — Autonomous Crypto Intelligence">
-    <meta property="og:description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data for Ethereum, Bitcoin, Arbitrum, Polygon & Base.">
+    <meta property="og:description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data.">
     <meta property="og:url" content="https://crypto-empire-ten.vercel.app/">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
@@ -569,84 +392,87 @@ INDEX_HTML = """<!DOCTYPE html>
 </head>
 <body>
     <div class="grid-bg"></div>
-    <div class="scan-line"></div>
-    <!-- Boot Screen -->
-    <div class="boot-screen" id="boot-screen">
-        <div style="max-width:600px;margin:auto;">
-            <div class="boot-version">CRYPTO_EMPIRE v1.0 — AUTONOMOUS INTELLIGENCE SYSTEM</div>
-            <div id="boot-lines"></div>
-            <div style="margin-top:20px;text-align:center;color:var(--dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;">
-                <span id="boot-status">Initializing systems</span><span class="boot-cursor"></span>
+    <div class="sweep"></div>
+
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="brand">
+                <div class="prompt">><span class="cr"></span></div>
+                <div>
+                    <div class="site-title">Crypto Empire</div>
+                    <div class="site-sub">Autonomous Intelligence System</div>
+                </div>
             </div>
-        </div>
-    </div>
-    <!-- Corner decorations -->
-    <div class="corner-tl"></div><div class="corner-tr"></div>
-    <div class="corner-bl"></div><div class="corner-br"></div>
-    <header>
-        <div class="container">
-            <div>
-                <pre class="ascii-banner" id="ascii-banner">____________________________________________________________________________________________________
-  ______ ___  ___ _   _ ___   _____ _____ ___  ___ ___ _   _ _____  ___ ___
- | ___ \\ _ \\/ __| | | | _ \\ |_   _|  ___/ _ \\| _ \\ __| | | | _ \\ \\/ / | __|
- | |_/ /   / (__| |_| |  _/   | | | |__| (_) |   / _|| |_| |  _/    \\| _|
- |    /|_|_\\\\___|\\___/|_|     |_| |____\\___/|_|_\\___|\\___/|_|_\\_/\\_/|_|
- |_|\\_\\                                                              </pre>
-                <a href="/" class="logo"><span class="glitch-wrap" data-text="CRYPTO_EMPIRE">CRYPTO_EMPIRE</span></a>
-                <div class="subtitle">Autonomous Crypto Intelligence</div>
-            </div>
-            <nav>
+            <div class="top-nav">
                 <a href="#market">Market</a>
                 <a href="#gas">Gas</a>
                 <a href="#news">News</a>
-                <a href="#features">Features</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
-                <a class="nav-btn" href="#donate">Support</a>
-            </nav>
+                <a class="premium" href="#premium">Premium</a>
+            </div>
         </div>
-    </header>
 
-    <div class="container">
-        <span class="status-badge">LIVE</span>
+        <!-- Status Line -->
+        <div class="status-line">
+            <span><span class="dot"></span> SYSTEM ONLINE</span>
+            <span id="live-clock">--</span>
+            <span>NODES: 4/4</span>
+            <span>v1.0</span>
+        </div>
+
         <!-- Top coins bar -->
-        <div class="top-bar">
+        <div class="stat-row">
             {% for coin_id, data in top_coins.items() %}
-            <div class="stat-card">
-                <div class="label">{{ coin_id|upper }}</div>
-                <div class="value">${{ "%.2f"|format(data.usd) if data.usd < 1000 else "%.0f"|format(data.usd) }}</div>
-                <div class="sub {{ 'up' if data.usd_24h_change >= 0 else 'down' }}">24h: {{ "%.2f"|format(data.usd_24h_change) }}%</div>
+            <div class="stat-item">
+                <div class="stat-label">{{ coin_id|upper }}</div>
+                <div class="stat-value">${{ "%.2f"|format(data.usd) if data.usd < 1000 else "%.0f"|format(data.usd) }}</div>
+                <div class="stat-sub {{ 'up' if data.usd_24h_change >= 0 else 'down' }}">24h: {{ "%.2f"|format(data.usd_24h_change) }}%</div>
             </div>
             {% endfor %}
             {% if fear_greed %}
-            <div class="stat-card">
-                <div class="label">FEAR & GREED</div>
-                <div class="value" style="color:{{ 'var(--green)' if fear_greed.value > 50 else 'var(--red)' if fear_greed.value < 25 else 'var(--yellow)' }};">{{ fear_greed.value }}</div>
-                <div class="sub" style="color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-size:10px;">{{ fear_greed.classification|upper }}</div>
+            <div class="stat-item">
+                <div class="stat-label">FEAR & GREED</div>
+                <div class="stat-value" style="color:{{ 'var(--green)' if fear_greed.value > 50 else 'var(--red)' }};">{{ fear_greed.value }}</div>
+                <div class="stat-sub" style="color:var(--text-dim);">{{ fear_greed.classification|upper }}</div>
             </div>
             {% endif %}
-            <div class="stat-card" id="tvl-card" style="display:none;">
-                <div class="label">ETH TVL</div>
-                <div class="value" id="tvl-value">--</div>
-                <div class="sub" style="color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-size:10px;">DefiLlama</div>
+            <div class="stat-item" id="tvl-card" style="display:none;">
+                <div class="stat-label">ETH TVL</div>
+                <div class="stat-value" id="tvl-value">--</div>
+                <div class="stat-sub">DefiLlama</div>
             </div>
         </div>
 
-        <div class="ascii-divider"></div>
-        <!-- Gas tracker -->
-        <div class="section-title">GAS TRACKER</div>
-        <div class="gas-grid" id="gas-grid">
-            <div class="gas-card"><div class="chain">Ethereum</div><div class="gwei" id="gas-eth">--</div></div>
-            <div class="gas-card"><div class="chain">Polygon</div><div class="gwei" id="gas-poly">--</div></div>
-            <div class="gas-card"><div class="chain">Arbitrum</div><div class="gwei" id="gas-arb">--</div></div>
-            <div class="gas-card"><div class="chain">Base</div><div class="gwei" id="gas-base">--</div></div>
+        <!-- Affiliate Strip -->
+        <div class="aff-strip">
+            <span class="aff-label">TRADE</span>
+            <div class="aff-links">
+                <a class="aff-link" href="https://www.binance.com/en/register?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Binance</a>
+                <a class="aff-link" href="https://www.coinbase.com/join/CRYPTOEMPIRE" target="_blank" rel="noopener">Coinbase</a>
+                <a class="aff-link" href="https://exchange.kraken.com/register?referrer=CRYPTOEMPIRE" target="_blank" rel="noopener">Kraken</a>
+                <a class="aff-link" href="https://app.uniswap.org/?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Uniswap</a>
+            </div>
         </div>
 
-        <div class="ascii-divider"></div>
+        <div class="divider"></div>
+
+        <!-- Gas tracker -->
+        <div class="s-title">GAS TRACKER</div>
+        <div class="gas-row" id="gas-grid">
+            <div class="gas-item"><div class="gas-chain">Ethereum</div><div class="gas-gwei" id="gas-eth">--</div></div>
+            <div class="gas-item"><div class="gas-chain">Polygon</div><div class="gas-gwei" id="gas-poly">--</div></div>
+            <div class="gas-item"><div class="gas-chain">Arbitrum</div><div class="gas-gwei" id="gas-arb">--</div></div>
+            <div class="gas-item"><div class="gas-chain">Base</div><div class="gas-gwei" id="gas-base">--</div></div>
+        </div>
+
+        <div class="divider"></div>
+
         <!-- Market Table -->
-        <h2 class="section-title" id="market">Top 20 Cryptocurrencies</h2>
-        <div class="table-wrap">
+        <div class="s-title" id="market">TOP 20 CRYPTOCURRENCIES</div>
+        <div class="tbl">
             <table>
                 <thead>
                     <tr><th>#</th><th>Name</th><th>Price</th><th>24h</th><th>7d</th><th>Chart</th><th>Market Cap</th><th>Volume 24h</th></tr>
@@ -655,7 +481,7 @@ INDEX_HTML = """<!DOCTYPE html>
                     {% for coin in market_data %}
                     <tr>
                         <td class="rank">{{ coin.market_cap_rank }}</td>
-                        <td><span class="coin-name">{{ coin.name }}</span> <span class="coin-symbol">{{ coin.symbol|upper }}</span></td>
+                        <td><span class="cname">{{ coin.name }}</span> <span class="csym">{{ coin.symbol|upper }}</span></td>
                         <td>${{ "%.2f"|format(coin.current_price) if coin.current_price < 1000 else "%.0f"|format(coin.current_price) }}</td>
                         <td class="{{ 'up' if coin.price_change_percentage_24h >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_24h) }}%</td>
                         <td class="{{ 'up' if coin.price_change_percentage_7d_in_currency >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_7d_in_currency) }}%</td>
@@ -668,290 +494,205 @@ INDEX_HTML = """<!DOCTYPE html>
             </table>
         </div>
 
-        <div class="ascii-divider"></div>
+        <div class="divider"></div>
+
+        <!-- Sponsored Slot -->
+        <div class="sponsor-box">
+            <span class="sponsor-label">SPONSORED — <em>YOUR PROJECT HERE</em></span>
+            <a class="sponsor-slot" href="#premium">Advertise here →</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- DEX Volume -->
+        <div class="s-title">DEX VOLUME</div>
+        <div class="tbl" id="dex-section">
+            <table>
+                <thead><tr><th>#</th><th>DEX</th><th>Volume 24h</th><th>Volume 7d</th><th>24h Change</th><th>Chains</th></tr></thead>
+                <tbody id="dex-tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Trending Coins -->
+        <div class="s-title" id="trending">TRENDING COINS</div>
+        <div class="gas-row" id="trending-grid"></div>
+
+        <div class="divider"></div>
+
         <!-- News -->
-        <h2 class="section-title" id="news">Crypto News</h2>
-        <div class="table-wrap">
+        <div class="s-title" id="news">CRYPTO NEWS</div>
+        <div class="tbl">
             <ul class="news-list">
                 {% for item in news %}
                 <li>
                     <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.title }}</a>
-                    <div class="news-date">{{ item.date[:25] if item.date else '' }}</div>
+                    <div class="n-date">{{ item.date[:22] if item.date else '' }}</div>
                 </li>
                 {% endfor %}
             </ul>
         </div>
 
-        <div class="ascii-divider"></div>
-        <!-- DEX Volume -->
-        <div class="section-title">DEX VOLUME</div>
-        <div class="table-wrap" id="dex-section">
-            <table>
-                <thead><tr><th>#</th><th>DEX</th><th>Volume 24h</th><th>Volume 7d</th><th>24h Change</th><th>Chains</th></tr></thead>
-                <tbody id="dex-tbody">
-                </tbody>
-            </table>
-        </div>
+        <div class="divider"></div>
 
-        <div class="ascii-divider"></div>
-        <!-- Trending Coins -->
-        <h2 class="section-title" id="trending">Trending Coins</h2>
-        <div class="gas-grid" id="trending-grid"></div>
-
-        <div class="ascii-divider"></div>
         <!-- Features -->
-        <h2 class="section-title" id="features">Everything You Need</h2>
-        <div class="features-grid">
-            <div class="feature-card"><div class="icon">[01]</div><h4>Real-Time Data</h4><p>Live prices, gas, and market caps for top coins</p></div>
-            <div class="feature-card"><div class="icon">[02]</div><h4>Arbitrage Scanner</h4><p>Cross-DEX price disparities in real-time</p></div>
-            <div class="feature-card"><div class="icon">[03]</div><h4>Gas Optimization</h4><p>Multi-chain gas tracker to minimize costs</p></div>
-            <div class="feature-card"><div class="icon">[04]</div><h4>Telegram Bot</h4><p>Live prices, gas &amp; wallet checks via <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="color:var(--white);">@Crypt0Emp1reBot</a></p></div>
-            <div class="feature-card"><div class="icon">[05]</div><h4>Self-Custodial</h4><p>Your keys, your coins. No exchange risk</p></div>
-            <div class="feature-card"><div class="icon">[06]</div><h4>Flash Loans</h4><p>Capital-free arbitrage via Aave V3</p></div>
+        <div class="s-title" id="features">FEATURES</div>
+        <div class="feat-grid">
+            <div class="feat-item"><div class="feat-icon">[01]</div><h4>Real-Time Data</h4><p>Live prices, gas, and market caps for top coins</p></div>
+            <div class="feat-item"><div class="feat-icon">[02]</div><h4>Arbitrage Scanner</h4><p>Cross-DEX price disparities in real-time</p></div>
+            <div class="feat-item"><div class="feat-icon">[03]</div><h4>Gas Optimization</h4><p>Multi-chain gas tracker to minimize costs</p></div>
+            <div class="feat-item"><div class="feat-icon">[04]</div><h4>Telegram Bot</h4><p>Live data via <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="color:var(--white);">@Crypt0Emp1reBot</a></p></div>
+            <div class="feat-item"><div class="feat-icon">[05]</div><h4>Self-Custodial</h4><p>Your keys, your coins. No exchange risk</p></div>
+            <div class="feat-item"><div class="feat-icon">[06]</div><h4>Premium API</h4><p>10K requests/day + arbitrage signals</p></div>
         </div>
 
         <!-- Telegram CTA -->
-        <div class="tg-cta">
+        <div class="prem-box">
             <h3>// TELEGRAM_BOT</h3>
             <p>Live crypto data at your fingertips. No signup, no API keys.</p>
-            <a href="https://t.me/Crypt0Emp1reBot" target="_blank" class="tg-btn">@Crypt0Emp1reBot</a>
-            <br><span class="tg-cmd">Send /start in Telegram</span>
+            <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:10px 24px;font-size:11px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;transition:.15s;font-weight:700;">@Crypt0Emp1reBot</a>
+            <br><span style="display:inline-block;border:1px dashed var(--text-muted);padding:8px 16px;margin-top:14px;font-size:11px;color:var(--green);font-family:monospace;user-select:all;">Send /start in Telegram</span>
         </div>
 
-        <!-- Donation Section -->
-        <div class="donation-box" id="donate">
-            <h3>Support Crypto Empire</h3>
-            <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">
-                Send a tip in ETH, USDC, or any ERC-20 token.<br>
-                Premium access (10K API req/day + arbitrage signals): send 0.005 ETH.
-            </p>
-            <div class="chain-tags">
-                <span class="chain-tag">Ethereum</span>
-                <span class="chain-tag">Arbitrum</span>
-                <span class="chain-tag">Base</span>
-                <span class="chain-tag">Polygon</span>
-                <span class="chain-tag">Optimism</span>
-                <span class="chain-tag">BSC</span>
-                <span class="chain-tag">Avalanche</span>
-                <span class="chain-tag">Solana</span>
+        <!-- Premium Section -->
+        <div class="prem-box" id="premium">
+            <h3>PREMIUM ACCESS</h3>
+            <p>10K API requests/day + arbitrage signals + priority support.<br>Unlock by sending <strong>0.005 ETH</strong> to the wallet below.</p>
+            <div class="ctags">
+                <span class="ctag">Ethereum</span>
+                <span class="ctag">Arbitrum</span>
+                <span class="ctag">Base</span>
+                <span class="ctag">Polygon</span>
+                <span class="ctag">Optimism</span>
+                <span class="ctag">BSC</span>
+                <span class="ctag">Avalanche</span>
+                <span class="ctag">Solana</span>
             </div>
-            <div class="wallet-addr" onclick="copyWallet(this)">{{ wallet }}</div>
-            <p style="color:var(--dim);font-size:10px;margin-top:4px;text-transform:uppercase;letter-spacing:1px;">Click to copy - All EVM chains supported</p>
+            <div class="waddr" onclick="copyWallet(this)">{{ wallet }}</div>
+            <div style="font-size:8px;color:var(--text-dim);margin-top:4px;text-transform:uppercase;letter-spacing:1px;">Click to copy — All EVM chains supported</div>
         </div>
 
-        <div style="text-align:center;margin-bottom:24px;">
-            <a href="/docs" class="nav-btn">API Docs</a>
-            <a href="/wallet-check" class="nav-btn">Wallet Checker</a>
+        <div style="text-align:center;margin-bottom:20px;">
+            <a href="/docs" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:8px 20px;font-size:9px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;transition:.15s;margin:0 4px;">API Docs</a>
+            <a href="/wallet-check" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:8px 20px;font-size:9px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;transition:.15s;margin:0 4px;">Wallet Checker</a>
         </div>
 
         <footer>
-            <p>Built autonomously — Zero KYC — Zero Budget — <a href="/">CRYPTO_EMPIRE</a></p>
-            <p style="margin-top:4px;font-size:10px;">Wallet: <code style="font-size:10px;">{{ wallet }}</code></p>
+            <p>Built autonomously — Zero KYC — Zero Budget</p>
+            <p style="margin-top:4px;font-size:8px;">Wallet: <code style="font-size:8px;">{{ wallet }}</code></p>
         </footer>
     </div>
 
-    <!-- System Status Bar -->
-    <div class="sys-bar">
-        <div class="sys-item"><span class="dot"></span> SYSTEM ONLINE</div>
-        <div class="sys-item"><span class="sep">|</span> WALLET: <span style="color:var(--white);">{{ wallet[:6] }}...{{ wallet[-4:] }}</span></div>
-        <div class="sys-item"><span class="sep">|</span> <span class="sys-clock" id="live-clock">--</span></div>
-        <div class="sys-item"><span class="sep">|</span> NODES: 4/4 <span class="dot" style="background:var(--green);"></span></div>
+    <!-- Bottom Status Bar -->
+    <div class="b-bar">
+        <span><span class="dot"></span> ONLINE</span>
+        <span><span class="sp">|</span> {{ wallet[:6] }}...{{ wallet[-4:] }}</span>
+        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+        <span><span class="sp">|</span> NODES 4/4</span>
     </div>
 
     <div class="toast" id="toast">COPIED</div>
 
     <script>
-        // ===== BOOT SEQUENCE =====
-        (function() {
-            var msgs = [
-                {t:'[  OK  ] System initialized — CRYPTO_EMPIRE v1.0', c:'ok'},
-                {t:'[  OK  ] Loading kernel modules...', c:'ok'},
-                {t:'[  OK  ] Network interfaces: eth0 — 10.0.0.42/24', c:'ok'},
-                {t:'[  OK  ] Starting crypto-empire.service...', c:'ok'},
-                {t:'[  OK  ] Blockchain RPC pool: 4/4 nodes connected', c:'ok'},
-                {t:'[ WARN ] Rate limit: 10 req/min (free tier)', c:'warn'},
-                {t:'[  OK  ] Price feed: CoinGecko API (200)', c:'ok'},
-                {t:'[  OK  ] Telegram bot: @Crypt0Emp1reBot (webhook OK)', c:'ok'},
-                {t:'[  OK  ] Wallet daemon: 0x2902...C7Ef', c:'ok'},
-                {t:'[  OK  ] Database: SQLite3 — ./data/web.db', c:'ok'},
-                {t:'[  OK  ] Web server: Flask (port 80/443)', c:'ok'},
-                {t:'[  OK  ] ALL SYSTEMS READY — Entering interactive mode', c:'highlight'},
-            ];
-            var bootDiv = document.getElementById('boot-lines');
-            var bootScreen = document.getElementById('boot-screen');
-            var statusEl = document.getElementById('boot-status');
-            var i = 0;
-            function addLine() {
-                if (i >= msgs.length) {
-                    statusEl.textContent = 'System ready';
-                    setTimeout(function() {
-                        bootScreen.classList.add('hidden');
-                        setTimeout(function() { bootScreen.style.display = 'none'; }, 800);
-                    }, 500);
-                    return;
-                }
-                var msg = msgs[i];
-                var line = document.createElement('div');
-                line.className = 'boot-line ' + msg.c;
-                line.textContent = msg.t;
-                bootDiv.appendChild(line);
-                i++;
-                setTimeout(addLine, 120 + Math.random() * 80);
-            }
-            setTimeout(addLine, 400);
-        })();
-
         // ===== LIVE CLOCK =====
-        (function() {
-            function updateClock() {
-                var now = new Date();
-                var y = now.getUTCFullYear();
-                var m = String(now.getUTCMonth() + 1).padStart(2,'0');
-                var d = String(now.getUTCDate()).padStart(2,'0');
-                var h = String(now.getUTCHours()).padStart(2,'0');
-                var min = String(now.getUTCMinutes()).padStart(2,'0');
-                var s = String(now.getUTCSeconds()).padStart(2,'0');
-                var el = document.getElementById('live-clock');
-                if (el) el.textContent = y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + ' UTC';
+        (function(){
+            function u(){
+                var n=new Date();
+                var y=n.getUTCFullYear();
+                var m=String(n.getUTCMonth()+1).padStart(2,'0');
+                var d=String(n.getUTCDate()).padStart(2,'0');
+                var h=String(n.getUTCHours()).padStart(2,'0');
+                var i=String(n.getUTCMinutes()).padStart(2,'0');
+                var s=String(n.getUTCSeconds()).padStart(2,'0');
+                var t=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+                var e1=document.getElementById('live-clock');
+                var e2=document.getElementById('live-clock2');
+                if(e1)e1.textContent=t;
+                if(e2)e2.textContent=t;
             }
-            updateClock();
-            setInterval(updateClock, 1000);
+            u();setInterval(u,1000);
         })();
 
-        // ===== TEXT SCRAMBLE =====
-        (function() {
-            var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&';
-            var targets = document.querySelectorAll('.section-title, h2.section-title');
-            targets.forEach(function(el) {
-                var text = el.textContent.replace(/[$_]/g,'').trim();
-                if (!text) return;
-                var iterations = 0;
-                var maxIter = 8;
-                var interval = setInterval(function() {
-                    var out = '';
-                    for (var i = 0; i < text.length; i++) {
-                        if (i < iterations) out += text[i];
-                        else out += chars[Math.floor(Math.random() * chars.length)];
-                    }
-                    el.textContent = '$ ' + out + '_';
-                    iterations++;
-                    if (iterations > text.length) {
-                        clearInterval(interval);
-                        el.textContent = '$ ' + text + '_';
-                    }
-                }, 50);
-            });
-        })();
-
-        // ===== MATRIX RAIN =====
-        (function() {
-            var canvas = document.createElement('canvas');
-            canvas.id = 'matrix-rain';
-            canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:0.04;';
-            document.body.insertBefore(canvas, document.body.firstChild);
-            var ctx = canvas.getContext('2d');
-            function resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            resize();
-            window.addEventListener('resize', resize);
-            var chars = '01';
-            var fontSize = 10;
-            var columns = Math.floor(canvas.width / fontSize);
-            var drops = [];
-            for (var x = 0; x < columns; x++) drops[x] = Math.random() * -100;
-            function draw() {
-                ctx.fillStyle = 'rgba(0,0,0,.05)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#0f0';
-                ctx.font = fontSize + 'px monospace';
-                for (var i = 0; i < drops.length; i++) {
-                    var text = chars[Math.floor(Math.random() * chars.length)];
-                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-                    drops[i]++;
-                }
-            }
-            setInterval(draw, 33);
-        })();
-
-        // ===== EXISTING FUNCTIONS (Gas, DEXs, Trending, TVL) =====
-        function copyWallet(el) {
-            navigator.clipboard.writeText(el.textContent).then(function() {
-                var t = document.getElementById('toast');
+        function copyWallet(el){
+            navigator.clipboard.writeText(el.textContent).then(function(){
+                var t=document.getElementById('toast');
                 t.classList.add('show');
-                setTimeout(function() { t.classList.remove('show'); }, 2000);
+                setTimeout(function(){t.classList.remove('show');},2000);
             });
         }
-        async function fetchGas() {
-            try {
-                var r = await fetch('/api/gas');
-                var data = await r.json();
-                for (var chain in data) {
-                    var id = chain === 'ethereum' ? 'gas-eth' : chain === 'polygon' ? 'gas-poly' : chain === 'arbitrum' ? 'gas-arb' : chain === 'base' ? 'gas-base' : 'gas-' + chain;
-                    var el = document.getElementById(id);
-                    if (el && data[chain].gas_gwei !== undefined) {
-                        var g = data[chain].gas_gwei;
-                        el.textContent = g + ' gwei';
-                        el.className = 'gwei ' + (g < 5 ? 'low' : g < 30 ? 'medium' : 'high');
+
+        async function fetchGas(){
+            try{
+                var r=await fetch('/api/gas');
+                var data=await r.json();
+                for(var chain in data){
+                    var id=chain==='ethereum'?'gas-eth':chain==='polygon'?'gas-poly':chain==='arbitrum'?'gas-arb':chain==='base'?'gas-base':'gas-'+chain;
+                    var el=document.getElementById(id);
+                    if(el&&data[chain].gas_gwei!==undefined){
+                        var g=data[chain].gas_gwei;
+                        el.textContent=g+' gwei';
+                        el.className='gas-gwei '+(g<5?'low':g<30?'med':'high');
                     }
                 }
-            } catch(e) {}
+            }catch(e){}
         }
-        async function fetchDEXs() {
-            try {
-                var r = await fetch('/api/dexs');
-                var data = await r.json();
-                var tbody = document.getElementById('dex-tbody');
-                if (!tbody) return;
-                var html = '';
-                for (var i = 0; i < data.length; i++) {
-                    var d = data[i];
-                    var vol24 = d.volume24h >= 1000000 ? '$' + (d.volume24h / 1000000).toFixed(1) + 'M' : '$' + (d.volume24h / 1000).toFixed(0) + 'K';
-                    var vol7 = d.volume7d >= 1000000 ? '$' + (d.volume7d / 1000000).toFixed(1) + 'M' : '$' + (d.volume7d / 1000).toFixed(0) + 'K';
-                    var cls = d.change1d >= 0 ? 'up' : 'down';
-                    html += '<tr><td class="rank">' + (i+1) + '</td><td><span class="coin-name">' + d.name + '</span></td><td>' + vol24 + '</td><td>' + vol7 + '</td><td class="' + cls + '">' + d.change1d + '%</td><td><span class="coin-symbol">' + (d.chains||[]).join(', ') + '</span></td></tr>';
+
+        async function fetchDEXs(){
+            try{
+                var r=await fetch('/api/dexs');
+                var data=await r.json();
+                var tbody=document.getElementById('dex-tbody');
+                if(!tbody)return;
+                var html='';
+                for(var i=0;i<data.length;i++){
+                    var d=data[i];
+                    var v24=d.volume24h>=1e6?'$'+(d.volume24h/1e6).toFixed(1)+'M':'$'+(d.volume24h/1e3).toFixed(0)+'K';
+                    var v7=d.volume7d>=1e6?'$'+(d.volume7d/1e6).toFixed(1)+'M':'$'+(d.volume7d/1e3).toFixed(0)+'K';
+                    var cls=d.change1d>=0?'up':'down';
+                    html+='<tr><td class="rank">'+(i+1)+'</td><td><span class="cname">'+d.name+'</span></td><td>'+v24+'</td><td>'+v7+'</td><td class="'+cls+'">'+d.change1d+'%</td><td class="csym">'+(d.chains||[]).join(', ')+'</td></tr>';
                 }
-                tbody.innerHTML = html;
-            } catch(e) {}
+                tbody.innerHTML=html;
+            }catch(e){}
         }
-        async function fetchTrending() {
-            try {
-                var r = await fetch('/api/trending');
-                var data = await r.json();
-                var grid = document.getElementById('trending-grid');
-                if (!grid || !data.trending) return;
-                var html = '';
-                for (var i = 0; i < Math.min(data.trending.length, 10); i++) {
-                    var c = data.trending[i];
-                    html += '<div class="gas-card"><div class="chain" style="font-size:12px;">' + c.name + '</div><div class="gwei" style="font-size:16px;color:var(--dim);">' + (c.symbol||'').toUpperCase() + '</div><div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Rank ' + (c.market_cap_rank||'--') + '</div></div>';
+
+        async function fetchTrending(){
+            try{
+                var r=await fetch('/api/trending');
+                var data=await r.json();
+                var grid=document.getElementById('trending-grid');
+                if(!grid||!data.trending)return;
+                var html='';
+                for(var i=0;i<Math.min(data.trending.length,10);i++){
+                    var c=data.trending[i];
+                    html+='<div class="gas-item"><div class="gas-chain" style="font-size:11px;">'+c.name+'</div><div class="gas-gwei" style="font-size:16px;color:var(--text-dim);">'+(c.symbol||'').toUpperCase()+'</div><div style="font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Rank '+(c.market_cap_rank||'--')+'</div></div>';
                 }
-                grid.innerHTML = html;
-            } catch(e) {}
+                grid.innerHTML=html;
+            }catch(e){}
         }
-        async function fetchTVL() {
-            try {
-                var r = await fetch('/api/tvl');
-                var data = await r.json();
-                var card = document.getElementById('tvl-card');
-                var val = document.getElementById('tvl-value');
-                if (card && val && data.tvl) {
-                    var tvl = data.tvl >= 1000000000 ? '$' + (data.tvl / 1000000000).toFixed(1) + 'B' : '$' + (data.tvl / 1000000).toFixed(0) + 'M';
-                    val.textContent = tvl;
-                    card.style.display = '';
+
+        async function fetchTVL(){
+            try{
+                var r=await fetch('/api/tvl');
+                var data=await r.json();
+                var card=document.getElementById('tvl-card');
+                var val=document.getElementById('tvl-value');
+                if(card&&val&&data.tvl){
+                    var tvl=data.tvl>=1e9?'$'+(data.tvl/1e9).toFixed(1)+'B':'$'+(data.tvl/1e6).toFixed(0)+'M';
+                    val.textContent=tvl;
+                    card.style.display='block';
                 }
-            } catch(e) {}
+            }catch(e){}
         }
+
         fetchGas();
         fetchDEXs();
         fetchTrending();
         fetchTVL();
-        setInterval(fetchGas, 30000);
-        setInterval(fetchDEXs, 120000);
-        setInterval(fetchTrending, 120000);
-        setInterval(fetchTVL, 120000);
-        setTimeout(function() { location.reload(); }, 180000);
+        setInterval(fetchGas,30000);
+        setInterval(fetchDEXs,120000);
+        setInterval(fetchTrending,120000);
+        setInterval(fetchTVL,120000);
     </script>
 </body>
 </html>"""
@@ -1138,86 +879,110 @@ def docs():
 </head>
 <body>
     <div class="grid-bg"></div>
-    <header>
-        <div class="container">
-            <div>
-                <a href="/" class="logo">CRYPTO_EMPIRE</a>
-                <div class="subtitle">Autonomous Crypto Intelligence</div>
+    <div class="sweep"></div>
+    <div class="container">
+        <div class="top-bar">
+            <div class="brand">
+                <div class="prompt">><span class="cr"></span></div>
+                <div>
+                    <div class="site-title">API Docs</div>
+                    <div class="site-sub">Public REST endpoints</div>
+                </div>
             </div>
-            <nav>
+            <div class="top-nav">
                 <a href="/">Dashboard</a>
                 <a href="/blog">Blog</a>
                 <a href="/wallet-check">Wallet</a>
-            </nav>
+            </div>
         </div>
-    </header>
-    <div class="container">
-        <div class="back-nav"><a href="/">Dashboard</a></div>
-        <h1 style="font-size:20px;color:var(--white);text-transform:uppercase;letter-spacing:3px;margin-bottom:8px;">// API_DOCS</h1>
-        <p style="color:var(--muted);margin-bottom:24px;font-size:12px;">Free public API for crypto data. No authentication required.</p>
+        <div class="status-line">
+            <span><span class="dot"></span> DOCS v1.0</span>
+            <span id="live-clock">--</span>
+        </div>
+        <div class="bnav"><a href="/">Dashboard</a></div>
+        <div class="s-title">API REFERENCE</div>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">Free public API. No authentication required. 100 req/day free, 10K req/day premium.</p>
 
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:24px;">
-            <p style="font-size:11px;"><span style="color:var(--green);">FREE:</span> 100 req/day &nbsp;|&nbsp; <span style="color:var(--yellow);">PREMIUM:</span> 10K req/day (send 0.005 ETH to wallet)</p>
+        <div class="prem-box" style="text-align:left;padding:12px 16px;margin-bottom:20px;">
+            <p style="font-size:10px;color:var(--text-dim);"><span style="color:var(--green);">FREE:</span> 100 req/day &nbsp;|&nbsp; <span style="color:var(--white);">PREMIUM:</span> 10K req/day &nbsp;|&nbsp; Send 0.005 ETH to <code style="font-size:9px;">{{ wallet[:8] }}...{{ wallet[-4:] }}</code></p>
         </div>
 
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p style="color:var(--white);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;">Telegram Bot</p>
-            <p style="color:var(--muted);font-size:11px;margin-top:4px;">Same data, directly in Telegram. No API key needed.</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">Open: https://t.me/Crypt0Emp1reBot
+        <div class="post">
+            <p style="font-size:10px;font-weight:700;color:var(--white);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Telegram Bot</p>
+            <p style="font-size:10px;color:var(--text-dim);margin-bottom:8px;">Same data, directly in Telegram. No API key needed.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">Open: https://t.me/Crypt0Emp1reBot
 Send: /help</pre>
         </div>
 
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/price/&lt;coin_id&gt;</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Get current price for any CoinGecko coin ID.</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/price/bitcoin</pre>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/price/&lt;coin_id&gt;</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Current price for any CoinGecko coin ID.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/price/bitcoin</pre>
         </div>
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/trending</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Trending coins on CoinGecko.</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/trending</pre>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/trending</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Trending coins on CoinGecko.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/trending</pre>
         </div>
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/gas</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Gas prices across Ethereum, Polygon, Arbitrum, Base.</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/gas</pre>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/gas</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Gas prices across Ethereum, Polygon, Arbitrum, Base.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/gas</pre>
         </div>
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/wallet</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Wallet balances across chains.</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/wallet</pre>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/wallet</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Wallet balances across chains.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/wallet</pre>
         </div>
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/fear-greed</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Fear &amp; Greed index history (7 days).</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/fear-greed</pre>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/fear-greed</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Fear &amp; Greed index.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/fear-greed</pre>
         </div>
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/news</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Latest crypto news from CoinTelegraph.</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/news</pre>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/news</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Latest crypto news from CoinTelegraph.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/news</pre>
         </div>
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:24px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/health</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Service health check.</p>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/health</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Service health check.</p>
+        </div>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/tvl</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Ethereum TVL from DeFiLlama.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/tvl</pre>
+        </div>
+        <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/dexs</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Top 10 DEXes by 24h volume.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/dexs</pre>
         </div>
 
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/tvl</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Ethereum total value locked from DeFiLlama.</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/tvl</pre>
-        </div>
-        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/dexs</code></p>
-            <p style="color:var(--dim);font-size:11px;margin-top:4px;">Top 10 DEXes by 24h volume from DeFiLlama.</p>
-            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/dexs</pre>
-        </div>
-
-        <p style="font-size:11px;color:var(--dim);margin-bottom:24px;">Support: <code style="color:var(--white);">{{ wallet }}</code></p>
         <footer>
-            <p><a href="/">Crypto Empire</a> - <a href="/sitemap.xml">Sitemap</a></p>
+            <p>Crypto Empire — Wallet: <code style="font-size:8px;">{{ wallet }}</code></p>
         </footer>
     </div>
+    <div class="b-bar">
+        <span><span class="dot"></span> DOCS</span>
+        <span>v1.0</span>
+    </div>
+    <script>
+        (function(){
+            function u(){
+                var n=new Date();
+                var y=n.getUTCFullYear();
+                var m=String(n.getUTCMonth()+1).padStart(2,'0');
+                var d=String(n.getUTCDate()).padStart(2,'0');
+                var h=String(n.getUTCHours()).padStart(2,'0');
+                var i=String(n.getUTCMinutes()).padStart(2,'0');
+                var s=String(n.getUTCSeconds()).padStart(2,'0');
+                var e=document.getElementById('live-clock');
+                if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+            }
+            u();setInterval(u,1000);
+        })();
+    </script>
 </body>
 </html>""", wallet=WALLET_ADDRESS)
 
@@ -1234,29 +999,53 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
 </head>
 <body>
     <div class="grid-bg"></div>
-    <header>
-        <div class="container">
-            <div>
-                <a href="/" class="logo">CRYPTO_EMPIRE</a>
-                <div class="subtitle">Autonomous Crypto Intelligence</div>
+    <div class="sweep"></div>
+    <div class="container">
+        <div class="top-bar">
+            <div class="brand">
+                <div class="prompt">><span class="cr"></span></div>
+                <div>
+                    <div class="site-title">Wallet Checker</div>
+                    <div class="site-sub">Multi-chain balance tool</div>
+                </div>
             </div>
-            <nav>
-                <a href="/">Home</a>
+            <div class="top-nav">
+                <a href="/">Dashboard</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
-            </nav>
+            </div>
         </div>
-    </header>
-    <div class="container">
-        <div class="back-nav"><a href="/">Dashboard</a></div>
-        <h1 style="font-size:20px;color:var(--white);text-transform:uppercase;letter-spacing:3px;margin-bottom:8px;">// WALLET_CHECKER</h1>
-        <p style="color:var(--muted);font-size:12px;margin-bottom:20px;">Check ETH balances across Ethereum, Arbitrum, Base, and Polygon.</p>
-        <input type="text" class="winput" id="address" placeholder="0x... or ENS name" value="0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef">
+        <div class="status-line">
+            <span><span class="dot"></span> WALLET CHECK v1.0</span>
+            <span id="live-clock">--</span>
+        </div>
+        <div class="bnav"><a href="/">Dashboard</a></div>
+        <div class="s-title">WALLET CHECKER</div>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:16px;">Check ETH balances across Ethereum, Arbitrum, Base, and Polygon.</p>
+        <input type="text" style="width:100%;max-width:440px;background:var(--surface);color:var(--white);border:1px solid var(--border);padding:10px 12px;font-size:11px;font-family:inherit;outline:none;" id="address" placeholder="0x... or ENS name" value="0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef">
         <br>
-        <button class="wbtn" onclick="checkWallet()">Check Wallet</button>
+        <button style="margin-top:10px;background:var(--surface);color:var(--white);border:1px solid var(--white);padding:8px 20px;font-size:11px;text-transform:uppercase;letter-spacing:3px;cursor:pointer;font-family:inherit;" onclick="checkWallet()">Check Wallet</button>
         <div id="results" class="result"></div>
     </div>
+    <div class="b-bar">
+        <span><span class="dot"></span> WALLET CHECK</span>
+        <span>v1.0</span>
+    </div>
     <script>
+    (function(){
+        function u(){
+            var n=new Date();
+            var y=n.getUTCFullYear();
+            var m=String(n.getUTCMonth()+1).padStart(2,'0');
+            var d=String(n.getUTCDate()).padStart(2,'0');
+            var h=String(n.getUTCHours()).padStart(2,'0');
+            var i=String(n.getUTCMinutes()).padStart(2,'0');
+            var s=String(n.getUTCSeconds()).padStart(2,'0');
+            var e=document.getElementById('live-clock');
+            if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+        }
+        u();setInterval(u,1000);
+    })();
     async function checkWallet() {
         var addr = document.getElementById('address').value.trim();
         var el = document.getElementById('results');
@@ -1499,43 +1288,66 @@ def blog_index():
 </head>
 <body>
     <div class="grid-bg"></div>
-    <header>
-        <div class="container">
-            <div>
-                <a href="/" class="logo">CRYPTO_EMPIRE</a>
-                <div class="subtitle">Autonomous Crypto Intelligence</div>
+    <div class="sweep"></div>
+    <div class="container">
+        <div class="top-bar">
+            <div class="brand">
+                <div class="prompt">><span class="cr"></span></div>
+                <div>
+                    <div class="site-title">Blog</div>
+                    <div class="site-sub">Tools, guides & market analysis</div>
+                </div>
             </div>
-            <nav>
+            <div class="top-nav">
                 <a href="/">Dashboard</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
-            </nav>
+            </div>
         </div>
-    </header>
-    <div class="container">
-        <div class="back-nav"><a href="/">Dashboard</a></div>
-        <h1 style="font-size:20px;color:var(--white);text-transform:uppercase;letter-spacing:3px;margin-bottom:8px;">// BLOG</h1>
-        <p style="color:var(--muted);margin-bottom:28px;font-size:12px;">Free crypto tools, guides, and market analysis.</p>
+        <div class="status-line">
+            <span><span class="dot"></span> BLOG</span>
+            <span id="live-clock">--</span>
+        </div>
+        <div class="bnav"><a href="/">Dashboard</a></div>
+        <div class="s-title">BLOG</div>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">Free crypto tools, guides, and market analysis.</p>
         
         {% for post in posts %}
-        <div class="post-card">
-            <h2><a href="/blog/{{ post.slug }}">{{ post.title }}</a></h2>
-            <div class="meta">{{ post.date }} - {{ post.tags|join(', ') }}</div>
-            <div class="tags">{% for tag in post.tags %}<span class="tag">{{ tag }}</span>{% endfor %}</div>
+        <div style="border:1px solid var(--border);padding:14px;margin-bottom:10px;">
+            <h2 style="font-size:13px;margin:0 0 4px;"><a href="/blog/{{ post.slug }}" style="color:var(--white);text-decoration:none;">{{ post.title }}</a></h2>
+            <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">{{ post.date }} — {{ post.tags|join(', ') }}</div>
         </div>
         {% endfor %}
         
-        <div class="donation-box" style="margin-top:28px;">
-            <h3>Support These Free Tools</h3>
-            <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">If you find these tools useful, send a tip in ETH, USDC, or any ERC-20 token.</p>
-            <div class="wallet-addr">{{ wallet }}</div>
-            <p style="color:var(--dim);font-size:10px;margin-top:4px;text-transform:uppercase;letter-spacing:1px;">Click to copy</p>
+        <div class="prem-box" style="margin-top:20px;">
+            <h3 style="font-size:11px;">SUPPORT</h3>
+            <p style="font-size:9px;color:var(--text-dim);">Send ETH to <code style="font-size:9px;">{{ wallet }}</code></p>
         </div>
         
         <footer>
-            <p><a href="/">Crypto Empire Dashboard</a> - <a href="/sitemap.xml">Sitemap</a></p>
+            <p>Crypto Empire</p>
         </footer>
     </div>
+    <div class="b-bar">
+        <span><span class="dot"></span> BLOG</span>
+        <span>v1.0</span>
+    </div>
+    <script>
+        (function(){
+            function u(){
+                var n=new Date();
+                var y=n.getUTCFullYear();
+                var m=String(n.getUTCMonth()+1).padStart(2,'0');
+                var d=String(n.getUTCDate()).padStart(2,'0');
+                var h=String(n.getUTCHours()).padStart(2,'0');
+                var i=String(n.getUTCMinutes()).padStart(2,'0');
+                var s=String(n.getUTCSeconds()).padStart(2,'0');
+                var e=document.getElementById('live-clock');
+                if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+            }
+            u();setInterval(u,1000);
+        })();
+    </script>
 </body>
 </html>""", posts=BLOG_POSTS, wallet=WALLET_ADDRESS)
 
@@ -1558,36 +1370,60 @@ def blog_post(slug):
 </head>
 <body>
     <div class="grid-bg"></div>
-    <header>
-        <div class="container">
-            <div>
-                <a href="/" class="logo">CRYPTO_EMPIRE</a>
-                <div class="subtitle">Autonomous Crypto Intelligence</div>
+    <div class="sweep"></div>
+    <div class="container">
+        <div class="top-bar">
+            <div class="brand">
+                <div class="prompt">><span class="cr"></span></div>
+                <div>
+                    <div class="site-title">Blog</div>
+                    <div class="site-sub">{{ title[:60] }}{% if title|length > 60 %}...{% endif %}</div>
+                </div>
             </div>
-            <nav>
+            <div class="top-nav">
                 <a href="/">Dashboard</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
-            </nav>
+            </div>
         </div>
-    </header>
-    <div class="container">
-        <div class="back-nav"><a href="/blog">Blog</a></div>
-        <h1 style="font-size:20px;color:var(--white);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">{{ title }}</h1>
-        <div class="meta" style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;">{{ date }} - Tags: {{ tags|join(", ") }}</div>
-        <div style="font-size:13px;line-height:1.8;color:var(--text);">{{ content|safe }}</div>
+        <div class="status-line">
+            <span><span class="dot"></span> ARTICLE</span>
+            <span id="live-clock">--</span>
+        </div>
+        <div class="bnav"><a href="/blog">Blog</a></div>
+        <div class="s-title" style="font-size:14px;">{{ title }}</div>
+        <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">{{ date }} — Tags: {{ tags|join(", ") }}</div>
+        <div style="font-size:12px;line-height:1.8;color:var(--text);">{{ content|safe }}</div>
         
-        <div class="donation-box" style="margin-top:28px;">
-            <h3>Support These Free Tools</h3>
-            <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">If you found this guide useful, send a tip in ETH, USDC, or any ERC-20 token.</p>
-            <div class="wallet-addr">{{ wallet }}</div>
-            <p style="color:var(--dim);font-size:10px;margin-top:4px;text-transform:uppercase;letter-spacing:1px;">Click to copy</p>
+        <div class="prem-box" style="margin-top:24px;">
+            <h3 style="font-size:11px;">SUPPORT</h3>
+            <p style="font-size:9px;color:var(--text-dim);">Send ETH to <code style="font-size:9px;">{{ wallet }}</code></p>
         </div>
         
         <footer>
-            <p><a href="/blog">More articles</a></p>
+            <p><a href="/blog" style="color:var(--text-dim);text-decoration:none;font-size:9px;text-transform:uppercase;letter-spacing:1px;">More articles</a></p>
         </footer>
     </div>
+    <div class="b-bar">
+        <span><span class="dot"></span> ARTICLE</span>
+        <span>v1.0</span>
+    </div>
+    <script>
+        (function(){
+            function u(){
+                var n=new Date();
+                var y=n.getUTCFullYear();
+                var m=String(n.getUTCMonth()+1).padStart(2,'0');
+                var d=String(n.getUTCDate()).padStart(2,'0');
+                var h=String(n.getUTCHours()).padStart(2,'0');
+                var i=String(n.getUTCMinutes()).padStart(2,'0');
+                var s=String(n.getUTCSeconds()).padStart(2,'0');
+                var e=document.getElementById('live-clock');
+                if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+            }
+            u();setInterval(u,1000);
+        })();
+    </script>
 </body>
 </html>""", title=post["title"], slug=post["slug"], date=post["date"], tags=post["tags"], content=post["content"], wallet=WALLET_ADDRESS)
 
@@ -1651,25 +1487,32 @@ def page_not_found(e):
 </head>
 <body>
     <div class="grid-bg"></div>
-    <header>
-        <div class="container">
-            <div>
-                <a href="/" class="logo">CRYPTO_EMPIRE</a>
-                <div class="subtitle">Autonomous Crypto Intelligence</div>
+    <div class="sweep"></div>
+    <div class="container">
+        <div class="top-bar">
+            <div class="brand">
+                <div class="prompt">><span class="cr"></span></div>
+                <div>
+                    <div class="site-title">Error 404</div>
+                    <div class="site-sub">Resource not found</div>
+                </div>
             </div>
         </div>
-    </header>
-    <div class="container">
-        <div class="error-404">
-            <h1>404</h1>
-            <p>The requested resource was not found on this chain.</p>
-            <div class="glitch">// PAGE_NOT_FOUND</div>
-            <br><br>
-            <a href="/" class="nav-btn">Return to Dashboard</a>
+        <div class="status-line">
+            <span><span class="dot" style="background:var(--red);"></span> 404 NOT FOUND</span>
+        </div>
+        <div style="text-align:center;padding:80px 0;">
+            <div style="font-size:60px;font-weight:700;color:var(--white);letter-spacing:-2px;">404</div>
+            <div style="font-size:11px;color:var(--text-dim);margin:12px 0 24px;text-transform:uppercase;letter-spacing:3px;">The requested resource was not found on this chain.</div>
+            <a href="/" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:10px 28px;font-size:10px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;">Return to Dashboard</a>
         </div>
         <footer>
-            <p><a href="/">Crypto Empire Dashboard</a></p>
+            <p>Crypto Empire</p>
         </footer>
+    </div>
+    <div class="b-bar">
+        <span><span class="dot" style="background:var(--red);"></span> 404</span>
+        <span>v1.0</span>
     </div>
 </body>
 </html>"""), 404
