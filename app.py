@@ -269,6 +269,29 @@ SHARED_HEAD = """<meta charset="UTF-8">
   .total-val{font-size:24px;font-weight:700;color:var(--white);text-align:center;padding:20px;border:2px solid var(--border);margin-bottom:12px;}
   .error{color:var(--red);text-align:center;padding:20px;}
   .loading{text-align:center;color:var(--dim);padding:20px;}
+  /* TELEGRAM CTA */
+  .tg-cta{
+    border:2px solid var(--white);padding:32px;margin-bottom:28px;text-align:center;
+    background:var(--surface);
+  }
+  .tg-cta h3{font-size:16px;margin-bottom:8px;text-transform:uppercase;letter-spacing:2px;}
+  .tg-cta p{font-size:12px;color:var(--muted);margin-bottom:16px;}
+  .tg-cta .tg-btn{
+    display:inline-block;border:2px solid var(--white);color:var(--white);
+    padding:12px 32px;font-size:14px;text-transform:uppercase;
+    letter-spacing:3px;text-decoration:none;transition:.1s;font-weight:700;
+  }
+  .tg-cta .tg-btn:hover{background:var(--white);color:var(--bg);}
+  .tg-cta .tg-cmd{
+    border:1px dashed var(--border);padding:12px;margin-top:16px;
+    font-size:13px;color:var(--green);display:inline-block;
+    user-select:all;
+  }
+  /* 404 PAGE */
+  .error-404{text-align:center;padding:80px 20px;}
+  .error-404 h1{font-size:80px;color:var(--white);font-weight:700;}
+  .error-404 p{color:var(--muted);font-size:13px;margin:16px 0 24px;}
+  .error-404 .glitch{font-size:14px;color:var(--dim);letter-spacing:5px;text-transform:uppercase;}
   @media(max-width:640px){
     .container{padding:12px;}
     .top-bar{grid-template-columns:repeat(2,1fr);}
@@ -287,6 +310,13 @@ INDEX_HTML = """<!DOCTYPE html>
     <meta name="description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data for Ethereum, Bitcoin, Arbitrum, Polygon & Base.">
     <meta name="keywords" content="crypto dashboard, wallet checker, gas tracker, Ethereum gas, Bitcoin price, crypto prices, portfolio tracker, blockchain tools">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/">
+    <meta property="og:title" content="Crypto Empire — Autonomous Crypto Intelligence">
+    <meta property="og:description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data for Ethereum, Bitcoin, Arbitrum, Polygon & Base.">
+    <meta property="og:url" content="https://crypto-empire-ten.vercel.app/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Crypto Empire — Autonomous Crypto Intelligence">
+    <meta name="twitter:description" content="Free crypto dashboard. Live prices, gas tracker, wallet checker, Telegram bot @Crypt0Emp1reBot.">
 </head>
 <body>
     <header>
@@ -396,9 +426,17 @@ INDEX_HTML = """<!DOCTYPE html>
             <div class="feature-card"><div class="icon">[01]</div><h4>Real-Time Data</h4><p>Live prices, gas, and market caps for top coins</p></div>
             <div class="feature-card"><div class="icon">[02]</div><h4>Arbitrage Scanner</h4><p>Cross-DEX price disparities in real-time</p></div>
             <div class="feature-card"><div class="icon">[03]</div><h4>Gas Optimization</h4><p>Multi-chain gas tracker to minimize costs</p></div>
-            <div class="feature-card"><div class="icon">[04]</div><h4>Telegram Bot</h4><p>Price alerts &amp; portfolio tracking via Telegram</p></div>
+            <div class="feature-card"><div class="icon">[04]</div><h4>Telegram Bot</h4><p>Live prices, gas &amp; wallet checks via <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="color:var(--white);">@Crypt0Emp1reBot</a></p></div>
             <div class="feature-card"><div class="icon">[05]</div><h4>Self-Custodial</h4><p>Your keys, your coins. No exchange risk</p></div>
             <div class="feature-card"><div class="icon">[06]</div><h4>Flash Loans</h4><p>Capital-free arbitrage via Aave V3</p></div>
+        </div>
+
+        <!-- Telegram CTA -->
+        <div class="tg-cta">
+            <h3>// TELEGRAM_BOT</h3>
+            <p>Live crypto data at your fingertips. No signup, no API keys.</p>
+            <a href="https://t.me/Crypt0Emp1reBot" target="_blank" class="tg-btn">@Crypt0Emp1reBot</a>
+            <br><span class="tg-cmd">Send /start in Telegram</span>
         </div>
 
         <!-- Donation Section -->
@@ -716,6 +754,13 @@ def docs():
         </div>
 
         <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
+            <p style="color:var(--white);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;">Telegram Bot</p>
+            <p style="color:var(--muted);font-size:11px;margin-top:4px;">Same data, directly in Telegram. No API key needed.</p>
+            <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">Open: https://t.me/Crypt0Emp1reBot
+Send: /help</pre>
+        </div>
+
+        <div style="border:2px solid var(--border);padding:16px;margin-bottom:12px;">
             <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="color:var(--white);font-size:13px;">/api/price/&lt;coin_id&gt;</code></p>
             <p style="color:var(--dim);font-size:11px;margin-top:4px;">Get current price for any CoinGecko coin ID.</p>
             <pre style="background:var(--surface);padding:12px;font-size:11px;margin-top:8px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/price/bitcoin</pre>
@@ -974,6 +1019,39 @@ BLOG_POSTS = [
 """
     },
     {
+        "slug": "crypto-empire-telegram-bot-live-prices-alerts",
+        "title": "Crypto Empire Telegram Bot is Live — Get Crypto Prices Directly in Telegram",
+        "date": "2026-06-04",
+        "tags": ["telegram bot", "crypto bot", "price alerts", "crypto tools"],
+        "content": """
+<h2>@Crypt0Emp1reBot — Live Crypto Data on Telegram</h2>
+<p>The Crypto Empire <a href="https://t.me/Crypt0Emp1reBot" target="_blank">Telegram bot</a> is now live. Get real-time crypto prices, gas fees, trending coins, and wallet balance checks directly in your Telegram chat. No signup, no API keys, no database — just pure on-chain and market data.</p>
+
+<h3>Available Commands</h3>
+<ul>
+<li><strong>/price &lt;coin&gt;</strong> — Current price, 24h change, market cap &amp; volume (e.g. /price bitcoin)</li>
+<li><strong>/gas</strong> — Live gas prices for Ethereum, Polygon, Arbitrum &amp; Base</li>
+<li><strong>/fear</strong> — Fear &amp; Greed Index (market sentiment)</li>
+<li><strong>/trending</strong> — Top 10 trending coins on CoinGecko</li>
+<li><strong>/news</strong> — Latest 5 crypto headlines from CoinTelegraph</li>
+<li><strong>/wallet &lt;address&gt;</strong> — Multi-chain balance check across ETH/Arb/Base/Poly</li>
+<li><strong>/tvl</strong> — Ethereum Total Value Locked from DeFiLlama</li>
+<li><strong>/dexs</strong> — Top 10 DEXes by 24h volume</li>
+<li><strong>/sparkline &lt;coin&gt;</strong> — ASCII 7-day price chart</li>
+</ul>
+
+<h3>How to Use</h3>
+<p>Open Telegram and search for <strong>@Crypt0Emp1reBot</strong> or click <a href="https://t.me/Crypt0Emp1reBot" target="_blank">this link</a>. Send <code>/start</code> to see the command list. That's it — no installation, no login, no ads.</p>
+
+<h3>Behind the Scenes</h3>
+<p>The bot runs on the same Vercel serverless infrastructure as the Crypto Empire dashboard. It uses a webhook endpoint at <code>/telegram/webhook</code> that processes commands in real-time. No persistent server, no polling — Telegram pushes messages to the endpoint and the bot responds within seconds.</p>
+
+<p>All data sources are the same free public APIs powering the dashboard: CoinGecko for prices, public RPC endpoints for wallet balances, DeFiLlama for TVL and DEX data, and Alternative.me for the Fear &amp; Greed Index.</p>
+
+<p>Built autonomously. Open source. <a href="https://github.com/ghassan-gaidi/crypto-empire">GitHub</a>.</p>
+"""
+    },
+    {
         "slug": "top-cryptocurrencies-today",
         "title": "Top 20 Cryptocurrencies by Market Cap - Live Prices & Charts June 2026",
         "date": "2026-06-01",
@@ -1141,6 +1219,40 @@ def telegram_webhook():
     data = request.get_json(silent=True) or {}
     result = handle_update(data)
     return jsonify(result)
+
+
+# ============================================================
+# 404 Handler
+# ============================================================
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template_string("""<!DOCTYPE html>
+<html lang="en">
+<head>""" + SHARED_HEAD + """
+    <title>404 — Crypto Empire</title>
+    <meta name="robots" content="noindex">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="/" class="logo">CRYPTO_EMPIRE</a>
+        </div>
+    </header>
+    <div class="container">
+        <div class="error-404">
+            <h1>404</h1>
+            <p>The requested resource was not found on this chain.</p>
+            <div class="glitch">// PAGE_NOT_FOUND</div>
+            <br><br>
+            <a href="/" class="nav-btn">Return to Dashboard</a>
+        </div>
+        <footer>
+            <p><a href="/">Crypto Empire Dashboard</a></p>
+        </footer>
+    </div>
+</body>
+</html>"""), 404
 
 
 # ============================================================
