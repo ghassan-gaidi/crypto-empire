@@ -59,7 +59,7 @@ def send_typing(chat_id):
 # Command handlers
 # ---------------------------------------------------------------------------
 
-def cmd_start(chat_id):
+def cmd_start(chat_id, args=None):
     msg = (
         "> CRYPTO_EMPIRE BOT\n"
         "━━━━━━━━━━━━━━━━━━━\n\n"
@@ -108,7 +108,7 @@ def cmd_price(chat_id, args):
         msg = f"Coin '{coin}' not found. Try /price bitcoin"
     send_message(chat_id, msg)
 
-def cmd_gas(chat_id):
+def cmd_gas(chat_id, args=None):
     send_typing(chat_id)
     app = _get_app()
     data = app.fetch_sync(f"{app.COINGECKO_API}/simple/price?ids=ethereum&vs_currencies=usd")
@@ -138,7 +138,7 @@ def cmd_gas(chat_id):
             lines.append(f"{name:<10} error")
     send_message(chat_id, "\n".join(lines))
 
-def cmd_fear(chat_id):
+def cmd_fear(chat_id, args=None):
     app = _get_app()
     data = app.fetch_sync("https://api.alternative.me/fng/?limit=1")
     if data and "data" in data and data["data"]:
@@ -151,7 +151,7 @@ def cmd_fear(chat_id):
         msg = "Fear & Greed unavailable"
     send_message(chat_id, msg)
 
-def cmd_trending(chat_id):
+def cmd_trending(chat_id, args=None):
     send_typing(chat_id)
     app = _get_app()
     data = app.fetch_sync(f"{app.COINGECKO_API}/search/trending")
@@ -168,7 +168,7 @@ def cmd_trending(chat_id):
         msg = "Trending unavailable"
     send_message(chat_id, msg)
 
-def cmd_news(chat_id):
+def cmd_news(chat_id, args=None):
     send_typing(chat_id)
     app = _get_app()
     items = app.fetch_rss("https://cointelegraph.com/rss")
@@ -225,7 +225,7 @@ def cmd_wallet(chat_id, args):
     lines.append(f"TOTAL: ${total:,.2f}")
     send_message(chat_id, "\n".join(lines))
 
-def cmd_tvl(chat_id):
+def cmd_tvl(chat_id, args=None):
     app = _get_app()
     data = app.fetch_sync("https://api.llama.fi/v2/historicalChainTvl/Ethereum")
     if data and len(data) > 0:
@@ -236,7 +236,7 @@ def cmd_tvl(chat_id):
         msg = "TVL unavailable"
     send_message(chat_id, msg)
 
-def cmd_dexs(chat_id):
+def cmd_dexs(chat_id, args=None):
     send_typing(chat_id)
     app = _get_app()
     data = app.fetch_sync("https://api.llama.fi/overview/dexs")
