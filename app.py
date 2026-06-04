@@ -118,185 +118,309 @@ def fetch_rss(url):
 SHARED_HEAD = """<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;border-radius:0!important;-webkit-border-radius:0!important;}
   :root{
     --bg:#000;
     --surface:#0a0a0a;
     --border:#333;
-    --text:#e0e0e0;
-    --muted:#666;
+    --text:#c0c0c0;
+    --muted:#555;
     --dim:#444;
     --green:#0f0;
     --red:#f00;
     --yellow:#ff0;
     --white:#fff;
+    --glow:0 0 6px rgba(255,255,255,.15);
   }
   body{
     font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
     background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;
-    min-height:100vh;position:relative;
+    min-height:100vh;position:relative;overflow-x:hidden;
   }
+  /* ===== CRT EFFECTS ===== */
   body::after{
     content:'';position:fixed;top:0;left:0;right:0;bottom:0;
-    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.012) 2px,rgba(255,255,255,.012) 4px);
+    background:repeating-linear-gradient(0deg,
+      transparent,transparent 2px,
+      rgba(255,255,255,.015) 2px,rgba(255,255,255,.015) 4px);
     pointer-events:none;z-index:9999;
+    animation:scanline-scroll 8s linear infinite;
+  }
+  @keyframes scanline-scroll{
+    0%{background-position:0 0}
+    100%{background-position:0 100vh}
+  }
+  /* CRT Vignette */
+  body::before{
+    content:'';position:fixed;top:0;left:0;right:0;bottom:0;
+    background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.7) 100%);
+    pointer-events:none;z-index:9998;
+  }
+  /* Subtle grid */
+  .grid-bg{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;z-index:-1;
   }
   ::selection{background:var(--white);color:var(--bg);}
   .container{max-width:1100px;margin:0 auto;padding:20px;}
   a{color:var(--text);text-decoration:underline;}
-  a:hover{color:var(--white);}
-  hr{border:none;border-top:1px dashed var(--border);margin:32px 0;}
-  /* HEADER */
-  header{border-bottom:2px solid var(--border);padding:20px 0;margin-bottom:32px;}
+  a:hover{color:var(--white);text-shadow:var(--glow);}
+  hr{border:none;border-top:1px dashed var(--border);margin:40px 0;}
+
+  /* ===== ASCII DIVIDER ===== */
+  .ascii-divider{
+    text-align:center;color:var(--dim);font-size:10px;
+    letter-spacing:4px;margin:36px 0 20px;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;
+  }
+  .ascii-divider::before{content:'---[';color:var(--muted);}
+  .ascii-divider::after{content:']---';color:var(--muted);}
+
+  /* ===== HEADER ===== */
+  header{
+    border-bottom:2px solid var(--border);padding:20px 0;margin-bottom:28px;
+    position:relative;
+  }
   header .container{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
   .logo{
-    font-size:18px;font-weight:700;color:var(--white);text-decoration:none;
-    text-transform:uppercase;letter-spacing:5px;
+    font-size:22px;font-weight:800;color:var(--white);text-decoration:none;
+    text-transform:uppercase;letter-spacing:6px;
+    text-shadow:0 0 10px rgba(255,255,255,.2);
+    animation:logo-flicker 3s infinite;
   }
-  .logo:before{content:'> ';color:var(--dim);}
+  @keyframes logo-flicker{
+    0%,100%{opacity:1}
+    92%{opacity:1}
+    93%{opacity:.4}
+    94%{opacity:.8}
+    95%{opacity:.2}
+    96%{opacity:1}
+  }
+  .logo:hover{animation:none;text-shadow:0 0 20px rgba(255,255,255,.4);}
+  .logo:before{content:'> ';color:var(--muted);}
   .logo:after{content:'_';animation:blink 1s step-end infinite;color:var(--white);}
   @keyframes blink{50%{opacity:0}}
+
+  .subtitle{
+    font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:4px;
+    margin-top:4px;overflow:hidden;white-space:nowrap;
+    animation:typewrite 3s steps(40) forwards;
+    width:0;
+  }
+  @keyframes typewrite{
+    0%{width:0}
+    100%{width:42ch}
+  }
+
   nav{display:flex;gap:2px;flex-wrap:wrap;}
   nav a{
-    color:var(--muted);text-decoration:none;padding:7px 14px;
-    border:1px solid transparent;font-size:11px;text-transform:uppercase;
-    letter-spacing:2px;transition:.1s;
+    color:var(--muted);text-decoration:none;padding:8px 16px;
+    border:1px solid var(--border);font-size:10px;text-transform:uppercase;
+    letter-spacing:2px;transition:.1s;background:transparent;
   }
-  nav a:hover{color:var(--white);border-color:var(--white);}
+  nav a:hover{color:var(--white);border-color:var(--white);text-shadow:var(--glow);}
   .nav-btn{
     display:inline-block;border:2px solid var(--white);color:var(--white);
-    padding:7px 14px;font-size:11px;text-transform:uppercase;
-    letter-spacing:2px;text-decoration:none;transition:.1s;background:transparent;
+    padding:8px 18px;font-size:10px;text-transform:uppercase;
+    letter-spacing:3px;text-decoration:none;transition:.1s;background:transparent;
+    cursor:pointer;
   }
   .nav-btn:hover{background:var(--white);color:var(--bg);}
-  /* SECTION LABELS */
+
+  /* ===== SECTION LABELS ===== */
   .section-title{
-    font-size:11px;color:var(--muted);text-transform:uppercase;
-    letter-spacing:3px;margin-bottom:12px;margin-top:36px;
-    padding-bottom:8px;border-bottom:1px dashed var(--border);
+    font-size:10px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:4px;margin-bottom:14px;margin-top:0;
+    padding-bottom:0;border:none;
   }
-  .section-title:before{content:'# ';color:var(--white);}
-  /* TOP BAR — BORDERED GRID */
+  .section-title::before{content:'$ ';color:var(--white);font-weight:700;}
+  .section-title::after{content:'_';animation:blink 1s step-end infinite;color:var(--white);}
+
+  /* ===== TOP BAR ===== */
   .top-bar{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
-    margin-bottom:28px;border:2px solid var(--border);
+    margin-bottom:28px;border:2px solid var(--border);position:relative;
   }
   .stat-card{
-    padding:14px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+    padding:16px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+    position:relative;transition:background .15s;
   }
-  .stat-card .label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;}
-  .stat-card .value{font-size:20px;font-weight:700;margin-top:4px;color:var(--white);}
-  .stat-card .sub{font-size:10px;margin-top:2px;text-transform:uppercase;letter-spacing:1px;}
+  .stat-card:hover{background:rgba(255,255,255,.02);}
+  .stat-card:hover .value{text-shadow:var(--glow);}
+  .stat-card .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;}
+  .stat-card .value{font-size:20px;font-weight:700;margin-top:4px;color:var(--white);transition:.2s;}
+  .stat-card .sub{font-size:9px;margin-top:2px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);}
   .up{color:var(--green);}
   .down{color:var(--red);}
-  /* GAS CARDS — BORDERED GRID */
-  .gas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:28px;border:2px solid var(--border);}
-  .gas-card{padding:14px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
-  .gas-card .chain{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;}
-  .gas-card .gwei{font-size:22px;font-weight:700;}
+
+  /* ===== GAS ===== */
+  .gas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:28px;border:2px solid var(--border);}
+  .gas-card{
+    padding:16px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+    transition:background .15s;
+  }
+  .gas-card:hover{background:rgba(255,255,255,.02);}
+  .gas-card .chain{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}
+  .gas-card .gwei{font-size:24px;font-weight:700;letter-spacing:1px;}
+  .gas-card:hover .gwei{text-shadow:var(--glow);}
   .low{color:var(--green);}.medium{color:var(--yellow);}.high{color:var(--red);}
-  /* MARKET TABLE */
-  .table-wrap{border:2px solid var(--border);margin-bottom:28px;overflow-x:auto;}
-  table{width:100%;border-collapse:collapse;min-width:600px;}
-  th,td{padding:8px 14px;text-align:left;font-size:12px;white-space:nowrap;border-bottom:1px solid var(--border);}
-  th{color:var(--dim);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:2px;}
+
+  /* ===== TABLE ===== */
+  .table-wrap{border:2px solid var(--border);margin-bottom:28px;overflow-x:auto;position:relative;}
+  table{width:100%;border-collapse:collapse;min-width:650px;}
+  th,td{padding:10px 16px;text-align:left;font-size:11px;white-space:nowrap;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:500;font-size:9px;text-transform:uppercase;letter-spacing:2px;background:var(--surface);}
   tr:last-child td{border-bottom:none;}
   tr:hover td{background:rgba(255,255,255,.02);}
-  .rank{color:var(--dim);width:30px;}
-  .coin-name{font-weight:500;}
-  .coin-symbol{color:var(--dim);font-size:10px;}
-  /* NEWS */
+  tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--white);}
+  .rank{color:var(--muted);width:30px;}
+  .coin-name{font-weight:500;color:var(--white);}
+  .coin-symbol{color:var(--dim);font-size:9px;}
+  .mc,.vol{color:var(--dim);font-size:11px;}
+
+  /* ===== NEWS ===== */
   .news-list{list-style:none;}
-  .news-list li{padding:8px 0;border-bottom:1px solid var(--border);}
+  .news-list li{padding:10px 14px;border-bottom:1px solid var(--border);transition:background .15s;}
   .news-list li:last-child{border-bottom:none;}
-  .news-list a{color:var(--text);text-decoration:none;font-size:13px;display:block;}
-  .news-list a:hover{color:var(--white);}
-  .news-date{font-size:10px;color:var(--dim);margin-top:2px;text-transform:uppercase;letter-spacing:1px;}
-  /* FEATURES */
-  .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;margin-bottom:28px;border:2px solid var(--border);}
-  .feature-card{padding:16px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
-  .feature-card .icon{font-size:16px;margin-bottom:4px;color:var(--muted);}
-  .feature-card h4{font-size:12px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
-  .feature-card p{font-size:11px;color:var(--dim);}
-  /* DONATION BOX */
-  .donation-box{border:2px solid var(--white);padding:24px;margin-bottom:28px;text-align:center;}
-  .donation-box h3{font-size:14px;margin-bottom:8px;text-transform:uppercase;letter-spacing:2px;}
-  .wallet-addr{
-    border:2px solid var(--border);padding:10px 16px;
-    font-family:monospace;font-size:12px;color:var(--white);
-    word-break:break-all;cursor:pointer;background:var(--surface);
-    display:inline-block;max-width:100%;user-select:all;margin:12px 0;
+  .news-list li:hover{background:rgba(255,255,255,.02);}
+  .news-list a{color:var(--text);text-decoration:none;font-size:12px;display:block;}
+  .news-list a:hover{color:var(--white);text-shadow:var(--glow);}
+  .news-date{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:1px;}
+
+  /* ===== FEATURES ===== */
+  .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;margin-bottom:28px;border:2px solid var(--border);}
+  .feature-card{
+    padding:20px 14px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+    transition:background .15s;cursor:default;
   }
-  .wallet-addr:hover{border-color:var(--white);}
-  .chain-tags{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:8px 0;}
-  .chain-tag{border:1px solid var(--border);padding:3px 10px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;}
-  /* FOOTER */
-  footer{text-align:center;padding:24px 0;border-top:2px solid var(--border);color:var(--muted);font-size:11px;}
+  .feature-card:hover{background:rgba(255,255,255,.02);}
+  .feature-card .icon{font-size:13px;margin-bottom:6px;color:var(--white);font-weight:700;}
+  .feature-card h4{font-size:11px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;color:var(--white);}
+  .feature-card p{font-size:10px;color:var(--dim);line-height:1.5;}
+
+  /* ===== DONATION ===== */
+  .donation-box{border:2px solid var(--border);padding:28px;margin-bottom:28px;text-align:center;position:relative;}
+  .donation-box h3{font-size:13px;margin-bottom:10px;text-transform:uppercase;letter-spacing:3px;color:var(--white);}
+  .donation-box h3::before{content:'$ ';color:var(--dim);}
+  .wallet-addr{
+    border:2px solid var(--border);padding:12px 20px;
+    font-family:monospace;font-size:11px;color:var(--white);
+    word-break:break-all;cursor:pointer;background:var(--surface);
+    display:inline-block;max-width:100%;user-select:all;margin:14px 0;
+    transition:border-color .2s;
+  }
+  .wallet-addr:hover{border-color:var(--white);box-shadow:0 0 8px rgba(255,255,255,.1);}
+  .chain-tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0;}
+  .chain-tag{border:1px solid var(--border);padding:4px 12px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .chain-tag:hover{border-color:var(--white);color:var(--white);}
+
+  /* ===== FOOTER ===== */
+  footer{text-align:center;padding:28px 0;border-top:2px solid var(--border);color:var(--muted);font-size:10px;}
   footer a{color:var(--muted);}
-  footer a:hover{color:var(--white);}
-  /* TOAST */
+  footer a:hover{color:var(--white);text-shadow:var(--glow);}
+
+  /* ===== TOAST ===== */
   .toast{
-    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-    background:var(--white);color:var(--bg);padding:10px 20px;
-    font-size:12px;font-weight:700;opacity:0;transition:opacity .2s;
-    pointer-events:none;z-index:100;text-transform:uppercase;letter-spacing:2px;
+    position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+    background:var(--white);color:var(--bg);padding:10px 24px;
+    font-size:11px;font-weight:700;opacity:0;transition:opacity .2s;
+    pointer-events:none;z-index:10000;text-transform:uppercase;letter-spacing:3px;
   }
   .toast.show{opacity:1;}
-  /* BACK NAV */
+
+  /* ===== BACK NAV ===== */
   .back-nav{margin-bottom:24px;}
-  .back-nav a{color:var(--dim);text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:1px;}
+  .back-nav a{color:var(--muted);text-decoration:none;font-size:10px;text-transform:uppercase;letter-spacing:2px;}
   .back-nav a:hover{color:var(--white);}
-  .back-nav a:before{content:'<- ';}
-  /* BLOG */
-  .post-card{border:2px solid var(--border);padding:20px;margin-bottom:12px;}
+  .back-nav a::before{content:'<< ';color:var(--dim);}
+
+  /* ===== BLOG ===== */
+  .post-card{border:2px solid var(--border);padding:24px;margin-bottom:14px;transition:border-color .2s;}
   .post-card:hover{border-color:var(--white);}
-  .post-card h2{font-size:16px;margin-bottom:6px;}
-  .post-card h2 a{color:var(--white);text-decoration:none;}
+  .post-card:hover h2 a{text-shadow:var(--glow);}
+  .post-card h2{font-size:15px;margin-bottom:6px;}
+  .post-card h2 a{color:var(--white);text-decoration:none;transition:.2s;}
   .post-card h2 a:hover{text-decoration:underline;}
-  .post-card .meta{color:var(--dim);font-size:10px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
-  .post-card .tags{display:flex;gap:4px;flex-wrap:wrap;}
-  .post-card .tag{border:1px solid var(--border);padding:2px 8px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
-  /* WALLET CHECKER */
-  .winput{border:2px solid var(--border);padding:12px 16px;background:var(--surface);color:var(--white);font-family:monospace;font-size:14px;outline:none;width:100%;display:block;}
-  .winput:focus{border-color:var(--white);}
-  .wbtn{border:2px solid var(--white);color:var(--white);background:transparent;padding:12px 24px;font-family:monospace;font-size:12px;cursor:pointer;text-transform:uppercase;letter-spacing:2px;margin-top:8px;}
-  .wbtn:hover{background:var(--white);color:var(--bg);}
-  .chain-row{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);padding:12px 16px;margin-bottom:6px;}
-  .chain-name{font-weight:500;text-transform:uppercase;letter-spacing:1px;font-size:12px;}
-  .chain-bal{font-family:monospace;color:var(--white);font-size:14px;}
-  .chain-usd{color:var(--dim);font-size:11px;}
-  .total-val{font-size:24px;font-weight:700;color:var(--white);text-align:center;padding:20px;border:2px solid var(--border);margin-bottom:12px;}
-  .error{color:var(--red);text-align:center;padding:20px;}
-  .loading{text-align:center;color:var(--dim);padding:20px;}
-  /* TELEGRAM CTA */
-  .tg-cta{
-    border:2px solid var(--white);padding:32px;margin-bottom:28px;text-align:center;
-    background:var(--surface);
+  .post-card .meta{color:var(--dim);font-size:9px;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;}
+  .post-card .tags{display:flex;gap:6px;flex-wrap:wrap;}
+  .post-card .tag{border:1px solid var(--border);padding:3px 10px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .post-card .tag:hover{border-color:var(--white);color:var(--white);}
+
+  /* ===== WALLET ===== */
+  .winput{
+    border:2px solid var(--border);padding:14px 18px;background:var(--surface);
+    color:var(--white);font-family:monospace;font-size:13px;outline:none;width:100%;display:block;
+    transition:border-color .2s;
   }
-  .tg-cta h3{font-size:16px;margin-bottom:8px;text-transform:uppercase;letter-spacing:2px;}
-  .tg-cta p{font-size:12px;color:var(--muted);margin-bottom:16px;}
+  .winput:focus{border-color:var(--white);box-shadow:0 0 8px rgba(255,255,255,.1);}
+  .wbtn{
+    border:2px solid var(--white);color:var(--white);background:transparent;
+    padding:12px 28px;font-family:monospace;font-size:11px;cursor:pointer;
+    text-transform:uppercase;letter-spacing:3px;margin-top:10px;transition:.1s;
+  }
+  .wbtn:hover{background:var(--white);color:var(--bg);}
+  .chain-row{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);padding:14px 18px;margin-bottom:8px;}
+  .chain-row:hover{background:rgba(255,255,255,.02);}
+  .chain-name{font-weight:500;text-transform:uppercase;letter-spacing:1px;font-size:11px;color:var(--white);}
+  .chain-bal{font-family:monospace;color:var(--white);font-size:13px;}
+  .chain-usd{color:var(--dim);font-size:11px;}
+  .total-val{font-size:28px;font-weight:700;color:var(--white);text-align:center;padding:24px;border:2px solid var(--border);margin-bottom:14px;}
+  .total-val::before{content:'$ ';color:var(--dim);}
+  .error{color:var(--red);text-align:center;padding:20px;font-size:12px;}
+  .loading{text-align:center;color:var(--dim);padding:20px;font-size:11px;animation:loading-pulse .8s ease-in-out infinite;}
+  @keyframes loading-pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+  /* ===== TELEGRAM CTA ===== */
+  .tg-cta{
+    border:2px solid var(--border);padding:36px;margin-bottom:28px;text-align:center;
+    position:relative;overflow:hidden;
+  }
+  .tg-cta h3{font-size:15px;margin-bottom:10px;text-transform:uppercase;letter-spacing:3px;color:var(--white);}
+  .tg-cta h3::before{content:'// ';color:var(--dim);}
+  .tg-cta p{font-size:11px;color:var(--muted);margin-bottom:18px;}
   .tg-cta .tg-btn{
     display:inline-block;border:2px solid var(--white);color:var(--white);
-    padding:12px 32px;font-size:14px;text-transform:uppercase;
-    letter-spacing:3px;text-decoration:none;transition:.1s;font-weight:700;
+    padding:14px 36px;font-size:13px;text-transform:uppercase;
+    letter-spacing:4px;text-decoration:none;transition:.1s;font-weight:700;
   }
   .tg-cta .tg-btn:hover{background:var(--white);color:var(--bg);}
   .tg-cta .tg-cmd{
-    border:1px dashed var(--border);padding:12px;margin-top:16px;
-    font-size:13px;color:var(--green);display:inline-block;
-    user-select:all;
+    border:1px dashed var(--border);padding:10px 18px;margin-top:18px;
+    font-size:12px;color:var(--green);display:inline-block;user-select:all;
+    font-family:monospace;
   }
-  /* 404 PAGE */
-  .error-404{text-align:center;padding:80px 20px;}
-  .error-404 h1{font-size:80px;color:var(--white);font-weight:700;}
-  .error-404 p{color:var(--muted);font-size:13px;margin:16px 0 24px;}
-  .error-404 .glitch{font-size:14px;color:var(--dim);letter-spacing:5px;text-transform:uppercase;}
+
+  /* ===== 404 ===== */
+  .error-404{text-align:center;padding:100px 20px;}
+  .error-404 h1{font-size:100px;color:var(--white);font-weight:800;letter-spacing:10px;text-shadow:0 0 20px rgba(255,255,255,.2);}
+  .error-404 p{color:var(--muted);font-size:12px;margin:16px 0 24px;letter-spacing:2px;}
+  .error-404 .glitch{font-size:13px;color:var(--dim);letter-spacing:8px;text-transform:uppercase;}
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+
+  /* ===== STATUS BADGE ===== */
+  .status-badge{
+    display:inline-block;border:2px solid var(--green);color:var(--green);
+    padding:4px 12px;font-size:9px;text-transform:uppercase;letter-spacing:2px;
+    margin-bottom:20px;
+  }
+  .status-badge::before{content:'> ';}
+
   @media(max-width:640px){
     .container{padding:12px;}
     .top-bar{grid-template-columns:repeat(2,1fr);}
-    th,td{padding:6px 8px;font-size:11px;}
+    th,td{padding:6px 8px;font-size:10px;}
     .chain-row{flex-direction:column;gap:4px;text-align:center;}
+    .logo{font-size:16px;letter-spacing:3px;}
   }
 </style>"""
 
@@ -319,9 +443,13 @@ INDEX_HTML = """<!DOCTYPE html>
     <meta name="twitter:description" content="Free crypto dashboard. Live prices, gas tracker, wallet checker, Telegram bot @Crypt0Emp1reBot.">
 </head>
 <body>
+    <div class="grid-bg"></div>
     <header>
         <div class="container">
-            <a href="/" class="logo">CRYPTO_EMPIRE</a>
+            <div>
+                <a href="/" class="logo">CRYPTO_EMPIRE</a>
+                <div class="subtitle">Autonomous Crypto Intelligence</div>
+            </div>
             <nav>
                 <a href="#market">Market</a>
                 <a href="#gas">Gas</a>
@@ -330,13 +458,13 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
-                <a href="https://github.com/ghassan-gaidi/crypto-empire" target="_blank">GitHub</a>
                 <a class="nav-btn" href="#donate">Support</a>
             </nav>
         </div>
     </header>
 
     <div class="container">
+        <span class="status-badge">LIVE</span>
         <!-- Top coins bar -->
         <div class="top-bar">
             {% for coin_id, data in top_coins.items() %}
@@ -360,8 +488,9 @@ INDEX_HTML = """<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- Gas Tracker -->
-        <h2 class="section-title" id="gas">Gas Tracker</h2>
+        <div class="ascii-divider"></div>
+        <!-- Gas tracker -->
+        <div class="section-title">GAS TRACKER</div>
         <div class="gas-grid" id="gas-grid">
             <div class="gas-card"><div class="chain">Ethereum</div><div class="gwei" id="gas-eth">--</div></div>
             <div class="gas-card"><div class="chain">Polygon</div><div class="gwei" id="gas-poly">--</div></div>
@@ -369,6 +498,7 @@ INDEX_HTML = """<!DOCTYPE html>
             <div class="gas-card"><div class="chain">Base</div><div class="gwei" id="gas-base">--</div></div>
         </div>
 
+        <div class="ascii-divider"></div>
         <!-- Market Table -->
         <h2 class="section-title" id="market">Top 20 Cryptocurrencies</h2>
         <div class="table-wrap">
@@ -393,6 +523,7 @@ INDEX_HTML = """<!DOCTYPE html>
             </table>
         </div>
 
+        <div class="ascii-divider"></div>
         <!-- News -->
         <h2 class="section-title" id="news">Crypto News</h2>
         <div class="table-wrap">
@@ -406,8 +537,9 @@ INDEX_HTML = """<!DOCTYPE html>
             </ul>
         </div>
 
+        <div class="ascii-divider"></div>
         <!-- DEX Volume -->
-        <h2 class="section-title" id="dexs">Top DEXes by Volume</h2>
+        <div class="section-title">DEX VOLUME</div>
         <div class="table-wrap" id="dex-section">
             <table>
                 <thead><tr><th>#</th><th>DEX</th><th>Volume 24h</th><th>Volume 7d</th><th>24h Change</th><th>Chains</th></tr></thead>
@@ -416,10 +548,12 @@ INDEX_HTML = """<!DOCTYPE html>
             </table>
         </div>
 
+        <div class="ascii-divider"></div>
         <!-- Trending Coins -->
         <h2 class="section-title" id="trending">Trending Coins</h2>
         <div class="gas-grid" id="trending-grid"></div>
 
+        <div class="ascii-divider"></div>
         <!-- Features -->
         <h2 class="section-title" id="features">Everything You Need</h2>
         <div class="features-grid">
@@ -461,12 +595,12 @@ INDEX_HTML = """<!DOCTYPE html>
         </div>
 
         <div style="text-align:center;margin-bottom:24px;">
-            <a href="https://github.com/ghassan-gaidi/crypto-empire" target="_blank" class="nav-btn" style="margin-right:8px;">Star on GitHub</a>
             <a href="/docs" class="nav-btn">API Docs</a>
+            <a href="/wallet-check" class="nav-btn">Wallet Checker</a>
         </div>
 
         <footer>
-            <p>Built autonomously - <a href="https://github.com/ghassan-gaidi/crypto-empire">Open Source</a> - Zero KYC - Zero Budget</p>
+            <p>Built autonomously — Zero KYC — Zero Budget — <a href="/">CRYPTO_EMPIRE</a></p>
             <p style="margin-top:4px;font-size:10px;">Wallet: <code style="font-size:10px;">{{ wallet }}</code></p>
         </footer>
     </div>
@@ -734,9 +868,13 @@ def docs():
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/docs">
 </head>
 <body>
+    <div class="grid-bg"></div>
     <header>
         <div class="container">
-            <a href="/" class="logo">CRYPTO_EMPIRE</a>
+            <div>
+                <a href="/" class="logo">CRYPTO_EMPIRE</a>
+                <div class="subtitle">Autonomous Crypto Intelligence</div>
+            </div>
             <nav>
                 <a href="/">Dashboard</a>
                 <a href="/blog">Blog</a>
@@ -807,8 +945,6 @@ Send: /help</pre>
         </div>
 
         <p style="font-size:11px;color:var(--dim);margin-bottom:24px;">Support: <code style="color:var(--white);">{{ wallet }}</code></p>
-        <p style="font-size:11px;"><a href="https://github.com/ghassan-gaidi/crypto-empire">GitHub</a></p>
-
         <footer>
             <p><a href="/">Crypto Empire</a> - <a href="/sitemap.xml">Sitemap</a></p>
         </footer>
@@ -825,17 +961,20 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
     <title>Wallet Checker — Crypto Empire</title>
-    <meta name="description" content="Check any Ethereum wallet balance across Ethereum, Arbitrum, Base, and Polygon. Free multi-chain wallet balance checker.">
-    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/wallet-check">
+    <meta name="description" content="Multi-chain Ethereum wallet balance checker. Check ETH, tokens and balances across Ethereum, Arbitrum, Polygon, Base, Optimism, BSC.">
 </head>
 <body>
+    <div class="grid-bg"></div>
     <header>
         <div class="container">
-            <a href="/" class="logo">CRYPTO_EMPIRE</a>
+            <div>
+                <a href="/" class="logo">CRYPTO_EMPIRE</a>
+                <div class="subtitle">Autonomous Crypto Intelligence</div>
+            </div>
             <nav>
-                <a href="/">Dashboard</a>
-                <a href="/docs">API</a>
+                <a href="/">Home</a>
                 <a href="/blog">Blog</a>
+                <a href="/docs">API</a>
             </nav>
         </div>
     </header>
@@ -1048,7 +1187,7 @@ BLOG_POSTS = [
 
 <p>All data sources are the same free public APIs powering the dashboard: CoinGecko for prices, public RPC endpoints for wallet balances, DeFiLlama for TVL and DEX data, and Alternative.me for the Fear &amp; Greed Index.</p>
 
-<p>Built autonomously. Open source. <a href="https://github.com/ghassan-gaidi/crypto-empire">GitHub</a>.</p>
+<p>Built autonomously. Private. Zero KYC. Zero Budget.</p>
 """
     },
     {
@@ -1090,9 +1229,13 @@ def blog_index():
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog">
 </head>
 <body>
+    <div class="grid-bg"></div>
     <header>
         <div class="container">
-            <a href="/" class="logo">CRYPTO_EMPIRE</a>
+            <div>
+                <a href="/" class="logo">CRYPTO_EMPIRE</a>
+                <div class="subtitle">Autonomous Crypto Intelligence</div>
+            </div>
             <nav>
                 <a href="/">Dashboard</a>
                 <a href="/docs">API</a>
@@ -1145,9 +1288,13 @@ def blog_post(slug):
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog/{{ slug }}">
 </head>
 <body>
+    <div class="grid-bg"></div>
     <header>
         <div class="container">
-            <a href="/" class="logo">CRYPTO_EMPIRE</a>
+            <div>
+                <a href="/" class="logo">CRYPTO_EMPIRE</a>
+                <div class="subtitle">Autonomous Crypto Intelligence</div>
+            </div>
             <nav>
                 <a href="/">Dashboard</a>
                 <a href="/blog">Blog</a>
@@ -1234,9 +1381,13 @@ def page_not_found(e):
     <meta name="robots" content="noindex">
 </head>
 <body>
+    <div class="grid-bg"></div>
     <header>
         <div class="container">
-            <a href="/" class="logo">CRYPTO_EMPIRE</a>
+            <div>
+                <a href="/" class="logo">CRYPTO_EMPIRE</a>
+                <div class="subtitle">Autonomous Crypto Intelligence</div>
+            </div>
         </div>
     </header>
     <div class="container">
