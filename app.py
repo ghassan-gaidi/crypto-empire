@@ -139,31 +139,51 @@ SHARED_HEAD = """<meta charset="UTF-8">
     min-height:100vh;position:relative;overflow-x:hidden;
   }
   /* ===== CRT EFFECTS ===== */
+  /* Screen flicker (subtle, CRT-like) */
+  @keyframes screen-flicker{
+    0%,100%{opacity:1}
+    50%{opacity:0.997}
+  }
+  body{
+    animation:screen-flicker 0.15s infinite;
+  }
+  /* CRT Scanlines — finer, faster */
   body::after{
     content:'';position:fixed;top:0;left:0;right:0;bottom:0;
     background:repeating-linear-gradient(0deg,
-      transparent,transparent 2px,
-      rgba(255,255,255,.015) 2px,rgba(255,255,255,.015) 4px);
+      transparent,transparent 1px,
+      rgba(255,255,255,.008) 1px,rgba(255,255,255,.008) 2px);
     pointer-events:none;z-index:9999;
-    animation:scanline-scroll 8s linear infinite;
+    animation:scanline-scroll 6s linear infinite;
   }
   @keyframes scanline-scroll{
     0%{background-position:0 0}
     100%{background-position:0 100vh}
   }
-  /* CRT Vignette */
+  /* CRT Vignette + Curvature */
   body::before{
     content:'';position:fixed;top:0;left:0;right:0;bottom:0;
-    background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.7) 100%);
+    background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.6) 80%,rgba(0,0,0,.85) 100%);
     pointer-events:none;z-index:9998;
   }
-  /* Subtle grid */
+  /* Sweeping scan line */
+  @keyframes scan-line{
+    0%{top:-5%}
+    100%{top:105%}
+  }
+  .scan-line{
+    position:fixed;left:0;right:0;height:6px;
+    background:linear-gradient(to bottom,transparent,rgba(255,255,255,.06),transparent);
+    pointer-events:none;z-index:9996;
+    animation:scan-line 8s linear infinite;
+  }
+  /* Grid background */
   .grid-bg{
     position:fixed;top:0;left:0;right:0;bottom:0;
     background-image:
-      linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
-    background-size:40px 40px;
+      linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+    background-size:30px 30px;
     pointer-events:none;z-index:-1;
   }
   ::selection{background:var(--white);color:var(--bg);}
@@ -190,18 +210,8 @@ SHARED_HEAD = """<meta charset="UTF-8">
   .logo{
     font-size:22px;font-weight:800;color:var(--white);text-decoration:none;
     text-transform:uppercase;letter-spacing:6px;
-    text-shadow:0 0 10px rgba(255,255,255,.2);
-    animation:logo-flicker 3s infinite;
   }
-  @keyframes logo-flicker{
-    0%,100%{opacity:1}
-    92%{opacity:1}
-    93%{opacity:.4}
-    94%{opacity:.8}
-    95%{opacity:.2}
-    96%{opacity:1}
-  }
-  .logo:hover{animation:none;text-shadow:0 0 20px rgba(255,255,255,.4);}
+  .logo:hover{text-shadow:0 0 20px rgba(255,255,255,.4);}
   .logo:before{content:'> ';color:var(--muted);}
   .logo:after{content:'_';animation:blink 1s step-end infinite;color:var(--white);}
   @keyframes blink{50%{opacity:0}}
@@ -401,11 +411,126 @@ SHARED_HEAD = """<meta charset="UTF-8">
   .error-404 p{color:var(--muted);font-size:12px;margin:16px 0 24px;letter-spacing:2px;}
   .error-404 .glitch{font-size:13px;color:var(--dim);letter-spacing:8px;text-transform:uppercase;}
 
-  /* ===== SCROLLBAR ===== */
-  ::-webkit-scrollbar{width:6px;height:6px;}
-  ::-webkit-scrollbar-track{background:var(--bg);}
+  /* ===== BOOT SCREEN ===== */
+  .boot-screen{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:var(--bg);z-index:99999;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:60px;font-size:12px;color:var(--green);
+    font-family:'JetBrains Mono',monospace;
+    transition:opacity .8s cubic-bezier(.4,0,.2,1);
+  }
+  .boot-screen.hidden{opacity:0;pointer-events:none;}
+  .boot-version{
+    color:var(--white);font-size:14px;font-weight:700;
+    margin-bottom:24px;letter-spacing:4px;
+    border-bottom:1px solid var(--border);padding-bottom:12px;
+  }
+  #boot-lines{text-align:left;max-width:580px;}
+  .boot-line{margin:3px 0;white-space:pre;overflow:hidden;width:0;
+    animation:boot-type .3s forwards;font-size:11px;color:var(--muted);}
+  .boot-line.ok{color:var(--green);}
+  .boot-line.warn{color:var(--yellow);}
+  .boot-line.err{color:var(--red);}
+  .boot-line.highlight{color:var(--white);}
+  @keyframes boot-type{to{width:100%}}
+  .boot-cursor::after{content:'_';animation:blink .6s step-end infinite;color:var(--green);}
+
+  /* ===== ASCII BANNER ===== */
+  .ascii-banner{
+    text-align:center;font-size:6px;line-height:1.2;
+    color:rgba(255,255,255,.06);margin-bottom:20px;
+    font-family:'JetBrains Mono',monospace;white-space:pre;
+    overflow:hidden;animation:ascii-fade 3s ease-out;
+    user-select:none;letter-spacing:0;
+  }
+  @keyframes ascii-fade{
+    0%{opacity:0;transform:translateY(8px)}
+    100%{opacity:1;transform:translateY(0)}
+  }
+
+  /* ===== TERMINAL CURSOR ===== */
+  @keyframes term-cursor-key{
+    0%,100%{opacity:1}
+    50%{opacity:0}
+  }
+  .term-cursor{
+    display:inline-block;width:9px;height:16px;
+    background:var(--white);vertical-align:middle;
+    animation:term-cursor-key 1s step-end infinite;
+    margin-left:2px;
+  }
+
+  /* ===== GLITCH TEXT ===== */
+  .glitch-wrap{
+    position:relative;display:inline-block;
+  }
+  .glitch-wrap::before,.glitch-wrap::after{
+    content:attr(data-text);position:absolute;top:0;left:0;
+    width:100%;height:100%;opacity:0;pointer-events:none;
+  }
+  .glitch-wrap::before{
+    color:var(--red);z-index:-1;
+    animation:glitch-before 5s infinite;
+  }
+  .glitch-wrap::after{
+    color:var(--green);z-index:-1;
+    animation:glitch-after 5s infinite;
+  }
+  @keyframes glitch-before{
+    0%,90%,94%,100%{opacity:0;transform:translate(0)}
+    91%{opacity:.6;transform:translate(-3px,1px)}
+    93%{opacity:.6;transform:translate(3px,-1px)}
+  }
+  @keyframes glitch-after{
+    0%,92%,96%,100%{opacity:0;transform:translate(0)}
+    93%{opacity:.4;transform:translate(2px,2px)}
+    95%{opacity:.4;transform:translate(-2px,-1px)}
+  }
+
+  /* ===== SYSTEM STATUS BAR ===== */
+  .sys-bar{
+    position:fixed;bottom:0;left:0;right:0;
+    background:rgba(10,10,10,.95);
+    border-top:1px solid var(--border);
+    padding:5px 20px;font-size:9px;color:var(--muted);
+    display:flex;justify-content:space-between;align-items:center;
+    text-transform:uppercase;letter-spacing:1px;z-index:9990;
+    backdrop-filter:blur(4px);
+  }
+  .sys-bar .sys-item{display:inline-flex;align-items:center;gap:5px;}
+  .sys-bar .dot{
+    width:4px;height:4px;background:var(--green);display:inline-block;
+    animation:blink 1.5s step-end infinite;
+  }
+  .sys-bar .sep{color:var(--dim);margin:0 8px;}
+  .sys-bar .sys-clock{font-size:9px;letter-spacing:1px;}
+
+  /* ===== STATUS PULSE ===== */
+  @keyframes status-pulse{
+    0%,100%{box-shadow:0 0 4px var(--green)}
+    50%{box-shadow:0 0 12px var(--green)}
+  }
+  .status-pulse{animation:status-pulse 2s ease-in-out infinite;}
+
+  /* ===== ENHANCED TABLE EFFECT ===== */
+  tr:hover td{text-shadow:0 0 6px rgba(255,255,255,.08);}
+
+  /* ===== SCROLLBAR FINER ===== */
+  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--border);}
   ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+
+  /* ===== CORNER DECORATION ===== */
+  .corner-tl,.corner-tr,.corner-bl,.corner-br{
+    position:fixed;width:16px;height:16px;
+    border-color:var(--dim);z-index:9995;pointer-events:none;
+  }
+  .corner-tl{top:8px;left:8px;border-top:1px solid;border-left:1px solid;}
+  .corner-tr{top:8px;right:8px;border-top:1px solid;border-right:1px solid;}
+  .corner-bl{bottom:8px;left:8px;border-bottom:1px solid;border-left:1px solid;}
+  .corner-br{bottom:8px;right:8px;border-bottom:1px solid;border-right:1px solid;}
 
   /* ===== STATUS BADGE ===== */
   .status-badge{
@@ -444,10 +569,30 @@ INDEX_HTML = """<!DOCTYPE html>
 </head>
 <body>
     <div class="grid-bg"></div>
+    <div class="scan-line"></div>
+    <!-- Boot Screen -->
+    <div class="boot-screen" id="boot-screen">
+        <div style="max-width:600px;margin:auto;">
+            <div class="boot-version">CRYPTO_EMPIRE v1.0 — AUTONOMOUS INTELLIGENCE SYSTEM</div>
+            <div id="boot-lines"></div>
+            <div style="margin-top:20px;text-align:center;color:var(--dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;">
+                <span id="boot-status">Initializing systems</span><span class="boot-cursor"></span>
+            </div>
+        </div>
+    </div>
+    <!-- Corner decorations -->
+    <div class="corner-tl"></div><div class="corner-tr"></div>
+    <div class="corner-bl"></div><div class="corner-br"></div>
     <header>
         <div class="container">
             <div>
-                <a href="/" class="logo">CRYPTO_EMPIRE</a>
+                <pre class="ascii-banner" id="ascii-banner">____________________________________________________________________________________________________
+  ______ ___  ___ _   _ ___   _____ _____ ___  ___ ___ _   _ _____  ___ ___
+ | ___ \\ _ \\/ __| | | | _ \\ |_   _|  ___/ _ \\| _ \\ __| | | | _ \\ \\/ / | __|
+ | |_/ /   / (__| |_| |  _/   | | | |__| (_) |   / _|| |_| |  _/    \\| _|
+ |    /|_|_\\\\___|\\___/|_|     |_| |____\\___/|_|_\\___|\\___/|_|_\\_/\\_/|_|
+ |_|\\_\\                                                              </pre>
+                <a href="/" class="logo"><span class="glitch-wrap" data-text="CRYPTO_EMPIRE">CRYPTO_EMPIRE</span></a>
                 <div class="subtitle">Autonomous Crypto Intelligence</div>
             </div>
             <nav>
@@ -605,9 +750,133 @@ INDEX_HTML = """<!DOCTYPE html>
         </footer>
     </div>
 
+    <!-- System Status Bar -->
+    <div class="sys-bar">
+        <div class="sys-item"><span class="dot"></span> SYSTEM ONLINE</div>
+        <div class="sys-item"><span class="sep">|</span> WALLET: <span style="color:var(--white);">{{ wallet[:6] }}...{{ wallet[-4:] }}</span></div>
+        <div class="sys-item"><span class="sep">|</span> <span class="sys-clock" id="live-clock">--</span></div>
+        <div class="sys-item"><span class="sep">|</span> NODES: 4/4 <span class="dot" style="background:var(--green);"></span></div>
+    </div>
+
     <div class="toast" id="toast">COPIED</div>
 
     <script>
+        // ===== BOOT SEQUENCE =====
+        (function() {
+            var msgs = [
+                {t:'[  OK  ] System initialized — CRYPTO_EMPIRE v1.0', c:'ok'},
+                {t:'[  OK  ] Loading kernel modules...', c:'ok'},
+                {t:'[  OK  ] Network interfaces: eth0 — 10.0.0.42/24', c:'ok'},
+                {t:'[  OK  ] Starting crypto-empire.service...', c:'ok'},
+                {t:'[  OK  ] Blockchain RPC pool: 4/4 nodes connected', c:'ok'},
+                {t:'[ WARN ] Rate limit: 10 req/min (free tier)', c:'warn'},
+                {t:'[  OK  ] Price feed: CoinGecko API (200)', c:'ok'},
+                {t:'[  OK  ] Telegram bot: @Crypt0Emp1reBot (webhook OK)', c:'ok'},
+                {t:'[  OK  ] Wallet daemon: 0x2902...C7Ef', c:'ok'},
+                {t:'[  OK  ] Database: SQLite3 — ./data/web.db', c:'ok'},
+                {t:'[  OK  ] Web server: Flask (port 80/443)', c:'ok'},
+                {t:'[  OK  ] ALL SYSTEMS READY — Entering interactive mode', c:'highlight'},
+            ];
+            var bootDiv = document.getElementById('boot-lines');
+            var bootScreen = document.getElementById('boot-screen');
+            var statusEl = document.getElementById('boot-status');
+            var i = 0;
+            function addLine() {
+                if (i >= msgs.length) {
+                    statusEl.textContent = 'System ready';
+                    setTimeout(function() {
+                        bootScreen.classList.add('hidden');
+                        setTimeout(function() { bootScreen.style.display = 'none'; }, 800);
+                    }, 500);
+                    return;
+                }
+                var msg = msgs[i];
+                var line = document.createElement('div');
+                line.className = 'boot-line ' + msg.c;
+                line.textContent = msg.t;
+                bootDiv.appendChild(line);
+                i++;
+                setTimeout(addLine, 120 + Math.random() * 80);
+            }
+            setTimeout(addLine, 400);
+        })();
+
+        // ===== LIVE CLOCK =====
+        (function() {
+            function updateClock() {
+                var now = new Date();
+                var y = now.getUTCFullYear();
+                var m = String(now.getUTCMonth() + 1).padStart(2,'0');
+                var d = String(now.getUTCDate()).padStart(2,'0');
+                var h = String(now.getUTCHours()).padStart(2,'0');
+                var min = String(now.getUTCMinutes()).padStart(2,'0');
+                var s = String(now.getUTCSeconds()).padStart(2,'0');
+                var el = document.getElementById('live-clock');
+                if (el) el.textContent = y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + s + ' UTC';
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
+        })();
+
+        // ===== TEXT SCRAMBLE =====
+        (function() {
+            var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&';
+            var targets = document.querySelectorAll('.section-title, h2.section-title');
+            targets.forEach(function(el) {
+                var text = el.textContent.replace(/[$_]/g,'').trim();
+                if (!text) return;
+                var iterations = 0;
+                var maxIter = 8;
+                var interval = setInterval(function() {
+                    var out = '';
+                    for (var i = 0; i < text.length; i++) {
+                        if (i < iterations) out += text[i];
+                        else out += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                    el.textContent = '$ ' + out + '_';
+                    iterations++;
+                    if (iterations > text.length) {
+                        clearInterval(interval);
+                        el.textContent = '$ ' + text + '_';
+                    }
+                }, 50);
+            });
+        })();
+
+        // ===== MATRIX RAIN =====
+        (function() {
+            var canvas = document.createElement('canvas');
+            canvas.id = 'matrix-rain';
+            canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:0.04;';
+            document.body.insertBefore(canvas, document.body.firstChild);
+            var ctx = canvas.getContext('2d');
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+            var chars = '01';
+            var fontSize = 10;
+            var columns = Math.floor(canvas.width / fontSize);
+            var drops = [];
+            for (var x = 0; x < columns; x++) drops[x] = Math.random() * -100;
+            function draw() {
+                ctx.fillStyle = 'rgba(0,0,0,.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#0f0';
+                ctx.font = fontSize + 'px monospace';
+                for (var i = 0; i < drops.length; i++) {
+                    var text = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+            }
+            setInterval(draw, 33);
+        })();
+
+        // ===== EXISTING FUNCTIONS (Gas, DEXs, Trending, TVL) =====
         function copyWallet(el) {
             navigator.clipboard.writeText(el.textContent).then(function() {
                 var t = document.getElementById('toast');
