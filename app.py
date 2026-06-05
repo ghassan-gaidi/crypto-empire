@@ -1945,6 +1945,144 @@ Sitemap: https://crypto-empire-ten.vercel.app/sitemap.xml
 
 
 # ============================================================
+# Embeddable Widget
+# ============================================================
+
+WIDGET_CSS = """<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+  :root{--bg:#000;--surface:#050505;--border:#181818;--text:#b0b0b0;--text-dim:#555;--text-muted:#282828;--green:#0f0;--red:#f00;--white:#fff;}
+  body{font-family:'JetBrains Mono','Fira Code','Courier New',monospace;background:var(--bg);color:var(--text);font-size:11px;line-height:1.6;min-height:auto;}
+  body.light{--bg:#fff;--surface:#f5f5f5;--border:#ddd;--text:#333;--text-dim:#888;--text-muted:#ccc;--green:#008000;--red:#d00;--white:#000;}
+  .w{max-width:360px;margin:0 auto;padding:10px;}
+  .hdr{text-align:center;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:8px;display:flex;justify-content:space-between;}
+  .hdr span{color:var(--green);}
+  .p-row{display:flex;gap:4px;margin-bottom:6px;}
+  .p-card{flex:1;border:1px solid var(--border);padding:6px 8px;background:var(--surface);text-align:center;}
+  .p-sym{font-size:7px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);}
+  .p-val{font-size:14px;font-weight:700;color:var(--white);margin:2px 0;}
+  .p-chg{font-size:8px;text-transform:uppercase;letter-spacing:1px;}
+  .up{color:var(--green);}.down{color:var(--red);}
+  .m-section{margin-top:8px;}
+  .m-title{font-size:7px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:4px;}
+  .m-row{display:flex;justify-content:space-between;padding:3px 6px;font-size:10px;border-bottom:1px solid var(--border);transition:.1s;}
+  .m-row:hover{background:rgba(255,255,255,.02);}
+  .m-name{color:var(--white);}
+  .m-sym{color:var(--text-muted);font-size:8px;margin-left:4px;}
+  .m-pr{color:var(--text-dim);}
+  .ftr{text-align:center;font-size:6px;color:var(--text-muted);margin-top:8px;text-transform:uppercase;letter-spacing:1px;}
+  .ftr a{color:var(--text-dim);text-decoration:none;}
+  .ldr{text-align:center;padding:20px;color:var(--text-dim);font-size:9px;text-transform:uppercase;letter-spacing:2px;}
+  .ldr .sp{display:inline-block;width:6px;height:6px;background:var(--green);margin-right:6px;animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0}}
+  .err{text-align:center;padding:14px;color:var(--red);font-size:9px;text-transform:uppercase;letter-spacing:1px;}
+  .nul{text-align:center;padding:10px;color:var(--text-dim);font-size:9px;}
+</style>"""
+
+WIDGET_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+""" + WIDGET_CSS + """
+<title>Crypto Empire Widget</title>
+</head>
+<body class="THEME">
+<div class="w">
+  <div class="hdr"><span>###</span> CRYPTO EMPIRE <span>###</span></div>
+  <div id="ce-prices">PRICE_ROWS</div>
+  <div id="ce-movers">MOVER_ROWS</div>
+  <div class="ftr"><a href="https://crypto-empire-ten.vercel.app" target="_blank">crypto-empire-ten.vercel.app</a></div>
+</div>
+<script>
+(function(){var d=document.getElementById('ce-prices'),m=document.getElementById('ce-movers');
+async function l(){try{
+var r=await fetch('/api/movers'),j=await r.json();
+var g=j.top_gainers||[],l=j.top_losers||[];
+if(m){var h='';
+h+='<div class="m-section"><div class="m-title">> TOP GAINERS</div>';
+g.slice(0,5).forEach(function(c){h+='<div class="m-row"><span><span class="m-name">'+c.name+'</span><span class="m-sym">'+c.symbol.toUpperCase()+'</span></span><span class="m-pr">$'+c.price+' <span class="up">+'+c.change+'%</span></span></div>';});
+h+='</div><div class="m-section"><div class="m-title">> TOP LOSERS</div>';
+l.slice(0,5).forEach(function(c){h+='<div class="m-row"><span><span class="m-name">'+c.name+'</span><span class="m-sym">'+c.symbol.toUpperCase()+'</span></span><span class="m-pr">$'+c.price+' <span class="down">'+c.change+'%</span></span></div>';});
+h+='</div>';
+m.innerHTML=h;}
+}catch(e){if(m)m.innerHTML='<div class="err">! FAILED TO LOAD</div>';}}
+l();
+var p=document.getElementById('ce-prices');
+async function lp(){try{
+var ids=['bitcoin','ethereum','solana'];
+var r=await fetch('/api/price/'+ids[0]);var j=await r.json();
+var b=j.data||{usd:0,usd_24h_change:0};
+r=await fetch('/api/price/'+ids[1]);j=await r.json();
+var e=j.data||{usd:0,usd_24h_change:0};
+r=await fetch('/api/price/'+ids[2]);j=await r.json();
+var s=j.data||{usd:0,usd_24h_change:0};
+function pc(v,c){return '<div class="p-card"><div class="p-sym">'+c+'</div><div class="p-val">$'+(v.usd||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="p-chg '+(v.usd_24h_change>=0?'up':'down')+'">'+(v.usd_24h_change>=0?'+':'')+(v.usd_24h_change||0).toFixed(2)+'%</div></div>';}
+if(p)p.innerHTML=pc(b,'BTC')+pc(e,'ETH')+pc(s,'SOL');
+}catch(e){if(p)p.innerHTML='<div class="err">! FAILED TO LOAD</div>';}}
+lp();})();
+</script>
+</body>
+</html>"""
+
+
+@app.route("/widget")
+def widget():
+    """Embeddable widget for iframe"""
+    mode = request.args.get("mode", "both")  # price, movers, both
+    theme = request.args.get("theme", "dark")  # dark, light
+    coins = request.args.get("coins", "bitcoin,ethereum,solana")
+
+    html = WIDGET_HTML
+    html = html.replace("THEME", "" if theme == "dark" else "light")
+
+    if mode == "price":
+        # Hide movers section
+        html = html.replace('<div id="ce-movers">MOVER_ROWS</div>', "")
+    elif mode == "movers":
+        # Hide price section
+        html = html.replace('<div id="ce-prices">PRICE_ROWS</div>', '<div id="ce-prices"></div>')
+
+    return html, 200, {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "text/html; charset=utf-8",
+        "X-Frame-Options": "ALLOWALL",
+        "Cache-Control": "no-cache",
+    }
+
+
+@app.route("/widget/embed.js")
+def widget_embed_js():
+    """JavaScript embed snippet for external sites"""
+    # Determine mode from query param, passed through to the iframe URL
+    mode = request.args.get("mode", "both")
+    theme = request.args.get("theme", "dark")
+    base_url = request.host_url.rstrip("/")
+
+    js = f"""(function(){{
+  var CE_WIDGET = function(){{
+    var container = document.getElementById('ce-widget');
+    if(!container){{
+      container = document.createElement('div');
+      container.id = 'ce-widget';
+      document.body.appendChild(container);
+    }}
+    var mode = container.getAttribute('data-mode') || '{mode}';
+    var theme = container.getAttribute('data-theme') || '{theme}';
+    var w = container.getAttribute('data-width') || '360';
+    container.innerHTML = '<iframe src="{base_url}/widget?mode='+mode+'&theme='+theme+'" style="width:'+w+'px;max-width:100%%;height:420px;border:1px solid #181818;background:#000;overflow:hidden;" frameborder="0" scrolling="no"></iframe>';
+  }};
+  if(document.readyState==='loading'){{document.addEventListener('DOMContentLoaded',CE_WIDGET);}}else{{CE_WIDGET();}}
+}})();"""
+
+    return js, 200, {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "max-age=300",
+    }
+
+
+# ============================================================
 # Telegram Bot Webhook
 # ============================================================
 
