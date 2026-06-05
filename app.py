@@ -421,6 +421,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="#news">News</a>
                 <a href="/trending">Trending</a>
                 <a href="/profiler">Profiler</a>
+                <a href="/launches">Launches</a>
                 <a href="/ticker">Ticker</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
@@ -1490,6 +1491,11 @@ Send: /help</pre>
             <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/profiler/0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</pre>
         </div>
         <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/launches</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Upcoming token launches, IDOs, ICOs, and TGEs with countdown timers, exchange affiliate links. Sorted by featured upcoming first.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/launches</pre>
+        </div>
+        <div class="post">
             <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/dexs</code></p>
             <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Top 10 DEXes by 24h volume.</p>
             <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/dexs</pre>
@@ -1943,6 +1949,378 @@ function renderProfile(d){
 @app.route("/profiler")
 def profiler_page():
     return render_template_string(PROFILER_HTML)
+
+
+# ============================================================
+# Token Launch Calendar — upcoming IDOs/ICOs/TGEs
+# ============================================================
+
+# Curated list of upcoming token launches.
+# To update live without deploying, edit data/launches.json on the repo.
+LAUNCHES_DEFAULT = [
+    {
+        "id": "abstract-chain",
+        "name": "Abstract Chain",
+        "symbol": "ABS",
+        "type": "L1 Launch",
+        "date": "2026-07-08T14:00:00Z",
+        "description": "ZK-powered L1 focused on consumer crypto. Backed by Founders Fund and 1kx.",
+        "chain": "Ethereum (via zkBridge)",
+        "url": "https://abstractchain.io",
+        "exchanges": [{"name": "Binance", "url": "https://accounts.binance.com/register?ref=CRYPTOEMPIRE"}],
+        "coingecko_id": "",
+        "featured": True,
+    },
+    {
+        "id": "story-protocol",
+        "name": "Story Protocol",
+        "symbol": "STORY",
+        "type": "TGE",
+        "date": "2026-07-15T14:00:00Z",
+        "description": "IP ownership and licensing blockchain. $54M Series B from a16z, Polychain.",
+        "chain": "Story (L1)",
+        "url": "https://story.foundation",
+        "exchanges": [{"name": "Uniswap", "url": "https://app.uniswap.org/swap?outputCurrency=STORY"}],
+        "coingecko_id": "",
+        "featured": True,
+    },
+    {
+        "id": "berachain",
+        "name": "Berachain",
+        "symbol": "BERA",
+        "type": "L1 Launch",
+        "date": "2026-07-22T14:00:00Z",
+        "description": "L1 built on Cosmos SDK with novel Proof-of-Liquidity consensus. $145M from Polychain, Hack VC.",
+        "chain": "Berachain (Cosmos)",
+        "url": "https://berachain.com",
+        "exchanges": [{"name": "Bybit", "url": "https://bybit.com/invite?ref=CRYPTOEMPIRE"}, {"name": "OKX", "url": "https://okx.com/account/register?ref=CRYPTOEMPIRE"}],
+        "coingecko_id": "",
+        "featured": True,
+    },
+    {
+        "id": "monad",
+        "name": "Monad",
+        "symbol": "MONAD",
+        "type": "L1 Launch",
+        "date": "2026-08-05T14:00:00Z",
+        "description": "Parallel EVM L1 with 10,000 TPS. Backed by Paradigm with $245M funding.",
+        "chain": "Monad (EVM)",
+        "url": "https://monad.xyz",
+        "exchanges": [{"name": "Coinbase", "url": "https://coinbase.com/join/CRYPTOEMPIRE"}, {"name": "Uniswap", "url": "https://app.uniswap.org/swap?outputCurrency=MONAD"}],
+        "coingecko_id": "",
+        "featured": True,
+    },
+    {
+        "id": "linea-v2-token",
+        "name": "Linea Token",
+        "symbol": "LINEA",
+        "type": "TGE",
+        "date": "2026-08-12T14:00:00Z",
+        "description": "Consensys zkEVM L2 native token. Mass adoption layer for Ethereum ecosystem.",
+        "chain": "Linea (zkEVM)",
+        "url": "https://linea.build",
+        "exchanges": [{"name": "Binance", "url": "https://accounts.binance.com/register?ref=CRYPTOEMPIRE"}],
+        "coingecko_id": "",
+        "featured": True,
+    },
+    {
+        "id": "scroll-token",
+        "name": "Scroll Token",
+        "symbol": "SCR",
+        "type": "TGE",
+        "date": "2026-08-19T14:00:00Z",
+        "description": "zkEVM L2 by Scroll team. Native token launch after mainnet stability period.",
+        "chain": "Scroll (zkEVM)",
+        "url": "https://scroll.io",
+        "exchanges": [{"name": "Uniswap", "url": "https://app.uniswap.org/swap?outputCurrency=SCR"}, {"name": "Gate.io", "url": "https://gate.io/signup/CRYPTOEMPIRE"}],
+        "coingecko_id": "",
+        "featured": False,
+    },
+    {
+        "id": "zora-token",
+        "name": "Zora Token",
+        "symbol": "ZORA",
+        "type": "TGE",
+        "date": "2026-09-01T14:00:00Z",
+        "description": "Media-focused L2 native token. Backed by Coinbase, Haun Ventures, Kindred.",
+        "chain": "Zora (OP Stack)",
+        "url": "https://zora.co",
+        "exchanges": [{"name": "Coinbase", "url": "https://coinbase.com/join/CRYPTOEMPIRE"}],
+        "coingecko_id": "",
+        "featured": False,
+    },
+    {
+        "id": "eclipse-token",
+        "name": "Eclipse Token",
+        "symbol": "ECL",
+        "type": "TGE",
+        "date": "2026-09-15T14:00:00Z",
+        "description": "First SVM L2 on Ethereum. Combines Solana execution with Ethereum liquidity.",
+        "chain": "Eclipse (SVM L2)",
+        "url": "https://eclipse.xyz",
+        "exchanges": [{"name": "Bybit", "url": "https://bybit.com/invite?ref=CRYPTOEMPIRE"}],
+        "coingecko_id": "",
+        "featured": False,
+    },
+    {
+        "id": "init-capital",
+        "name": "Init Capital",
+        "symbol": "INIT",
+        "type": "IDO",
+        "date": "2026-07-02T14:00:00Z",
+        "description": "Permissionless credit markets. First protocol to bring isolated lending to Scroll.",
+        "chain": "Scroll",
+        "url": "https://init.capital",
+        "exchanges": [{"name": "Aerodrome", "url": "https://aerodrome.finance"}],
+        "coingecko_id": "",
+        "featured": False,
+    },
+    {
+        "id": "walrus-protocol",
+        "name": "Walrus Protocol",
+        "symbol": "WAL",
+        "type": "TGE",
+        "date": "2026-07-28T14:00:00Z",
+        "description": "Decentralized data storage layer built on Sui. $30M from a16z Crypto.",
+        "chain": "Sui",
+        "url": "https://walrus.xyz",
+        "exchanges": [{"name": "Kraken", "url": "https://kraken.com/signup?ref=CRYPTOEMPIRE"}],
+        "coingecko_id": "",
+        "featured": False,
+    },
+]
+
+
+def get_launches():
+    """Load launches from data/launches.json if available, else default"""
+    import json as _json
+    try:
+        data_dir = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "data"))
+        path = os.path.join(data_dir, "launches.json")
+        if os.path.exists(path):
+            with open(path) as f:
+                return _json.load(f)
+    except Exception:
+        pass
+    return LAUNCHES_DEFAULT
+
+
+@app.route("/api/launches")
+def api_launches():
+    """JSON endpoint for token launch calendar"""
+    launches = get_launches()
+    from datetime import datetime as _dt, timezone as _tz
+
+    now = _dt.now(_tz.utc)
+    enriched = []
+    for l in launches:
+        try:
+            dt = _dt.fromisoformat(l["date"].replace("Z", "+00:00"))
+            status = "upcoming"
+            if dt < now:
+                status = "ended"
+                # check if still ongoing (7 day window)
+                delta = now - dt
+                if delta.days < 7:
+                    status = "ongoing"
+        except Exception:
+            dt = None
+            status = "unknown"
+
+        enriched.append({
+            **l,
+            "status": status,
+            "date_iso": l["date"],
+            "days_until": (dt - now).days if dt else None,
+            "timestamp": int(dt.timestamp()) if dt else 0,
+        })
+
+    # Sort: featured upcoming first, then date ascending
+    enriched.sort(key=lambda x: (
+        0 if x["status"] == "upcoming" and x.get("featured") else
+        1 if x["status"] == "upcoming" else
+        2 if x["status"] == "ongoing" else 3,
+        x.get("timestamp", 0)
+    ))
+
+    return jsonify({"launches": enriched, "updated": int(time.time())})
+
+
+LAUNCHES_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Token Launch Calendar — Crypto Empire</title>
+""" + SHARED_HEAD + r"""
+<style>
+.filter-row{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.filter-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);padding:6px 16px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;transition:.15s}
+.filter-btn.active{border-color:var(--white);color:var(--white)}
+.filter-btn:hover{border-color:var(--white)}
+.launch-card{border:1px solid var(--border);padding:16px;margin-bottom:12px;transition:.15s}
+.launch-card:hover{border-color:var(--white)}
+.launch-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px}
+.launch-name{font-size:14px;color:var(--white);font-weight:700;letter-spacing:-.5px;margin-bottom:2px}
+.launch-symbol{font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase}
+.launch-type{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);border:1px solid var(--border);padding:2px 8px;display:inline-block;margin-left:6px}
+.countdown{font-size:18px;color:var(--white);font-variant-numeric:tabular-nums;letter-spacing:-1px;font-weight:700;min-width:120px;text-align:right}
+.countdown-unit{font-size:7px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-left:2px}
+.countdown-label{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-align:right;margin-top:1px}
+.launch-desc{font-size:10px;color:var(--text);margin:8px 0;line-height:1.5}
+.launch-meta{font-size:9px;color:var(--text-dim);letter-spacing:1px;display:flex;gap:12px;flex-wrap:wrap}
+.launch-meta span{display:inline-flex;align-items:center;gap:4px}
+.launch-links{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.exchange-link{border:1px solid var(--border);padding:4px 12px;font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--text);text-decoration:none;transition:.15s;font-family:inherit}
+.exchange-link:hover{border-color:var(--white);color:var(--white)}
+.status-badge{font-size:8px;text-transform:uppercase;letter-spacing:2px;padding:2px 8px;display:inline-block}
+.status-upcoming{color:var(--green);border:1px solid var(--green)}
+.status-ongoing{color:var(--white);border:1px solid var(--white)}
+.status-ended{color:var(--text-dim);border:1px solid var(--border)}
+.featured-star{color:var(--white);font-size:16px;margin-right:4px}
+.empty-state{text-align:center;padding:60px 0;color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="sweep"></div>
+<div class="container">
+<div class="top-bar">
+<div class="brand">
+<div class="prompt">><span class="cr"></span></div>
+<div>
+<div class="site-title">Launch Calendar</div>
+<div class="site-sub">upcoming token launches &amp; TGEs</div>
+</div>
+</div>
+<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;">
+<a href="/" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Dashboard</a>
+<a href="/profiler" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Profiler</a>
+</div>
+</div>
+<div class="status-line"><span><span class="dot"></span> Live calendar</span><span>+0000 UTC</span></div>
+
+<div class="filter-row" id="filters">
+<button class="filter-btn active" data-filter="all">All</button>
+<button class="filter-btn" data-filter="upcoming">Upcoming</button>
+<button class="filter-btn" data-filter="ongoing">Live Now</button>
+<button class="filter-btn" data-filter="featured">Featured</button>
+<button class="filter-btn" data-filter="ended">Past</button>
+</div>
+
+<div id="launch-list"><div class="loading">Loading calendar...</div></div>
+
+<div style="margin-top:24px;padding:12px;border:1px solid var(--border);font-size:9px;color:var(--text-dim);text-align:center;letter-spacing:1px;">
+Launch dates are estimates from public sources. Use exchange affiliate links to support Crypto Empire.
+</div>
+</div>
+<div class="b-bar"><span><span class="dot"></span> launch calendar</span><span>v2.8</span></div>
+
+<script>
+var launches=[];
+var currentFilter='all';
+
+async function loadLaunches(){
+  try{
+    var r=await fetch('/api/launches');
+    var d=await r.json();
+    launches=d.launches||[];
+    render();
+  }catch(e){
+    document.getElementById('launch-list').innerHTML='<div class="error">Failed to load calendar</div>';
+  }
+}
+
+function render(){
+  var el=document.getElementById('launch-list');
+  var items=launches;
+  if(currentFilter!=='all'){
+    items=items.filter(function(l){
+      if(currentFilter==='featured')return l.featured;
+      return l.status===currentFilter;
+    });
+  }
+  if(!items.length){
+    el.innerHTML='<div class="empty-state">No launches match this filter</div>';
+    return;
+  }
+  var html='';
+  for(var i=0;i<items.length;i++){
+    var l=items[i];
+    var cls='status-'+l.status;
+    html+='<div class="launch-card">';
+    html+='<div class="launch-header">';
+    html+='<div>';
+    html+='<div class="launch-name">'+(l.featured?'<span class="featured-star">&#9733;</span>':'')+l.name+' <span class="launch-symbol">$'+l.symbol+'</span> <span class="launch-type">'+l.type+'</span></div>';
+    html+='<div class="launch-meta"><span>'+l.chain+'</span> <span class="status-badge '+cls+'">'+l.status+'</span></div>';
+    html+='</div>';
+    html+='<div class="countdown" id="cd-'+l.id+'"><div class="countdown-label">'+formatDate(l.date_iso)+'</div></div>';
+    html+='</div>';
+    html+='<div class="launch-desc">'+l.description+'</div>';
+    if(l.exchanges&&l.exchanges.length){
+      html+='<div class="launch-links">';
+      for(var j=0;j<l.exchanges.length;j++){
+        var ex=l.exchanges[j];
+        html+='<a href="'+ex.url+'" target="_blank" rel="noopener" class="exchange-link">'+ex.name+'</a>';
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+  }
+  el.innerHTML=html;
+  // Start countdowns
+  startCountdowns(items);
+}
+
+function formatDate(iso){
+  var d=new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+function startCountdowns(items){
+  function tick(){
+    var now=new Date().getTime();
+    for(var i=0;i<items.length;i++){
+      var l=items[i];
+      var target=new Date(l.date_iso).getTime();
+      var diff=target-now;
+      var el=document.getElementById('cd-'+l.id);
+      if(!el)continue;
+      if(diff<=0){
+        el.innerHTML='<div style="font-size:14px;color:var(--green);">LAUNCHED</div>';
+        if(l.status==='ended'||l.status==='ongoing')continue;
+      }else{
+        var d=Math.floor(diff/86400000);
+        var h=Math.floor((diff%86400000)/3600000);
+        var m=Math.floor((diff%3600000)/60000);
+        var s=Math.floor((diff%60000)/1000);
+        el.innerHTML='<div>'+d+'<span class="countdown-unit">d</span> '+h+'<span class="countdown-unit">h</span> '+m+'<span class="countdown-unit">m</span> '+s+'<span class="countdown-unit">s</span></div>';
+      }
+    }
+  }
+  tick();
+  setInterval(tick,1000);
+}
+
+// Filters
+document.getElementById('filters').addEventListener('click',function(e){
+  var btn=e.target.closest('.filter-btn');
+  if(!btn)return;
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  currentFilter=btn.getAttribute('data-filter');
+  render();
+});
+
+loadLaunches();
+</script>
+</body>
+</html>"""
+
+
+@app.route("/launches")
+def launches_page():
+    return render_template_string(LAUNCHES_HTML)
 
 
 # ============================================================
