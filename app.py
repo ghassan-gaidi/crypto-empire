@@ -606,8 +606,11 @@ INDEX_HTML = """<!DOCTYPE html>
         <div class="prem-box">
             <h3>// TELEGRAM_BOT</h3>
             <p>Live crypto data at your fingertips. No signup, no API keys.</p>
-            <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:10px 24px;font-size:11px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;transition:.15s;font-weight:700;">@Crypt0Emp1reBot</a>
-            <br><span style="display:inline-block;border:1px dashed var(--text-muted);padding:8px 16px;margin-top:14px;font-size:11px;color:var(--green);font-family:monospace;user-select:all;">Send /start in Telegram</span>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:10px 24px;font-size:11px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;transition:.15s;font-weight:700;">@Crypt0Emp1reBot</a>
+                <a href="https://t.me/Crypt0Emp1reBot?startgroup=start" target="_blank" style="display:inline-block;border:1px solid var(--green);color:var(--green);padding:10px 24px;font-size:11px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;transition:.15s;font-weight:700;">+ ADD TO GROUP</a>
+            </div>
+            <br><span style="display:inline-block;border:1px dashed var(--text-muted);padding:8px 16px;margin-top:14px;font-size:11px;color:var(--green);font-family:monospace;user-select:all;">Send /btc /eth /sol in any group</span>
         </div>
 
         <!-- Premium Section -->
