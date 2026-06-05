@@ -1,0 +1,17 @@
+name: Check Price Alerts
+"on":
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/check-alerts
+        run: |
+          curl -s -X POST \
+            "https://crypto-empire-ten.vercel.app/api/check-alerts" \
+            -H "X-Alert-Check-Key: ${{ secrets.ALERT_CHECK_SECRET }}" \
+            -H "Accept: application/json" \
+            --max-time 30

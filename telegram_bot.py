@@ -3,6 +3,7 @@ Crypto Empire Telegram Bot — Webhook mode for Vercel serverless
 """
 import os
 import json
+import sqlite3
 import logging
 from html import unescape
 import requests
@@ -317,6 +318,23 @@ def handle_update(data):
         text = (msg.get("text") or "").strip()
         if not chat_id or not text:
             return {"ok": False, "reason": "no message"}
+
+        # Store chat_id → username mapping for alert delivery
+        user = msg.get("from", {})
+        username = (user.get("username") or "").lower().strip()
+        if username and chat_id:
+            try:
+                app = _get_app()
+                conn = sqlite3.connect(str(app.DB_PATH))
+                conn.execute("CREATE TABLE IF NOT EXISTS telegram_mapping (username TEXT PRIMARY KEY, chat_id INTEGER)")
+                conn.execute(
+                    "INSERT OR REPLACE INTO telegram_mapping (username, chat_id) VALUES (?, ?)",
+                    (username, chat_id),
+                )
+                conn.commit()
+                conn.close()
+            except Exception:
+                pass
 
         # Parse command
         parts = text.split()

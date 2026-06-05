@@ -1155,6 +1155,167 @@ def api_alerts():
     return jsonify({"status": "ok", "message": f"Alert set for {coin} at ${target}"})
 
 
+# ---------------------------------------------------------------------------
+# Coin symbol → CoinGecko ID lookup (top 100+ coins)
+# ---------------------------------------------------------------------------
+COIN_SYMBOL_TO_ID = {
+    "BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana", "BNB": "binancecoin",
+    "XRP": "ripple", "ADA": "cardano", "DOGE": "dogecoin", "TRX": "tron",
+    "DOT": "polkadot", "LINK": "chainlink", "MATIC": "matic-network",
+    "AVAX": "avalanche-2", "SHIB": "shiba-inu", "DAI": "dai",
+    "LTC": "litecoin", "UNI": "uniswap", "ATOM": "cosmos",
+    "XLM": "stellar", "BCH": "bitcoin-cash", "FIL": "filecoin",
+    "APT": "aptos", "ARB": "arbitrum", "OP": "optimism",
+    "SUI": "sui", "PEPE": "pepe", "INJ": "injective-protocol",
+    "RUNE": "thorchain", "AAVE": "aave", "MKR": "maker",
+    "SAND": "the-sandbox", "MANA": "decentraland", "AXS": "axie-infinity",
+    "FTM": "fantom", "NEAR": "near", "TIA": "celestia",
+    "SEI": "sei-network", "STRK": "starknet",
+    "WIF": "dogwifcoin", "BONK": "bonk", "FLOKI": "floki",
+    "CRV": "curve-dao-token", "GALA": "gala", "CHZ": "chiliz",
+    "CAKE": "pancakeswap-token", "KUJI": "kujira", "OSMO": "osmosis",
+    "JUP": "jupiter-exchange-solana", "RNDR": "render-token",
+    "FET": "fetch-ai", "AGIX": "singularitynet", "OCEAN": "ocean-protocol",
+    "IMX": "immutable-x", "MAGIC": "magic", "BLUR": "blur",
+}
+
+
+def _coin_to_id(symbol):
+    """Convert coin symbol (BTC, ETH) to CoinGecko ID. Falls back to searching API."""
+    s = symbol.strip().upper()
+    if s in COIN_SYMBOL_TO_ID:
+        return COIN_SYMBOL_TO_ID[s]
+    # Try lowercase (maybe they entered the ID directly)
+    if symbol.strip().islower():
+        return symbol.strip()
+    # Try CoinGecko search as last resort
+    try:
+        r = requests.get(f"{COINGECKO_API}/search?query={s}", timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            coins = data.get("coins", [])
+            if coins:
+                return coins[0]["id"]
+    except:
+        pass
+    return symbol.strip().lower()
+
+
+ALERT_CHECK_SECRET = os.environ.get("ALERT_CHECK_SECRET", "")
+
+
+@app.route("/api/check-alerts", methods=["GET", "POST"])
+def api_check_alerts():
+    """Check all pending price alerts and send Telegram notifications when triggered.
+
+    Protected by X-Alert-Check-Key header matching ALERT_CHECK_SECRET env var.
+    Called by GH Actions cron every 15 minutes.
+    """
+    # Verify auth
+    provided = request.headers.get("X-Alert-Check-Key", "")
+    if not ALERT_CHECK_SECRET or provided != ALERT_CHECK_SECRET:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    # Ensure table + triggered column exist
+    c.execute("CREATE TABLE IF NOT EXISTS alerts (coin TEXT, target REAL, telegram TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    try:
+        c.execute("ALTER TABLE alerts ADD COLUMN triggered INTEGER DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+
+    rows = c.execute("SELECT rowid, * FROM alerts WHERE triggered = 0").fetchall()
+    if not rows:
+        conn.close()
+        return jsonify({"status": "ok", "checked": 0, "triggered": 0, "message": "No pending alerts"})
+
+    # Get unique coins
+    coin_ids = set()
+    for r in rows:
+        cid = _coin_to_id(r["coin"])
+        coin_ids.add(cid)
+
+    # Batch-fetch prices
+    ids_param = ",".join(coin_ids)
+    price_data = fetch_sync(f"{COINGECKO_API}/simple/price?ids={ids_param}&vs_currencies=usd")
+
+    if not price_data:
+        conn.close()
+        return jsonify({"error": "Failed to fetch prices"}), 502
+
+    # Check each alert
+    triggered = 0
+    results = []
+    for r in rows:
+        cid = _coin_to_id(r["coin"])
+        current_price = price_data.get(cid, {}).get("usd")
+        if current_price is None:
+            continue
+
+        target = r["target"]
+        telegram_user = r["telegram"].strip()
+        telegram_msg = (
+            f"\u23f0 PRICE ALERT TRIGGERED\n"
+            f"\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
+            f"{r['coin']} has reached your target!\n\n"
+            f"Target: ${target:,.2f}\n"
+            f"Current: ${current_price:,.2f}\n\n"
+            f"crypto-empire-ten.vercel.app"
+        )
+
+        # Send Telegram DM
+        if telegram_user.startswith("@"):
+            # We need a chat_id. For Telegram, we need the user's chat ID.
+            # The alert form collects @username. We can send a message to the
+            # bot and it'll arrive as a DM if the user has started the bot.
+            # Alternatively, send via the bot API using the @username.
+            # Telegram doesn't let you send by @username directly in Bot API.
+            # We need the chat_id, which we'd have if they've messaged the bot before.
+            # For now, we send via the bot to the user only if they've started the bot.
+            # We store the chat_id when they interact with /start.
+            pass
+
+        # Send via Telegram bot API — try to resolve chat_id from telegram_mapping table
+        chat_id = None
+        try:
+            # Check if we have a stored chat_id for this telegram user
+            c2 = conn.cursor()
+            c2.execute("CREATE TABLE IF NOT EXISTS telegram_mapping (username TEXT PRIMARY KEY, chat_id INTEGER)")
+            row2 = c2.execute("SELECT chat_id FROM telegram_mapping WHERE username = ?", (telegram_user.lower().lstrip("@"),)).fetchone()
+            if row2:
+                chat_id = row2["chat_id"]
+        except:
+            pass
+
+        if chat_id:
+            # Send notification
+            try:
+                from telegram_bot import send_message as tg_send
+                tg_send(chat_id, telegram_msg, parse_mode="HTML")
+                # Mark as triggered
+                conn.execute("UPDATE alerts SET triggered = 1 WHERE rowid = ?", (r["rowid"],))
+                triggered += 1
+                results.append({"coin": r["coin"], "user": telegram_user, "sent": True})
+            except Exception as e:
+                results.append({"coin": r["coin"], "user": telegram_user, "sent": False, "error": str(e)})
+        else:
+            results.append({"coin": r["coin"], "user": telegram_user, "sent": False, "reason": "unknown chat_id"})
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "status": "ok",
+        "checked": len(rows),
+        "triggered": triggered,
+        "results": results,
+    })
+
+
 @app.route("/api/wallet")
 def api_wallet():
     chains = {
