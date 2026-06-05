@@ -420,6 +420,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="#gas">Gas</a>
                 <a href="#news">News</a>
                 <a href="/trending">Trending</a>
+                <a href="/ticker">Ticker</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
@@ -2122,6 +2123,210 @@ def widget_embed_js():
   if(document.readyState==='loading'){{document.addEventListener('DOMContentLoaded',CE_WIDGET);}}else{{CE_WIDGET();}}
 }})();"""
 
+    return js, 200, {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "max-age=300",
+    }
+
+
+# ============================================================
+# Scrolling Market Ticker — embeddable ribbon
+# ============================================================
+
+@app.route("/api/ticker-data")
+def ticker_data():
+    """Flat price data for the scrolling ticker"""
+    symbols = {
+        "bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL",
+        "ripple": "XRP", "cardano": "ADA", "dogecoin": "DOGE",
+        "polkadot": "DOT", "avalanche-2": "AVAX", "chainlink": "LINK",
+        "polygon": "MATIC", "shiba-inu": "SHIB", "litecoin": "LTC",
+        "uniswap": "UNI", "stellar": "XLM",
+    }
+    ids = list(symbols.keys())
+    try:
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price",
+            params={"ids": ",".join(ids), "vs_currencies": "usd",
+                    "include_24hr_change": "true"},
+            timeout=10,
+        )
+        prices = r.json()
+        ticker = []
+        for cid in ids:
+            data = prices.get(cid, {})
+            usd = data.get("usd")
+            ch = data.get("usd_24h_change")
+            if usd:
+                ticker.append({
+                    "s": symbols[cid],
+                    "p": round(usd, 2) if usd >= 1 else round(usd, 6),
+                    "c": round(ch, 2) if ch is not None else None,
+                })
+        # Append top movers (up to 5)
+        try:
+            m = requests.get(
+                "https://api.coingecko.com/api/v3/coins/markets",
+                params={"vs_currency": "usd", "order": "volume_desc",
+                        "per_page": 50, "page": 1, "sparkline": "false"},
+                timeout=10,
+            )
+            markets = m.json()
+            # Sort by 24h change descending, pick top 5 not already in ticker
+            gainers = sorted([c for c in markets if c.get("price_change_percentage_24h") is not None],
+                             key=lambda c: c["price_change_percentage_24h"], reverse=True)[:5]
+            seen = set(i["s"] for i in ticker)
+            for c in gainers:
+                sym = (c.get("symbol") or "").upper()
+                if sym not in seen and c.get("current_price"):
+                    seen.add(sym)
+                    ticker.append({
+                        "s": sym,
+                        "p": round(c["current_price"], 2) if c["current_price"] >= 1 else round(c["current_price"], 6),
+                        "c": round(c["price_change_percentage_24h"], 2),
+                    })
+        except Exception:
+            pass
+        return jsonify({"ticker": ticker, "updated_at": int(time.time())})
+    except Exception as e:
+        return jsonify({"ticker": [], "error": str(e), "updated_at": int(time.time())})
+
+
+TICKER_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market Ticker — Crypto Empire</title>
+""" + SHARED_HEAD + r"""
+<style>
+/* Ticker-specific overrides — compact, no-nav */
+body{overflow:hidden;background:transparent;min-height:auto}
+.container{max-width:none;padding:0;margin:0}
+/* Remove CRT scanlines for ticker — cleaner on embed */
+body::after,body::before,.sweep,.grid-bg{display:none}
+.ticker-wrap{overflow:hidden;width:100%;height:36px;background:var(--bg);border:1px solid var(--border);border-left:none;border-right:none;position:relative}
+.ticker-track{display:flex;white-space:nowrap;will-change:transform}
+.ticker-track.paused{animation-play-state:paused!important}
+.ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 18px;height:34px;font-size:11px;letter-spacing:.5px;border-right:1px solid var(--border)}
+.ticker-sym{color:var(--white);font-weight:700}
+.ticker-price{color:var(--text)}
+.ticker-chg{font-weight:500;font-size:10px}
+.ticker-chg.up{color:var(--green)}
+.ticker-chg.down{color:var(--red)}
+.ticker-chg.neutral{color:var(--text-dim)}
+.ticker-sep{color:var(--text-muted);padding:0 8px;font-size:8px}
+/* Dark theme default, light override */
+body.light{--bg:#fff;--surface:#f5f5f5;--border:#ddd;--text:#444;--text-dim:#999;--white:#000;--green:#060;--red:#c00}
+</style>
+</head>
+<body>
+<div class="ticker-wrap" id="ticker-wrap">
+  <div class="ticker-track" id="ticker-track">
+    <div style="padding:0 20px;color:var(--text-dim);font-size:10px;letter-spacing:1px;height:34px;display:flex;align-items:center;">Loading...</div>
+  </div>
+</div>
+<script>
+(function(){
+var wrap=document.getElementById('ticker-wrap');
+var track=document.getElementById('ticker-track');
+var items=[];
+var animId=null;
+var speed=50; // px per second
+
+function fmtP(v){return v<1?v.toFixed(6):v<100?v.toFixed(2):v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtC(v){if(v==null)return '<span class="ticker-chg neutral">--</span>';var c=v>0?'up':'down';return '<span class="ticker-chg '+c+'">'+(v>0?'+':'')+v.toFixed(2)+'%</span>'}
+
+function render(data){
+  var html='';
+  for(var i=0;i<data.length;i++){
+    var d=data[i];
+    html+='<div class="ticker-item">';
+    html+='<span class="ticker-sym">'+d.s+'</span>';
+    html+='<span class="ticker-price">$'+fmtP(d.p)+'</span>';
+    html+=fmtC(d.c);
+    html+='</div>';
+  }
+  if(data.length)html+='<div class="ticker-item" style="color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;">Crypto Empire</div>';
+  track.innerHTML=html;
+  startScroll();
+}
+
+function startScroll(){
+  if(animId){cancelAnimationFrame(animId);animId=null}
+  var tw=wrap.offsetWidth;
+  var tt=track.scrollWidth;
+  if(tt<=tw){track.style.transform='translateX(0)';track.style.justifyContent='center';return}
+  // Clone content for seamless loop
+  track.innerHTML+=track.innerHTML;
+  var totalW=track.scrollWidth/2;
+  var pos=0;
+  var last=performance.now();
+  function frame(now){
+    var dt=(now-last)/1000;
+    last=now;
+    pos+=dt*speed;
+    if(pos>=totalW)pos-=totalW;
+    track.style.transform='translateX(-'+pos+'px)';
+    animId=requestAnimationFrame(frame);
+  }
+  animId=requestAnimationFrame(frame);
+}
+
+// Pause on hover
+wrap.addEventListener('mouseenter',function(){track.classList.add('paused');if(animId){cancelAnimationFrame(animId);animId=null}});
+wrap.addEventListener('mouseleave',function(){track.classList.remove('paused');startScroll()});
+
+async function fetchData(){
+  try{
+    var r=await fetch('/api/ticker-data');
+    var d=await r.json();
+    if(d.ticker&&d.ticker.length)render(d.ticker);
+  }catch(e){}
+}
+fetchData();
+setInterval(fetchData,30000);
+})();
+</script>
+</body>
+</html>"""
+
+
+@app.route("/ticker")
+def ticker():
+    """Embeddable scrolling ticker (iframe)"""
+    theme = request.args.get("theme", "dark")
+    html = TICKER_HTML
+    if theme == "light":
+        html = html.replace('<body>', '<body class="light">', 1)
+    return html, 200, {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "text/html; charset=utf-8",
+        "X-Frame-Options": "ALLOWALL",
+        "Cache-Control": "no-cache",
+    }
+
+
+@app.route("/ticker/embed.js")
+def ticker_embed_js():
+    """JavaScript embed snippet for the scrolling ticker"""
+    theme = request.args.get("theme", "dark")
+    base_url = request.host_url.rstrip("/")
+
+    js = f"""(function(){{
+  var CE_TICKER = function(){{
+    var container = document.getElementById('ce-ticker');
+    if(!container){{
+      container = document.createElement('div');
+      container.id = 'ce-ticker';
+      document.body.appendChild(container);
+    }}
+    var theme = container.getAttribute('data-theme') || '{theme}';
+    container.innerHTML = '<iframe src="{base_url}/ticker?theme='+theme+'" style="width:100%;height:36px;border:none;overflow:hidden;display:block;" frameborder="0" scrolling="no"></iframe>';
+  }};
+  if(document.readyState==='loading'){{document.addEventListener('DOMContentLoaded',CE_TICKER);}}else{{CE_TICKER();}}
+}})();"""
     return js, 200, {
         "Content-Type": "application/javascript; charset=utf-8",
         "Access-Control-Allow-Origin": "*",
