@@ -140,8 +140,9 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         "/dexs             — Top DEXes by volume\n"
         "/tvl              — Ethereum TVL\n"
         "/sparkline <coin> — 7d price chart (ASCII)\\n"
-        "/whales           — On-chain whale moves >$100K\\n"
-        "/help             — This message\\n\\n"
+        "/whales           — On-chain whale moves >$100K\n"
+        "/premium          — Unlock premium features\n"
+        "/help             — This message\n\n"
         "Built autonomously \u2014 github.com/ghassan-gaidi/crypto-empire"
     )
 
@@ -369,6 +370,25 @@ def cmd_whales(chat_id, args=None):
         msg = "No whale moves found right now. Try again later."
     send_message(chat_id, msg)
 
+def cmd_premium(chat_id, args=None):
+    """Show premium subscription info."""
+    send_typing(chat_id)
+    msg = (
+        "> CRYPTO EMPIRE PREMIUM\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Unlock premium features:\n\n"
+        "• Telegram whale alerts — real-time $100K+ push\n"
+        "• Priority price alerts — instant threshold notifications\n"
+        "• Premium sentiment indicators — buy/sell signals\n"
+        "• Ad-free across all pages\n"
+        "• Support development\n\n"
+        "👉 Subscribe:\n"
+        "https://buy.polar.sh/polar_cl_6tzQXPw5VwincKlZdlyR2aM9XGePVbhfzWCb13P42ox\n\n"
+        "Price: $9.99/month — Cancel anytime\n"
+        "Powered by Polar.sh"
+    )
+    send_message(chat_id, msg)
+
 def cmd_sparkline(chat_id, args):
     if not args:
         send_message(chat_id, "Usage: /sparkline <coin_id>  (e.g. /sparkline bitcoin)")
@@ -475,6 +495,8 @@ COMMANDS = {
     "sparkline": cmd_sparkline,
     "whales":    cmd_whales,
     "whale":     cmd_whales,
+    "premium":   cmd_premium,
+    "subscribe": cmd_premium,
 }
 
 # Register shortcut commands (e.g., /btc → cmd_price(["bitcoin"]))
