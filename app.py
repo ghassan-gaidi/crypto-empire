@@ -420,6 +420,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="#gas">Gas</a>
                 <a href="#news">News</a>
                 <a href="/trending">Trending</a>
+                <a href="/profiler">Profiler</a>
                 <a href="/ticker">Ticker</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
@@ -1484,6 +1485,11 @@ Send: /help</pre>
             <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/tvl</pre>
         </div>
         <div class="post">
+            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/profiler/&lt;address&gt;</code></p>
+            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Profile any Ethereum address: native balance, top ERC-20s, tx count, USD value.</p>
+            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/profiler/0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</pre>
+        </div>
+        <div class="post">
             <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/dexs</code></p>
             <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Top 10 DEXes by 24h volume.</p>
             <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/dexs</pre>
@@ -1662,6 +1668,281 @@ def api_check_wallet(address):
         "total_usd": total_usd,
         "total_usd_formatted": f"${total_usd:,.2f}",
     })
+
+
+# ============================================================
+# Wallet Profiler — paste any ETH address
+# ============================================================
+
+def query_rpc(method, params, rpc_url="https://ethereum-rpc.publicnode.com"):
+    """Helper for JSON-RPC calls"""
+    try:
+        r = requests.post(rpc_url, json={
+            "jsonrpc": "2.0", "method": method,
+            "params": params, "id": 1
+        }, timeout=8)
+        return r.json().get("result")
+    except Exception:
+        return None
+
+
+# Top ERC-20 token contracts on Ethereum (by market cap / relevance)
+PROFILER_TOKENS = [
+    ("0xdAC17F958D2ee523a2206206994597C13D831ec7", "USDT", 6),
+    ("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "USDC", 6),
+    ("0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", "WBTC", 8),
+    ("0x514910771AF9Ca656af840dff83E8264EcF986CA", "LINK", 18),
+    ("0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0", "MATIC", 18),
+    ("0x967da4048cD07aB37855c090aAF366e4ce1b9F48", "OCEAN", 18),
+    ("0x4Fabb145d64652a948d72533023f6E7A623C7C53", "BUSD", 18),
+    ("0x6B175474E89094C44Da98b954EedeAC495271d0F", "DAI", 18),
+    ("0x0000000000085d4780B73119b644AE5ecd22b376", "TUSD", 18),
+    ("0x57Ab1ec28D129707052df4dF418D58a2D46d5f51", "SUSD", 18),
+    ("0x3845badAde8e6dFF049820680d1F14bD3903a5d0", "SAND", 18),
+]
+
+
+@app.route("/api/profiler/<address>")
+def api_profiler(address):
+    """Profile any Ethereum address: balance, tokens, recent tx count, USD value"""
+    if not re.match(r'^0x[a-fA-F0-9]{40}$', address):
+        return jsonify({"error": "Invalid Ethereum address"}), 400
+
+    # 1. Native ETH balance
+    native_bal_raw = query_rpc("eth_getBalance", [address, "latest"])
+    native_bal = int(native_bal_raw, 16) / 1e18 if native_bal_raw else 0
+
+    # 2. Transaction count (nonce)
+    tx_count_raw = query_rpc("eth_getTransactionCount", [address, "latest"])
+    tx_count = int(tx_count_raw, 16) if tx_count_raw else 0
+
+    # 3. Token balances via eth_call (no API key needed)
+    tokens = []
+    for contract, sym, decimals in PROFILER_TOKENS:
+        # ERC-20 balanceOf(address) — 0x70a08231 + padded address
+        data = "0x70a08231" + address[2:].zfill(64)
+        result = query_rpc("eth_call", [{"to": contract, "data": data}, "latest"])
+        if result and result != "0x" and int(result, 16) > 0:
+            bal = int(result, 16) / (10 ** decimals)
+            tokens.append({"symbol": sym, "balance": bal, "contract": contract})
+
+    # 4. USD prices via CoinGecko
+    eth_price = 0
+    token_prices = {}
+    try:
+        ids = "ethereum," + ",".join(
+            {"USDT": "tether", "USDC": "usd-coin", "WBTC": "wrapped-bitcoin",
+             "LINK": "chainlink", "MATIC": "matic-network", "DAI": "dai",
+             "BUSD": "binance-usd", "SAND": "the-sandbox", "SUSD": "nusd",
+             "TUSD": "true-usd", "OCEAN": "ocean-protocol"}.get(t["symbol"], "")
+            for t in tokens
+        )
+        price_data_raw = fetch_sync(f"{COINGECKO_API}/simple/price?ids={ids}&vs_currencies=usd")
+        if price_data_raw:
+            eth_price = price_data_raw.get("ethereum", {}).get("usd", 0) or 0
+            token_prices = {
+                "USDT": (price_data_raw.get("tether", {}) or {}).get("usd", 1),
+                "USDC": (price_data_raw.get("usd-coin", {}) or {}).get("usd", 1),
+                "WBTC": (price_data_raw.get("wrapped-bitcoin", {}) or {}).get("usd", 0),
+                "LINK": (price_data_raw.get("chainlink", {}) or {}).get("usd", 0),
+                "MATIC": (price_data_raw.get("matic-network", {}) or {}).get("usd", 0),
+                "DAI": (price_data_raw.get("dai", {}) or {}).get("usd", 1),
+                "BUSD": (price_data_raw.get("binance-usd", {}) or {}).get("usd", 1),
+                "SAND": (price_data_raw.get("the-sandbox", {}) or {}).get("usd", 0),
+                "OCEAN": (price_data_raw.get("ocean-protocol", {}) or {}).get("usd", 0),
+            }
+    except Exception:
+        pass
+
+    total_usd = native_bal * eth_price
+    token_results = []
+    for t in tokens:
+        tok_price = token_prices.get(t["symbol"], 0) or 0
+        usd = t["balance"] * tok_price
+        total_usd += usd
+        token_results.append({
+            "symbol": t["symbol"],
+            "balance": t["balance"],
+            "balance_fmt": f"{t['balance']:.2f}" if t['balance'] >= 1 else f"{t['balance']:.6f}",
+            "usd_value": usd,
+            "usd_fmt": f"${usd:,.2f}" if usd >= 0.01 else "<$0.01",
+        })
+
+    # Sort tokens by USD value descending
+    token_results.sort(key=lambda x: x["usd_value"], reverse=True)
+
+    return jsonify({
+        "address": address,
+        "eth_balance": native_bal,
+        "eth_balance_fmt": f"{native_bal:.4f}",
+        "eth_usd_value": native_bal * eth_price,
+        "eth_usd_fmt": f"${native_bal * eth_price:,.2f}",
+        "tx_count": tx_count,
+        "tokens": token_results,
+        "total_usd": total_usd,
+        "total_usd_fmt": f"${total_usd:,.2f}",
+        "eth_price": eth_price,
+        "updated_at": int(time.time()),
+    })
+
+
+PROFILER_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wallet Profiler — Crypto Empire</title>
+""" + SHARED_HEAD + r"""
+<style>
+.profiler-form{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
+.profiler-form input{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:inherit;font-size:12px;outline:none;letter-spacing:.5px}
+.profiler-form input:focus{border-color:var(--white)}
+.profiler-form button{border:1px solid var(--white);color:var(--white);background:transparent;padding:10px 24px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:3px;cursor:pointer;transition:.15s}
+.profiler-form button:hover{background:var(--white);color:var(--bg)}
+.profiler-form button:disabled{opacity:.3;cursor:not-allowed}
+.profiler-form button:disabled:hover{background:transparent;color:var(--white)}
+.summary-row{display:flex;gap:16px;margin:16px 0;flex-wrap:wrap}
+.summary-box{border:1px solid var(--border);padding:14px 18px;flex:1;min-width:140px}
+.summary-box .label{font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-bottom:4px}
+.summary-box .value{font-size:16px;color:var(--white);font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.summary-box .sub{font-size:9px;color:var(--text-dim);margin-top:2px;letter-spacing:1px}
+.token-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:12px 0}
+.token-card{background:var(--surface);border:1px solid var(--border);padding:12px}
+.token-card .sym{font-size:11px;color:var(--white);font-weight:700;letter-spacing:1px}
+.token-card .bal{font-size:13px;color:var(--white);margin:4px 0 2px;letter-spacing:-.5px}
+.token-card .usd{font-size:9px;color:var(--text-dim);letter-spacing:1px}
+.address-display{font-size:10px;color:var(--text-dim);word-break:break-all;padding:8px 0;letter-spacing:.5px}
+.address-display .addr{color:var(--white)}
+.share-note{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin:12px 0}
+.loading{text-align:center;padding:60px 0;color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.error{text-align:center;padding:40px 0;color:var(--red);font-size:10px;letter-spacing:2px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="sweep"></div>
+<div class="container">
+<div class="top-bar">
+<div class="brand">
+<div class="prompt">><span class="cr"></span></div>
+<div>
+<div class="site-title">Wallet Profiler</div>
+<div class="site-sub">inspect any ethereum address</div>
+</div>
+</div>
+<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;">
+<a href="/" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Dashboard</a>
+<a href="/wallet-check" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Checker</a>
+</div>
+</div>
+
+<div class="status-line">
+<span><span class="dot"></span> Live data</span>
+</div>
+
+<form class="profiler-form" id="profiler-form" onsubmit="return loadProfile()">
+<input type="text" id="addr-input" placeholder="0x... or ENS name (e.g. vitalik.eth)" value="" autocomplete="off" spellcheck="false">
+<button type="submit" id="profiler-btn">Inspect</button>
+</form>
+
+<div class="share-note">Shareable URL — bookmark or send any address as <code style="color:var(--white);font-size:10px;">/profiler?address=0x...</code></div>
+
+<div id="results"></div>
+</div>
+<div class="b-bar"><span><span class="dot"></span> wallet profiler</span><span>v2.7</span></div>
+
+<script>
+var form=document.getElementById('profiler-form');
+var input=document.getElementById('addr-input');
+var btn=document.getElementById('profiler-btn');
+var results=document.getElementById('results');
+
+// Load from URL param
+var params=new URLSearchParams(window.location.search);
+var addrParam=params.get('address');
+if(addrParam){input.value=addrParam;loadProfile()}
+
+function fmtUsd(v){
+  if(v==null||isNaN(v))return'--';
+  if(v>=1e6)return'$'+(v/1e6).toFixed(2)+'M';
+  if(v>=1e3)return'$'+(v/1e3).toFixed(2)+'K';
+  if(v>=1)return'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return v<0.01?'<$0.01':'$'+v.toFixed(2);
+}
+
+async function loadProfile(){
+  var addr=input.value.trim();
+  if(!addr){return false}
+  // Basic ENS detection — pass through as-is, API handles
+  var apiAddr=addr;
+  btn.disabled=true;
+  btn.textContent='Loading...';
+  results.innerHTML='<div class="loading">Scanning address...</div>';
+  try{
+    var r=await fetch('/api/profiler/'+encodeURIComponent(apiAddr));
+    var d=await r.json();
+    if(d.error){results.innerHTML='<div class="error">'+d.error+'</div>';btn.disabled=false;btn.textContent='Inspect';return false}
+    renderProfile(d);
+    // Update URL without reload
+    if(window.history.pushState){
+      var url=new URL(window.location);
+      url.searchParams.set('address',addr);
+      window.history.pushState({},'',url);
+    }
+  }catch(e){
+    results.innerHTML='<div class="error">Request failed</div>';
+  }
+  btn.disabled=false;
+  btn.textContent='Inspect';
+  return false;
+}
+
+function renderProfile(d){
+  var eth=d.eth_balance||0;
+  var html='';
+  // Summary row
+  html+='<div class="summary-row">';
+  html+='<div class="summary-box"><div class="label">Total Value</div><div class="value">'+d.total_usd_fmt+'</div><div class="sub">USD</div></div>';
+  html+='<div class="summary-box"><div class="label">ETH Balance</div><div class="value">'+eth.toFixed(4)+'</div><div class="sub">'+d.eth_usd_fmt+'</div></div>';
+  html+='<div class="summary-box"><div class="label">Transactions</div><div class="value">'+(d.tx_count||0).toLocaleString()+'</div><div class="sub">total sent</div></div>';
+  if(d.tokens&&d.tokens.length){html+='<div class="summary-box"><div class="label">Tokens</div><div class="value">'+d.tokens.length+'</div><div class="sub">top ERC-20s</div></div>'}
+  html+='</div>';
+
+  // Address
+  html+='<div class="address-display">Address: <span class="addr">'+d.address+'</span>';
+  html+=' &middot; ETH price: <span class="addr">$'+(d.eth_price||0).toLocaleString('en-US',{minimumFractionDigits:2,maxFractionDigits:2})+'</span>';
+  html+='</div>';
+
+  // Token grid
+  if(d.tokens&&d.tokens.length){
+    html+='<div class="s-title" style="margin-top:20px;">TOKEN HOLDINGS</div>';
+    html+='<div class="token-grid">';
+    for(var i=0;i<d.tokens.length;i++){
+      var t=d.tokens[i];
+      html+='<div class="token-card">';
+      html+='<div class="sym">'+t.symbol+'</div>';
+      html+='<div class="bal">'+t.balance_fmt+'</div>';
+      html+='<div class="usd">'+fmtUsd(t.usd_value)+'</div>';
+      html+='</div>';
+    }
+    html+='</div>';
+  }
+
+  // Empty state
+  if(!d.tokens||!d.tokens.length){
+    html+='<div style="text-align:center;padding:20px 0;color:var(--text-dim);font-size:9px;letter-spacing:2px;text-transform:uppercase;">No ERC-20 tokens detected for this address</div>';
+  }
+
+  results.innerHTML=html;
+}
+</script>
+</body>
+</html>"""
+
+
+@app.route("/profiler")
+def profiler_page():
+    return render_template_string(PROFILER_HTML)
 
 
 # ============================================================
