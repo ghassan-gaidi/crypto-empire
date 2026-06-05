@@ -7,6 +7,7 @@ import os
 import json
 import sqlite3
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -418,6 +419,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="#market">Market</a>
                 <a href="#gas">Gas</a>
                 <a href="#news">News</a>
+                <a href="/trending">Trending</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
@@ -913,6 +915,51 @@ def api_trending():
             })
         return jsonify({"trending": coins})
     return jsonify({"error": "Could not fetch trending"}), 500
+
+
+# ============================================================
+# Trending Now — CoinGecko trending searches enriched with prices
+# ============================================================
+
+@app.route("/api/trending-now")
+def api_trending_now():
+    """Trending coins with live price data. 60s cache-friendly."""
+    data = fetch_sync(f"{COINGECKO_API}/search/trending")
+    if not data or "coins" not in data:
+        return jsonify({"error": "Could not fetch trending"}), 500
+
+    coins = []
+    for coin in data["coins"][:15]:
+        item = coin.get("item", {})
+        coins.append({
+            "id": item.get("id"),
+            "name": item.get("name"),
+            "symbol": item.get("symbol"),
+            "thumb": item.get("thumb"),
+            "market_cap_rank": item.get("market_cap_rank"),
+            "score": item.get("score"),
+        })
+
+    # Batch-fetch prices
+    ids = [c["id"] for c in coins if c["id"]]
+    if ids:
+        batch = ",".join(ids[:20])
+        prices = fetch_sync(
+            f"{COINGECKO_API}/simple/price?ids={batch}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true"
+        )
+        if prices:
+            for c in coins:
+                pid = c["id"]
+                if pid in prices:
+                    c["price_usd"] = prices[pid].get("usd")
+                    c["usd_24h_change"] = prices[pid].get("usd_24h_change")
+                    c["market_cap"] = prices[pid].get("usd_market_cap")
+                else:
+                    c["price_usd"] = None
+                    c["usd_24h_change"] = None
+                    c["market_cap"] = None
+
+    return jsonify({"trending": coins, "updated_at": int(time.time())})
 
 
 @app.route("/api/gas")
@@ -2080,6 +2127,197 @@ def widget_embed_js():
         "Access-Control-Allow-Origin": "*",
         "Cache-Control": "max-age=300",
     }
+
+
+# ============================================================
+# Trending This Hour — standalone page
+# ============================================================
+
+TRENDING_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trending This Hour — Crypto Empire</title>
+""" + SHARED_HEAD + r"""
+<style>
+.coin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:16px 0}
+.coin-card{background:var(--surface);border:1px solid var(--border);padding:14px;cursor:pointer;transition:background .15s,border-color .15s;text-decoration:none;display:block}
+.coin-card:hover{background:var(--border);border-color:var(--text-dim)}
+.coin-card:target{border-color:var(--white);box-shadow:0 0 0 1px var(--white)}
+.coin-rank{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.coin-name{font-size:13px;color:var(--white);font-weight:600}
+.coin-sym{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.coin-price{font-size:15px;color:var(--white);margin:6px 0 2px;font-weight:700;letter-spacing:-.5px}
+.coin-change{font-size:10px;letter-spacing:.5px}
+.coin-change.up{color:var(--green)}
+.coin-change.down{color:var(--red)}
+.coin-cap{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.updated{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+.updated span{color:var(--white)}
+.filter-bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.filter-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:6px 14px;font-size:9px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;font-family:inherit;transition:all .1s}
+.filter-btn:hover,.filter-btn.active{border-color:var(--white);color:var(--white)}
+.stat-row{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap}
+.stat-item{font-size:9px;text-transform:uppercase;letter-spacing:1px}
+.stat-item .num{color:var(--white);font-weight:600}
+@media(max-width:480px){.coin-grid{grid-template-columns:1fr 1fr}.coin-card{padding:10px}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="sweep"></div>
+<div class="container">
+<div class="top-bar">
+<div class="brand">
+<div class="prompt">><span class="cr"></span></div>
+<div>
+<div class="site-title">Trending This Hour</div>
+<div class="site-sub">coingecko trending <span id="coin-count" style="color:var(--white);">--</span> coins</div>
+</div>
+</div>
+<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;">
+<a href="/" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Dashboard</a>
+<a href="/widget" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Widget</a>
+</div>
+</div>
+
+<div class="status-line">
+<span><span class="dot"></span> Live — refreshing every 60s</span>
+<span class="updated">Updated <span id="update-time">--</span></span>
+</div>
+
+<div class="stat-row">
+<div class="stat-item">trending <span class="num" id="stat-total">--</span></div>
+<div class="stat-item">with prices <span class="num" id="stat-priced">--</span></div>
+<div class="stat-item">24h &uarr; <span class="num" id="stat-up" style="color:var(--green)">--</span></div>
+<div class="stat-item">24h &darr; <span class="num" id="stat-down" style="color:var(--red)">--</span></div>
+</div>
+
+<div class="filter-bar">
+<button class="filter-btn active" data-filter="all">All</button>
+<button class="filter-btn" data-filter="gainers">Gainers</button>
+<button class="filter-btn" data-filter="losers">Losers</button>
+<button class="filter-btn" data-filter="top10">Top 10</button>
+</div>
+
+<div class="coin-grid" id="coin-grid"></div>
+
+<div style="text-align:center;padding:20px 0;font-size:9px;color:var(--text-dim);letter-spacing:1px;">
+Data from CoinGecko &middot; Updates every 60 seconds &middot; Coin cards are shareable — copy the URL while highlighted
+</div>
+
+<footer><p>Crypto Empire &middot; <a href="/api/trending-now" style="color:var(--text-dim);">API</a></p></footer>
+</div>
+<div class="b-bar"><span><span class="dot"></span> trending this hour</span><span>v2.4</span></div>
+
+<script>
+(function(){
+var grid=document.getElementById('coin-grid');
+var updateTime=document.getElementById('update-time');
+var coinCount=document.getElementById('coin-count');
+var statTotal=document.getElementById('stat-total');
+var statPriced=document.getElementById('stat-priced');
+var statUp=document.getElementById('stat-up');
+var statDown=document.getElementById('stat-down');
+var activeFilter='all';
+var allCoins=[];
+
+function fmtPrice(v){
+ if(v==null||v===0)return'--';
+ return v>=1000?'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+   :'$'+v.toFixed(4);
+}
+function fmtCap(v){
+ if(v==null)return'--';
+ return v>=1e9?'$'+(v/1e9).toFixed(1)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+(v/1e3).toFixed(0)+'K';
+}
+
+function render(coins){
+ allCoins=coins;
+ var filtered=coins;
+ if(activeFilter==='gainers')filtered=coins.filter(function(c){return c.usd_24h_change>0});
+ else if(activeFilter==='losers')filtered=coins.filter(function(c){return c.usd_24h_change<0});
+ else if(activeFilter==='top10')filtered=coins.slice(0,10);
+
+ var html='';
+ for(var i=0;i<filtered.length;i++){
+   var c=filtered[i];
+   var p=c.price_usd;
+   var ch=c.usd_24h_change;
+   var cls=ch>0?'up':'down';
+   var sym=(c.symbol||'').toUpperCase();
+   var id=c.id||('coin-'+i);
+   html+='<a class="coin-card" id="cc-'+id+'" href="#'+id+'" onclick="window.location.hash=\''+id+'\';return true">';
+   html+='<div class="coin-rank">#'+(c.market_cap_rank||'--')+' &middot; Score '+(c.score||'--')+'</div>';
+   html+='<div class="coin-name">'+c.name+' <span class="coin-sym">'+sym+'</span></div>';
+   html+='<div class="coin-price">'+fmtPrice(p)+'</div>';
+   if(ch!=null)html+='<div class="coin-change '+cls+'">'+(ch>0?'+':'')+ch.toFixed(2)+'% 24h</div>';
+   else html+='<div class="coin-change" style="color:var(--text-dim);">-- 24h</div>';
+   html+='<div class="coin-cap">Cap: '+fmtCap(c.market_cap)+'</div>';
+   html+='</a>';
+ }
+ grid.innerHTML=html;
+
+ // Stats
+ var priced=coins.filter(function(c){return c.price_usd!=null});
+ var up=coins.filter(function(c){return c.usd_24h_change>0});
+ var down=coins.filter(function(c){return c.usd_24h_change<0});
+ coinCount.textContent=coins.length;
+ statTotal.textContent=coins.length;
+ statPriced.textContent=priced.length;
+ statUp.textContent=up.length;
+ statDown.textContent=down.length;
+
+ // Scroll to hash target
+ var h=window.location.hash.replace('#','');
+ if(h){
+   var target=document.getElementById('cc-'+h);
+   if(target){
+     target.scrollIntoView({behavior:'smooth',block:'center'});
+     setTimeout(function(){target.style.boxShadow='0 0 0 2px var(--white)';setTimeout(function(){target.style.boxShadow=''},2000)},300);
+   }
+ }
+}
+
+async function fetchData(){
+ try{
+   var r=await fetch('/api/trending-now');
+   var d=await r.json();
+   if(d.trending){
+     render(d.trending);
+     var now=new Date(d.updated_at*1000);
+     updateTime.textContent=now.toUTCString().split(' ')[4]+' UTC';
+   }
+ }catch(e){}
+}
+
+// Filters
+document.querySelectorAll('.filter-btn').forEach(function(btn){
+ btn.addEventListener('click',function(){
+   document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});
+   this.classList.add('active');
+   activeFilter=this.getAttribute('data-filter');
+   render(allCoins);
+ });
+});
+
+// Hash change — scroll to coin
+window.addEventListener('hashchange',function(){
+ if(allCoins.length)render(allCoins);
+});
+
+fetchData();
+setInterval(fetchData,60000);
+})();
+</script>
+</body>
+</html>"""
+
+
+@app.route("/trending")
+def trending_page():
+    return render_template_string(TRENDING_HTML)
 
 
 # ============================================================
