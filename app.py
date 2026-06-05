@@ -14,7 +14,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 from html import unescape
 
-from flask import Flask, render_template_string, jsonify, request
+from flask import Flask, render_template_string, jsonify, request, redirect
 from flask_cors import CORS
 import requests
 
@@ -1412,7 +1412,13 @@ def premium_page():
     updateClock();setInterval(updateClock,1000);
     </script>
 </body>
-</html>""")
+</html>""", customer_status=status)
+
+
+@app.route("/api/premium/checkout")
+def api_premium_checkout():
+    """Redirect to Polar checkout"""
+    return redirect(POLAR_CHECKOUT_URL)
 
 
 @app.route("/api/premium/check")
