@@ -50,6 +50,7 @@ POLAR_PRICE_ID = "06bc870e-bc6d-48ed-82de-c30420a8bd8a"
 POLAR_CHECKOUT_URL = "https://buy.polar.sh/polar_cl_6tzQXPw5VwincKlZdlyR2aM9XGePVbhfzWCb13P42ox"
 POLAR_API = "https://api.polar.sh/v1"
 POLAR_WEBHOOK_SECRET = os.environ.get("POLAR_WEBHOOK_SECRET", "")
+BASE_URL = os.environ.get("BASE_URL", "https://crypto-empire-ten.vercel.app")
 
 # Premium subscriptions cache
 SUBS_PATH = DATA_DIR / "subscriptions.json"
@@ -1387,6 +1388,11 @@ def premium_page():
         <div style="margin-top:16px;padding:12px;border:1px solid var(--green);text-align:center;">
             <span style="color:var(--green);font-size:10px;text-transform:uppercase;letter-spacing:2px;">&#10003; PREMIUM ACTIVE</span>
         </div>
+        <div style="margin-top:8px;display:flex;gap:8px;">
+            <a href="/api/premium/manage?customer_id={{ customer_id }}" style="flex:1;display:block;padding:10px;background:transparent;color:var(--white);border:1px solid var(--white);text-align:center;text-decoration:none;font-size:10px;letter-spacing:1px;text-transform:uppercase;border-radius:0;">
+                Manage Subscription
+            </a>
+        </div>
 """ + "{% else %}"
 """
         <div style="margin-top:16px;display:flex;gap:8px;">
@@ -1412,13 +1418,37 @@ def premium_page():
     updateClock();setInterval(updateClock,1000);
     </script>
 </body>
-</html>""", customer_status=status)
+</html>""", customer_status=status, customer_id=customer)
 
 
 @app.route("/api/premium/checkout")
 def api_premium_checkout():
     """Redirect to Polar checkout"""
     return redirect(POLAR_CHECKOUT_URL)
+
+
+@app.route("/api/premium/manage")
+def api_premium_manage():
+    """Create Polar customer portal session and redirect"""
+    customer_id = request.args.get("customer_id", "")
+    if not customer_id:
+        return jsonify({"error": "customer_id required"}), 400
+
+    # Check user is premium
+    subs = _load_subs()
+    sub = subs.get(customer_id, {})
+    if sub.get("status") not in ("active", "trialing"):
+        return jsonify({"error": "not a premium subscriber"}), 403
+
+    # Create Polar customer session
+    result = _polar_request("POST", "/customer-sessions/", {
+        "customer_id": customer_id,
+        "return_url": f"{BASE_URL}/premium?customer_id={customer_id}",
+    })
+    portal_url = result.get("customer_portal_url", "")
+    if portal_url:
+        return redirect(portal_url)
+    return jsonify({"error": "failed to create portal session"}), 500
 
 
 @app.route("/api/premium/check")
@@ -1454,8 +1484,13 @@ def api_premium_webhook():
             subs = _load_subs()
             if customer_id not in subs:
                 subs[customer_id] = {}
+            # Extract external customer ID from Polar's customer object
+            customer_obj = sub_data.get("customer", {})
+            external_id = customer_obj.get("external_id", "") or sub_data.get("external_customer_id", "")
             subs[customer_id].update({
                 "status": status,
+                "polar_customer_id": customer_id,
+                "external_id": external_id,
                 "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "subscription_id": sub_data.get("id", ""),
                 "product_id": sub_data.get("product_id", ""),

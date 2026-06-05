@@ -142,6 +142,7 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         "/sparkline <coin> — 7d price chart (ASCII)\\n"
         "/whales           — On-chain whale moves >$100K\n"
         "/premium          — Unlock premium features\n"
+        "/manage           — Manage your subscription\n"
         "/help             — This message\n\n"
         "Built autonomously \u2014 github.com/ghassan-gaidi/crypto-empire"
     )
@@ -385,7 +386,22 @@ def cmd_premium(chat_id, args=None):
         "👉 Subscribe:\n"
         "https://buy.polar.sh/polar_cl_6tzQXPw5VwincKlZdlyR2aM9XGePVbhfzWCb13P42ox\n\n"
         "Price: $9.99/month — Cancel anytime\n"
-        "Powered by Polar.sh"
+        "Powered by Polar.sh\n\n"
+        "Already subscribed? Manage at:\n"
+        "https://crypto-empire-ten.vercel.app/premium"
+    )
+    send_message(chat_id, msg)
+
+def cmd_manage(chat_id, args=None):
+    """Manage subscription — opens web portal."""
+    send_typing(chat_id)
+    url = f"https://crypto-empire-ten.vercel.app/premium?customer_id={chat_id}"
+    msg = (
+        "> MANAGE SUBSCRIPTION\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        "Open the web portal to view, upgrade, or cancel:\n\n"
+        f"{url}\n\n"
+        "Note: Your Telegram ID is used to link your subscription."
     )
     send_message(chat_id, msg)
 
@@ -497,6 +513,7 @@ COMMANDS = {
     "whale":     cmd_whales,
     "premium":   cmd_premium,
     "subscribe": cmd_premium,
+    "manage":    cmd_manage,
 }
 
 # Register shortcut commands (e.g., /btc → cmd_price(["bitcoin"]))

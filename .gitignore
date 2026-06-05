@@ -9,3 +9,4 @@ cache/
 .vercel
 .telegram_token
 .env*.local
+.env.production
