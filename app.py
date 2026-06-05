@@ -420,6 +420,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="#gas">Gas</a>
                 <a href="#news">News</a>
                 <a href="/trending">Trending</a>
+                <a href="/whales">Whales</a>
                 <a href="/profiler">Profiler</a>
                 <a href="/launches">Launches</a>
                 <a href="/ticker">Ticker</a>
@@ -1076,6 +1077,201 @@ def api_sponsored():
         "price": f"{price:,.2f}" if price else "0",
         "change_24h": change_24h,
     })
+
+
+# ── Whale Tracker RPC helpers ─────────────────────────────────────────
+WHALE_RPC_URL = "https://ethereum-rpc.publicnode.com"
+WHALE_TOKENS = {
+    "USDT": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "USDC": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "WBTC": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+}
+WHALE_THRESHOLDS = {"USDT": 100_000, "USDC": 100_000, "WBTC": 2}
+WHALE_DECIMALS = {"USDT": 6, "USDC": 6, "WBTC": 8}
+TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+
+def _whale_rpc(method, params):
+    resp = requests.post(WHALE_RPC_URL, json={
+        "jsonrpc": "2.0", "method": method, "params": params, "id": 1
+    }, timeout=20)
+    data = resp.json()
+    if "error" in data:
+        raise Exception(f"RPC error [{method}]: {data['error']}")
+    return data["result"]
+
+
+def _whale_send_alerts(new_moves):
+    """Send Telegram alerts for new whale moves to configured chat IDs."""
+    token = os.environ.get("TELEGRAM_TOKEN", "")
+    chat_ids_str = os.environ.get("WHALE_ALERT_CHAT_IDS", "")
+    if not token or not chat_ids_str:
+        return
+    chat_ids = [c.strip() for c in chat_ids_str.split(",") if c.strip()]
+    if not chat_ids:
+        return
+    max_alerts = min(len(new_moves), 5)
+    for m in new_moves[:max_alerts]:
+        usd = f"${m['usdValue']:,.0f}" if m.get("usdValue") else f"{m['value']:,.2f} {m['token']}"
+        msg = (
+            f"\U0001F40B Whale Move\n"
+            f"{usd} {m['token']}\n"
+            f"From: {m['from'][:10]}...{m['from'][-6:]}\n"
+            f"To:   {m['to'][:10]}...{m['to'][-6:]}\n"
+            f"Tx:   https://etherscan.io/tx/{m['txHash']}"
+        )
+        for cid in chat_ids:
+            try:
+                url = f"https://api.telegram.org/bot{token}/sendMessage"
+                requests.post(url, json={
+                    "chat_id": cid, "text": msg,
+                    "parse_mode": "HTML", "disable_web_page_preview": True,
+                }, timeout=10)
+            except Exception:
+                pass
+
+
+def _whale_refresh():
+    """Fetch recent whale moves from on-chain and save to cache."""
+    current_block = int(_whale_rpc("eth_blockNumber", []), 16)
+    cache_path = DATA_DIR / "whale_cache.json"
+    cache = {"lastBlock": None, "moves": [], "lastUpdated": None}
+    if cache_path.exists():
+        try:
+            cache = json.loads(cache_path.read_text())
+        except Exception:
+            pass
+
+    from_block = cache.get("lastBlock")
+    if from_block is None:
+        from_block = current_block - 100
+    else:
+        from_block = from_block + 1
+
+    if from_block < current_block - 500:
+        from_block = current_block - 500
+
+    if from_block >= current_block:
+        cache["lastUpdated"] = datetime.utcnow().isoformat()
+        return cache
+
+    all_new = []
+    for name, addr in WHALE_TOKENS.items():
+        try:
+            logs = _whale_rpc("eth_getLogs", [{
+                "address": addr,
+                "fromBlock": hex(from_block),
+                "toBlock": hex(current_block),
+                "topics": [TRANSFER_TOPIC]
+            }])
+            for log in logs:
+                topics = log.get("topics", [])
+                if len(topics) < 3:
+                    continue
+                raw_val = int(log["data"], 16)
+                if raw_val == 0:
+                    continue
+                adj = raw_val / (10 ** WHALE_DECIMALS[name])
+                if adj >= WHALE_THRESHOLDS[name]:
+                    all_new.append({
+                        "txHash": log["transactionHash"],
+                        "token": name,
+                        "from": "0x" + topics[1][-40:].lower(),
+                        "to": "0x" + topics[2][-40:].lower(),
+                        "value": adj,
+                        "blockNumber": int(log["blockNumber"], 16),
+                        "logIndex": int(log["logIndex"], 16),
+                    })
+        except Exception:
+            pass
+
+    if all_new:
+        all_new.sort(key=lambda m: (-m["blockNumber"], -m["logIndex"]))
+        # Enrich with USD prices
+        try:
+            p = requests.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": "tether,usd-coin,wrapped-bitcoin", "vs_currencies": "usd"},
+                timeout=10
+            )
+            prices = p.json() if p.status_code == 200 else {}
+            price_map = {"USDT": "tether", "USDC": "usd-coin", "WBTC": "wrapped-bitcoin"}
+            for m in all_new:
+                cid = price_map.get(m["token"])
+                if cid and cid in prices and "usd" in prices[cid]:
+                    m["usdValue"] = round(m["value"] * prices[cid]["usd"], 2)
+                else:
+                    m["usdValue"] = None
+        except Exception:
+            pass
+
+        existing = set(m["txHash"] for m in cache["moves"])
+        truly_new = [m for m in all_new if m["txHash"] not in existing]
+        if truly_new:
+            cache["moves"] = truly_new + cache["moves"]
+            cache["moves"] = cache["moves"][:500]
+        _whale_send_alerts(truly_new)
+
+    cache["lastBlock"] = current_block
+    cache["lastUpdated"] = datetime.utcnow().isoformat()
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(cache, indent=2, default=str))
+    return cache
+
+
+@app.route("/api/whales")
+def api_whales():
+    """Whale tracker — recent large on-chain transfers (>$100K)"""
+    # Auto-refresh if cache is stale (>3 min old)
+    cache_path = DATA_DIR / "whale_cache.json"
+    needs_refresh = True
+    if cache_path.exists():
+        try:
+            data = json.loads(cache_path.read_text())
+            last_up = data.get("lastUpdated", "")
+            if last_up:
+                age = (datetime.utcnow() - datetime.fromisoformat(last_up)).total_seconds()
+                if age < 180:
+                    needs_refresh = False
+        except Exception:
+            pass
+
+    if needs_refresh:
+        try:
+            data = _whale_refresh()
+        except Exception as e:
+            if cache_path.exists():
+                data = json.loads(cache_path.read_text())
+            else:
+                data = {"moves": []}
+    else:
+        data = json.loads(cache_path.read_text())
+
+    limit = request.args.get("limit", 50, type=int)
+    moves = data.get("moves", [])[:limit]
+    return jsonify({
+        "status": "ok",
+        "count": len(moves),
+        "total": len(data.get("moves", [])),
+        "lastBlock": data.get("lastBlock"),
+        "lastUpdated": data.get("lastUpdated"),
+        "moves": moves,
+    })
+
+
+@app.route("/api/whales/refresh")
+def api_whales_refresh():
+    """Force-refresh whale cache. Protected by X-Whale-Refresh-Key."""
+    secret = os.environ.get("WHALE_REFRESH_SECRET", "")
+    if secret:
+        provided = request.headers.get("X-Whale-Refresh-Key", "")
+        if provided != secret:
+            return jsonify({"error": "Unauthorized"}), 401
+    try:
+        data = _whale_refresh()
+        return jsonify({"status": "ok", "count": len(data.get("moves", [])), "lastUpdated": data.get("lastUpdated")})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/api-keys")
@@ -2999,6 +3195,193 @@ def ticker_embed_js():
 # ============================================================
 # Trending This Hour — standalone page
 # ============================================================
+
+# ============================================================
+# Whale Tracker Page
+# ============================================================
+WHALE_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whale Tracker — Crypto Empire</title>
+""" + SHARED_HEAD + r"""
+<style>
+.whale-stats{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap}
+.whale-stats .s{font-size:9px;text-transform:uppercase;letter-spacing:1px}
+.whale-stats .s .num{color:var(--white);font-weight:600}
+.filter-bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.filter-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:6px 14px;font-size:9px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;font-family:inherit;transition:all .1s}
+.filter-btn:hover,.filter-btn.active{border-color:var(--white);color:var(--white)}
+.whale-feed{display:flex;flex-direction:column;gap:6px;margin:12px 0}
+.whale-item{background:var(--surface);border:1px solid var(--border);padding:12px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;transition:background .15s;position:relative}
+.whale-item:hover{background:var(--border)}
+.whale-amt{font-size:13px;color:var(--white);font-weight:700;letter-spacing:-.5px;white-space:nowrap}
+.whale-usd{font-size:10px;color:var(--text-dim);letter-spacing:.5px}
+.whale-tag{font-size:8px;text-transform:uppercase;letter-spacing:1px;padding:2px 6px;border:1px solid currentColor;border-radius:0;display:inline-block;margin-bottom:4px}
+.whale-tag.usdt{color:var(--green)}
+.whale-tag.usdc{color:var(--white)}
+.whale-tag.wbtc{color:#f7931a}
+.whale-addrs{font-size:9px;color:var(--text-dim);letter-spacing:.5px;line-height:1.6}
+.whale-addrs .label{color:var(--text-dim);text-transform:uppercase;font-size:8px;letter-spacing:1px}
+.whale-addrs .addr{color:var(--white);font-family:monospace}
+.whale-tx{font-size:9px;letter-spacing:.5px;text-align:right;white-space:nowrap}
+.whale-tx a{color:var(--text-dim);text-decoration:none;border-bottom:1px dotted var(--border)}
+.whale-tx a:hover{color:var(--white)}
+.whale-time{font-size:8px;color:var(--text-dim);letter-spacing:1px;margin-top:2px}
+.updated{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+.updated span{color:var(--white)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-dim);font-size:11px;letter-spacing:1px}
+.empty-state .icon{font-size:30px;margin-bottom:12px;display:block}
+@media(max-width:480px){.whale-item{grid-template-columns:1fr;gap:6px}.whale-tx{text-align:left}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="sweep"></div>
+<div class="container">
+<div class="top-bar">
+<div class="brand">
+<div class="prompt">><span class="cr"></span></div>
+<div>
+<div class="site-title">Whale Tracker</div>
+<div class="site-sub">on-chain large transfers >$100K</div>
+</div>
+</div>
+<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;">
+<a href="/" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Dashboard</a>
+<a href="/profiler" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Profiler</a>
+</div>
+</div>
+
+<div class="status-line">
+<span><span class="dot"></span> Live — monitoring USDT, USDC, WBTC</span>
+<span class="updated">Updated <span id="update-time">--</span></span>
+</div>
+
+<div class="whale-stats" id="stats-row">
+<div class="s">moves tracked <span class="num" id="stat-total">--</span></div>
+<div class="s">biggest <span class="num" id="stat-biggest" style="color:var(--white)">--</span></div>
+<div class="s">24h volume <span class="num" id="stat-volume" style="color:var(--white)">--</span></div>
+</div>
+
+<div class="filter-bar">
+<button class="filter-btn active" data-filter="all">All</button>
+<button class="filter-btn" data-filter="USDT">USDT</button>
+<button class="filter-btn" data-filter="USDC">USDC</button>
+<button class="filter-btn" data-filter="WBTC">WBTC</button>
+</div>
+
+<div class="whale-feed" id="whale-feed">
+<div class="empty-state" id="loading-state"><span class="icon">\u23f3</span>Loading whale activity...</div>
+</div>
+
+<div style="text-align:center;padding:20px 0;font-size:9px;color:var(--text-dim);letter-spacing:1px;">
+Data from Ethereum mainnet via public RPC &middot; Updates every 30 seconds
+</div>
+
+<footer><p>Crypto Empire &middot; <a href="/api/whales" style="color:var(--text-dim);">API</a></p></footer>
+</div>
+<div class="b-bar"><span><span class="dot"></span> whale tracker</span><span>v3.0</span></div>
+
+<script>
+(function(){
+var feed=document.getElementById('whale-feed');
+var updateTime=document.getElementById('update-time');
+var statTotal=document.getElementById('stat-total');
+var statBiggest=document.getElementById('stat-biggest');
+var statVolume=document.getElementById('stat-volume');
+var currentFilter='all';
+
+function fmtAddr(a){return '<span class="addr">'+a.slice(0,8)+'...'+a.slice(-6)+'</span>'}
+function fmtTime(ts){
+ if(!ts)return '--';
+ var s=Math.floor((Date.now()-new Date(ts).getTime())/1000);
+ if(s<60)return s+'s ago';
+ var m=Math.floor(s/60);if(m<60)return m+'m ago';
+ var h=Math.floor(m/60);if(h<24)return h+'h ago';
+ return Math.floor(h/24)+'d ago';
+}
+
+function render(data){
+ var moves=data.moves||[];
+ statTotal.textContent=data.total||0;
+
+ // Compute stats
+ var biggest=null,vol24=0,now=Date.now();
+ moves.forEach(function(m){
+  var usd=m.usdValue||0;
+  if(usd&&(!biggest||usd>biggest))biggest=usd;
+  vol24+=usd||0;
+ });
+ statBiggest.textContent=biggest?'$'+biggest.toLocaleString('en-US',{maximumFractionDigits:0}):'--';
+ statVolume.textContent=vol24?'$'+vol24.toLocaleString('en-US',{maximumFractionDigits:0}):'--';
+
+ if(!moves.length){
+  feed.innerHTML='<div class="empty-state"><span class="icon">\U0001f648</span>No whale moves detected yet. Waiting for the next big splash.</div>';
+  return;
+ }
+
+ var html='';
+ var count=0;
+ moves.forEach(function(m){
+  var token=m.token||'?';
+  var val=m.value?m.value.toLocaleString('en-US',{maximumFractionDigits:2}):'?';
+  var usd=m.usdValue?'$'+m.usdValue.toLocaleString('en-US',{maximumFractionDigits:0}):'';
+  var from=m.from||'?';
+  var to=m.to||'?';
+  var tx=m.txHash||'#';
+  var timeAgo=m.timestamp?fmtTime(m.timestamp):'';
+
+  if(currentFilter!=='all'&&token!==currentFilter)return;
+  count++;
+
+  var arrow='\u2192';
+  html+=('<div class="whale-item" data-token="'+token+'">'+
+   '<div><span class="whale-tag '+token.toLowerCase()+'">'+token+'</span><div class="whale-amt">'+val+'</div>'+(usd?'<div class="whale-usd">'+usd+'</div>':'')+'</div>'+
+   '<div class="whale-addrs"><span class="label">from</span> '+fmtAddr(from)+'<br><span class="label">to</span> '+fmtAddr(to)+'</div>'+
+   '<div class="whale-tx"><a href="https://etherscan.io/tx/'+tx+'" target="_blank" rel="noopener">view \u2197</a>'+(timeAgo?'<div class="whale-time">'+timeAgo+'</div>':'')+'</div>'+
+  '</div>');
+ });
+
+ if(!count){
+  feed.innerHTML='<div class="empty-state"><span class="icon">\U0001f50d</span>No '+currentFilter+' moves found</div>';
+  return;
+ }
+ feed.innerHTML=html;
+}
+
+function fetchData(){
+ fetch('/api/whales?limit=100').then(function(r){return r.json()}).then(function(data){
+  updateTime.textContent=new Date().toISOString().slice(11,19)+' UTC';
+  render(data);
+ }).catch(function(){
+  updateTime.textContent='err';
+ });
+}
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(function(btn){
+ btn.addEventListener('click',function(){
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});
+  this.classList.add('active');
+  currentFilter=this.getAttribute('data-filter');
+  fetchData();
+ });
+});
+
+fetchData();
+setInterval(fetchData,30000);
+})();
+</script>
+</body>
+</html>"""
+
+
+@app.route("/whales")
+def whale_page():
+    return render_template_string(WHALE_HTML)
+
 
 TRENDING_HTML = r"""<!DOCTYPE html>
 <html lang="en">

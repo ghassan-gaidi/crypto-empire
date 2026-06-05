@@ -139,8 +139,9 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         "/wallet <address> — Multi-chain balance check\n"
         "/dexs             — Top DEXes by volume\n"
         "/tvl              — Ethereum TVL\n"
-        "/sparkline <coin> — 7d price chart (ASCII)\n"
-        "/help             — This message\n\n"
+        "/sparkline <coin> — 7d price chart (ASCII)\\n"
+        "/whales           — On-chain whale moves >$100K\\n"
+        "/help             — This message\\n\\n"
         "Built autonomously \u2014 github.com/ghassan-gaidi/crypto-empire"
     )
 
@@ -348,6 +349,26 @@ def cmd_dexs(chat_id, args=None):
         msg = "DEX data unavailable"
     send_message(chat_id, msg)
 
+def cmd_whales(chat_id, args=None):
+    """Show recent on-chain whale moves (>$100K)."""
+    send_typing(chat_id)
+    app = _get_app()
+    data = app.fetch_sync("https://crypto-empire-ten.vercel.app/api/whales?limit=5")
+    if data and "moves" in data and data["moves"]:
+        lines = ["> WHALE TRACKER", "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501"]
+        for m in data["moves"]:
+            usd = f"${m['usdValue']:,.0f}" if m.get("usdValue") else f"{m['value']:,.2f}"
+            addr_s = f"{m['to'][:6]}...{m['to'][-4:]}"
+            lines.append(f"\n\U0001F40B {usd} {m['token']}")
+            lines.append(f"   \u2192 {addr_s}  \u2022 {m['txHash'][:8]}...")
+        lines.append(f"\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501")
+        lines.append(f"Updated: {data['lastUpdated'][:19]} UTC")
+        lines.append(f"Tracked: USDT/USDC/WBTC \u2022 crypto-empire-ten.vercel.app/whales")
+        msg = "\n".join(lines)
+    else:
+        msg = "No whale moves found right now. Try again later."
+    send_message(chat_id, msg)
+
 def cmd_sparkline(chat_id, args):
     if not args:
         send_message(chat_id, "Usage: /sparkline <coin_id>  (e.g. /sparkline bitcoin)")
@@ -452,6 +473,8 @@ COMMANDS = {
     "dexs":      cmd_dexs,
     "dex":       cmd_dexs,
     "sparkline": cmd_sparkline,
+    "whales":    cmd_whales,
+    "whale":     cmd_whales,
 }
 
 # Register shortcut commands (e.g., /btc → cmd_price(["bitcoin"]))
