@@ -468,6 +468,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="/premium" style="color:var(--green);">Premium</a>
                 <a href="/profiler">Profiler</a>
                 <a href="/launches">Launches</a>
+                <a href="/yields">Yields</a>
                 <a href="/ticker">Ticker</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
@@ -1124,6 +1125,131 @@ def api_sponsored():
     })
 
 
+# ── Yield Aggregator ──────────────────────────────────────────────────
+YIELD_CACHE_DURATION = 300  # 5 min
+YIELD_CACHE_FILE = DATA_DIR / "yield_cache.json"
+
+# Known lending/staking projects for categorization
+LENDING_PROJECTS = {
+    "aave-v3", "aave-v2", "compound-v3", "compound-v2", "sky-lending",
+    "spark", "morpho-blue", "morpho-aave", "radiant-v2", "silicon-v2",
+    "seamless-protocol", "zerolend", "layerbank", "gearbox",
+    "euler", "ionic", "sonne-finance",
+}
+STAKING_PROJECTS = {
+    "lido", "rocket-pool", "binance-staked-eth", "frax-eth",
+    "stakewise-v3", "stakewise-v2", "swell", "ether-fi",
+    "kelp-dao", "puffer-finance", "renzo", "stader",
+}
+STABLECOIN_LENDING = {
+    "aave-v3", "aave-v2", "compound-v3", "compound-v2",
+    "sky-lending", "spark", "morpho-blue",
+}
+
+
+def _fetch_yields():
+    """Fetch and cache yield data from DeFi Llama. Returns list of pool dicts."""
+    now = time.time()
+    try:
+        if YIELD_CACHE_FILE.exists():
+            cached = json.loads(YIELD_CACHE_FILE.read_text())
+            if now - cached.get("ts", 0) < YIELD_CACHE_DURATION:
+                return cached.get("pools", [])
+    except (json.JSONDecodeError, OSError):
+        pass
+
+    try:
+        resp = requests.get("https://yields.llama.fi/pools", timeout=15)
+        if resp.status_code == 200:
+            data = resp.json()
+            pools = data.get("data", [])
+            YIELD_CACHE_FILE.write_text(json.dumps({"ts": now, "pools": pools}))
+            return pools
+    except Exception:
+        # Fall back to stale cache
+        try:
+            if YIELD_CACHE_FILE.exists():
+                return json.loads(YIELD_CACHE_FILE.read_text()).get("pools", [])
+        except Exception:
+            pass
+    return []
+
+
+@app.route("/api/yields")
+def api_yields():
+    """Curated yield data from DeFi Llama. Returns categories + top pools."""
+    pools = _fetch_yields()
+    if not pools:
+        return jsonify({"error": "unavailable"}), 503
+
+    top_lending = []
+    top_staking = []
+    top_stablecoin = []
+    by_chain = {}
+
+    for p in pools:
+        project = (p.get("project") or "").lower()
+        chain = (p.get("chain") or "").lower()
+        apy = p.get("apy") or 0
+        tvl = p.get("tvlUsd") or 0
+        symbol = p.get("symbol") or ""
+        pool_meta = p.get("poolMeta") or ""
+        il_risk = p.get("ilRisk") or "no"
+        stablecoin = p.get("stablecoin", False)
+
+        entry = {
+            "pool": p.get("pool", ""),
+            "project": project,
+            "symbol": symbol,
+            "meta": pool_meta,
+            "chain": chain,
+            "apy": round(apy, 2),
+            "tvlUsd": round(tvl),
+            "stablecoin": stablecoin,
+            "ilRisk": il_risk,
+        }
+
+        # By chain
+        if chain not in by_chain:
+            by_chain[chain] = []
+        by_chain[chain].append(entry)
+
+        # Lending categories
+        if project in LENDING_PROJECTS:
+            top_lending.append(entry)
+        if project in STAKING_PROJECTS or "stake" in symbol.lower():
+            top_staking.append(entry)
+        if stablecoin and project in STABLECOIN_LENDING:
+            top_stablecoin.append(entry)
+
+    # Sort by APY descending, take top 15 each
+    sort_key = lambda x: x["apy"]
+    top_lending = sorted(top_lending, key=sort_key, reverse=True)[:15]
+    top_staking = sorted(top_staking, key=sort_key, reverse=True)[:15]
+    top_stablecoin = sorted(top_stablecoin, key=sort_key, reverse=True)[:15]
+
+    # Top by chain (top 5 per chain, chains with TVL > $10M)
+    chain_summary = {}
+    for chain, pools_list in sorted(by_chain.items()):
+        sorted_pools = sorted(pools_list, key=sort_key, reverse=True)
+        chain_tvl = sum(p["tvlUsd"] for p in sorted_pools)
+        if chain_tvl > 10_000_000:
+            chain_summary[chain] = {
+                "topPools": sorted_pools[:5],
+                "totalPools": len(sorted_pools),
+                "tvlUsd": round(chain_tvl),
+            }
+
+    return jsonify({
+        "lending": top_lending,
+        "staking": top_staking,
+        "stablecoin": top_stablecoin,
+        "byChain": chain_summary,
+        "updated": int(time.time()),
+    })
+
+
+
 # ── Whale Tracker RPC helpers ─────────────────────────────────────────
 WHALE_RPC_URL = "https://ethereum-rpc.publicnode.com"
 WHALE_TOKENS = {
@@ -1351,6 +1477,7 @@ def premium_page():
             </div>
             <div class="top-nav">
                 <a href="/">Dashboard</a>
+                <a href="/yields">Yields</a>
                 <a href="/docs">API</a>
                 <a href="/api-keys">Keys</a>
             </div>
@@ -3629,6 +3756,225 @@ def whale_page():
     return render_template_string(WHALE_HTML)
 
 
+# ── Yield Aggregator Page ─────────────────────────────────────────────
+YIELDS_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+""" + SHARED_HEAD + """
+<style>
+  .yield-grid{display:grid;grid-template-columns:1fr;gap:24px;margin-top:16px;}
+  .yield-section{border:1px solid var(--border);padding:16px;}
+  .yield-section h3{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-bottom:12px;}
+  .yield-section h3 .count{color:var(--text-muted);font-weight:400;}
+  .y-table{width:100%;border-collapse:collapse;font-size:10px;}
+  .y-table th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:400;font-size:8px;}
+  .y-table td{padding:5px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  .y-table tr:hover td{background:rgba(255,255,255,.02);}
+  .y-table .apy-val{font-weight:700;font-size:11px;}
+  .y-table .apy-green{color:var(--green);}
+  .y-table .apy-yellow{color:#aaa;}
+  .y-table .apy-dim{color:var(--text-dim);}
+  .y-table .proj{text-transform:lowercase;color:var(--text);}
+  .y-table .chain{color:var(--text-dim);font-size:9px;}
+  .y-table .tvl{color:var(--text-dim);}
+  .y-table .il{font-size:8px;text-transform:uppercase;letter-spacing:1px;}
+  .y-table .il-no{color:var(--green);}
+  .y-table .il-yes{color:var(--red);}
+  .y-table .meta{color:var(--text-muted);font-size:8px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .y-filters{display:flex;gap:1px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:12px;}
+  .y-filt{padding:5px 14px;font-size:9px;text-transform:uppercase;letter-spacing:2px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:.15s;}
+  .y-filt:hover{color:var(--white);border-color:var(--white);}
+  .y-filt.active{color:var(--white);border-color:var(--white);background:var(--surface);}
+  .chain-filters{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;}
+  .chain-filt{padding:3px 10px;font-size:8px;text-transform:uppercase;letter-spacing:1px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:.15s;}
+  .chain-filt:hover{color:var(--text);border-color:var(--text-dim);}
+  .chain-filt.active{color:var(--white);border-color:var(--white);}
+  .y-status{font-size:9px;color:var(--text-muted);margin-bottom:16px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .prem-teaser{border:1px dashed var(--text-muted);padding:12px 16px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .prem-teaser .pt-label{font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);}
+  .prem-teaser .pt-title{font-size:12px;font-weight:700;color:var(--white);}
+  .prem-teaser .pt-link{font-size:9px;color:var(--green);border:1px solid var(--green);padding:5px 12px;text-transform:uppercase;letter-spacing:2px;transition:.15s;}
+  .prem-teaser .pt-link:hover{background:var(--green);color:var(--bg);}
+  .y-loading{text-align:center;padding:40px 0;color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;}
+  .y-loading .spinner{display:inline-block;width:8px;height:8px;background:var(--green);margin-right:8px;animation:blink 1s step-end infinite;}
+  .chain-block{margin-top:8px;}
+  .chain-block .ch-name{font-size:10px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .chain-block .ch-name .ch-count{color:var(--text-muted);font-weight:400;}
+  .chain-block .ch-tvl{color:var(--dim);font-size:8px;}
+  .tbl-wrap{overflow-x:auto;}
+</style>
+</head>
+<body>
+<div class="sweep"></div>
+<div class="grid-bg"></div>
+<div class="container">
+  <div class="top-bar">
+    <div class="brand">
+      <div class="prompt">><span class="cr"></span></div>
+      <div>
+        <div class="site-title">Crypto Empire</div>
+        <div class="site-sub">Yield Aggregator</div>
+      </div>
+    </div>
+    <div class="top-nav">
+      <a href="/">Dashboard</a>
+      <a href="/yields" style="color:var(--white);border-color:var(--text-dim);">Yields</a>
+      <a href="/trending">Trending</a>
+      <a href="/whales">Whales</a>
+      <a href="/premium" style="color:var(--green);">Premium</a>
+      <a href="/profiler">Profiler</a>
+      <a href="/launches">Launches</a>
+      <a href="/ticker">Ticker</a>
+      <a href="/blog">Blog</a>
+      <a href="/docs">API</a>
+    </div>
+  </div>
+  <div class="status-line">
+    <span><span class="dot"></span> YIELD AGGREGATOR ONLINE</span>
+    <span id="live-clock">--</span>
+    <span>DEFI LLAMA</span>
+    <span>v1.0</span>
+  </div>
+  <div class="y-filters">
+    <button class="y-filt active" data-cat="all">All</button>
+    <button class="y-filt" data-cat="lending">Lending</button>
+    <button class="y-filt" data-cat="staking">Staking</button>
+    <button class="y-filt" data-cat="stablecoin">Stablecoin</button>
+  </div>
+  <div class="chain-filters" id="chain-filters">
+    <button class="chain-filt active" data-chain="all">All Chains</button>
+  </div>
+  <div class="y-status">
+    <span><span id="pool-count">--</span> pools tracked</span>
+    <span id="y-update-time">--</span>
+  </div>
+  <div class="y-loading" id="y-loading"><span class="spinner"></span> Loading yields...</div>
+  <div id="yield-content" style="display:none;"></div>
+  <div class="prem-teaser">
+    <div>
+      <div class="pt-label">Premium Feature</div>
+      <div class="pt-title">Impermanent Loss Calculator</div>
+      <div style="font-size:9px;color:var(--text-dim);margin-top:4px;">Calculate IL for any liquidity pool pair — coming soon for premium subscribers.</div>
+    </div>
+    <a href="/premium" class="pt-link">Upgrade →</a>
+  </div>
+  <hr>
+  <div class="divider">Affiliate</div>
+  <div style="font-size:9px;color:var(--text-dim);margin-bottom:20px;">
+    Trade with <a href="https://accounts.binance.com/register?ref=CEMASTER" style="color:var(--white);">Binance</a> &bull;
+    <a href="https://www.bybit.com/invite?ref=CEVIP" style="color:var(--white);">Bybit</a> &bull;
+    <a href="https://www.okx.com/join/CEVIP" style="color:var(--white);">OKX</a>
+  </div>
+  <div class="divider">Wallet</div>
+  <div style="font-size:9px;color:var(--text-dim);margin-bottom:20px;word-break:break-all;">
+    Support development: <span style="color:var(--text);font-weight:700;" onclick="navigator.clipboard.writeText(this.textContent)">0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</span>
+    <span style="font-size:8px;color:var(--text-muted);display:block;">click to copy</span>
+  </div>
+</div>
+<script>
+(function(){function u(){var d=new Date();document.getElementById('live-clock').textContent=d.toUTCString().split(' ')[4]+' UTC'}u();setInterval(u,1000)})();
+</script>
+<script>
+(function(){
+var allPools = [];
+var activeCat = 'all';
+var activeChain = 'all';
+function fmtApy(v){
+  var cls='apy-dim';
+  if(v>20) cls='apy-green';
+  else if(v>5) cls='apy-yellow';
+  return '<span class="apy-val '+cls+'">'+v.toFixed(2)+'%</span>';
+}
+function fmtTvl(v){
+  if(v>=1e9) return '$'+(v/1e9).toFixed(2)+'B';
+  if(v>=1e6) return '$'+(v/1e6).toFixed(1)+'M';
+  if(v>=1e3) return '$'+(v/1e3).toFixed(0)+'K';
+  return '$'+v.toFixed(0);
+}
+function fmtIl(risk){
+  if(risk==='no') return '<span class="il il-no">no</span>';
+  return '<span class="il il-yes">yes</span>';
+}
+function renderTable(pools){
+  if(!pools.length) return '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:10px;">No pools match the selected filters.</div>';
+  var h='<div class="tbl-wrap"><table class="y-table"><thead><tr><th>Project</th><th>Asset</th><th>Chain</th><th>APY</th><th>TVL</th><th>IL Risk</th></tr></thead><tbody>';
+  for(var i=0;i<pools.length;i++){
+    var p=pools[i];
+    var metaHtml=p.meta?' <span class="meta">'+p.meta+'</span>':'';
+    h+='<tr><td class="proj">'+p.project+'</td><td>'+p.symbol+metaHtml+'</td><td class="chain">'+p.chain+'</td><td>'+fmtApy(p.apy)+'</td><td class="tvl">'+fmtTvl(p.tvlUsd)+'</td><td>'+fmtIl(p.ilRisk)+'</td></tr>';
+  }
+  h+='</tbody></table></div>';
+  return h;
+}
+function renderCategory(title, pools){
+  if(!pools.length) return '';
+  return '<div class="yield-section"><h3>> '+title+' <span class="count">('+pools.length+')</span></h3>'+renderTable(pools)+'</div>';
+}
+function render(){
+  var pools=allPools;
+  if(activeCat==='lending') pools=allPools.filter(function(p){return p._cat==='lending'});
+  else if(activeCat==='staking') pools=allPools.filter(function(p){return p._cat==='staking'});
+  else if(activeCat==='stablecoin') pools=allPools.filter(function(p){return p._cat==='stablecoin'});
+  if(activeChain!=='all') pools=pools.filter(function(p){return p.chain===activeChain});
+  var html='';
+  if(activeCat==='all'){
+    var lp=allPools.filter(function(p){return p._cat==='lending'});
+    var sp=allPools.filter(function(p){return p._cat==='staking'});
+    var scp=allPools.filter(function(p){return p._cat==='stablecoin'});
+    if(activeChain!=='all'){lp=lp.filter(function(p){return p.chain===activeChain});sp=sp.filter(function(p){return p.chain===activeChain});scp=scp.filter(function(p){return p.chain===activeChain});}
+    html+=renderCategory('Top Lending Yields',lp);
+    html+='<div style="margin-top:16px;"></div>';
+    html+=renderCategory('Top Staking Yields',sp);
+    html+='<div style="margin-top:16px;"></div>';
+    html+=renderCategory('Stablecoin Lending Yields',scp);
+  }else{
+    html+=renderCategory('Yields',pools);
+  }
+  document.getElementById('yield-content').innerHTML=html;
+  document.getElementById('pool-count').textContent=pools.length;
+}
+function init(data){
+  allPools=[];
+  data.lending.forEach(function(p){p._cat='lending';allPools.push(p)});
+  data.staking.forEach(function(p){p._cat='staking';allPools.push(p)});
+  data.stablecoin.forEach(function(p){p._cat='stablecoin';allPools.push(p)});
+  var chains={};
+  allPools.forEach(function(p){chains[p.chain]=true});
+  var chainNames=Object.keys(chains).sort();
+  var chHtml='<button class="chain-filt active" data-chain="all">All Chains</button>';
+  chainNames.forEach(function(c){chHtml+='<button class="chain-filt" data-chain="'+c+'">'+c+'</button>'});
+  document.getElementById('chain-filters').innerHTML=chHtml;
+  document.querySelectorAll('.chain-filt').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.chain-filt').forEach(function(b){b.classList.remove('active')});
+      this.classList.add('active');
+      activeChain=this.getAttribute('data-chain');
+      render();
+    });
+  });
+  var d=new Date(data.updated*1000);
+  document.getElementById('y-update-time').textContent='Updated: '+d.toUTCString().split(' ')[4]+' UTC';
+  document.getElementById('y-loading').style.display='none';
+  document.getElementById('yield-content').style.display='block';
+  document.getElementById('pool-count').textContent=allPools.length;
+  render();
+}
+fetch('/api/yields').then(function(r){return r.json()}).then(function(d){init(d)}).catch(function(e){document.getElementById('y-loading').innerHTML='<span style=\\"color:var(--red);\\">Error: '+e.message+'</span>'});
+document.querySelectorAll('.y-filt').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.y-filt').forEach(function(b){b.classList.remove('active')});
+    this.classList.add('active');
+    activeCat=this.getAttribute('data-cat');
+    render();
+  });
+});
+setInterval(function(){fetch('/api/yields').then(function(r){return r.json()}).then(function(d){init(d)}).catch(function(){})},300000);
+})();
+</script>
+</body>
+</html>"""
+
+
 TRENDING_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3814,6 +4160,11 @@ setInterval(fetchData,60000);
 @app.route("/trending")
 def trending_page():
     return render_template_string(TRENDING_HTML)
+
+
+@app.route("/yields")
+def yields_page():
+    return render_template_string(YIELDS_HTML)
 
 
 # ============================================================
