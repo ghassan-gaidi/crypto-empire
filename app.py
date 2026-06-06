@@ -80,6 +80,21 @@ POLAR_API = "https://api.polar.sh/v1"
 POLAR_WEBHOOK_SECRET = os.environ.get("POLAR_WEBHOOK_SECRET", "")
 BASE_URL = os.environ.get("BASE_URL", "https://crypto-empire-ten.vercel.app")
 
+# Portfolio tracker
+PORTFOLIO_CACHE_FILE = DATA_DIR / "portfolios.json"
+
+# Same ERC-20 tokens as profiler for portfolio balance lookups
+PORTFOLIO_TOKENS = [
+    ("0xdAC17F958D2ee523a2206206994597C13D831ec7", "USDT", 6),
+    ("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "USDC", 6),
+    ("0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", "WBTC", 8),
+    ("0x514910771AF9Ca656af840dff83E8264EcF986CA", "LINK", 18),
+    ("0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0", "MATIC", 18),
+    ("0x6B175474E89094C44Da98b954EedeAC495271d0F", "DAI", 18),
+    ("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", "WETH", 18),
+    ("0x3845badAde8e6dFF049820680d1F14bD3903a5d0", "SAND", 18),
+]
+
 # Premium subscriptions cache
 SUBS_PATH = DATA_DIR / "subscriptions.json"
 
@@ -502,6 +517,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
                 <a href="/api-keys">Keys</a>
+                <a href="/portfolio">Portfolio</a>
                 <a href="/advertise" style="color:var(--green);">Advertise</a>
                 <a class="premium" href="#premium">Premium</a>
             </div>
@@ -2769,6 +2785,329 @@ function renderProfile(d){
 @app.route("/profiler")
 def profiler_page():
     return render_template_string(PROFILER_HTML)
+
+
+# ============================================================
+# Portfolio Tracker — Multi-Wallet P&L
+# ============================================================
+
+def _load_portfolios():
+    if PORTFOLIO_CACHE_FILE.exists():
+        try:
+            return json.loads(PORTFOLIO_CACHE_FILE.read_text())
+        except: pass
+    return {}
+
+def _save_portfolios(data):
+    PORTFOLIO_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PORTFOLIO_CACHE_FILE.write_text(json.dumps(data, indent=2))
+
+def _pf_query_rpc(method, params):
+    try:
+        r = requests.post(
+            "https://ethereum-rpc.publicnode.com",
+            json={"jsonrpc":"2.0","method":method,"params":params,"id":1},
+            timeout=8
+        )
+        return r.json().get("result")
+    except: return None
+
+def _pf_query_wallet(address):
+    """Query a single ETH address: native balance + ERC-20 tokens + USD value.
+    Returns dict or error dict."""
+    if not re.match(r'^0x[a-fA-F0-9]{40}$', address):
+        return None
+    # Native ETH balance
+    raw = _pf_query_rpc("eth_getBalance", [address, "latest"])
+    eth_bal = int(raw, 16) / 1e18 if raw else 0
+    # Tx count
+    raw2 = _pf_query_rpc("eth_getTransactionCount", [address, "latest"])
+    tx_count = int(raw2, 16) if raw2 else 0
+    # ERC-20 tokens
+    tokens = []
+    for contract, sym, decimals in PORTFOLIO_TOKENS:
+        data = "0x70a08231" + address[2:].zfill(64)
+        result = _pf_query_rpc("eth_call", [{"to": contract, "data": data}, "latest"])
+        if result and result != "0x" and int(result, 16) > 0:
+            bal = int(result, 16) / (10 ** decimals)
+            tokens.append({"symbol": sym, "balance": bal, "contract": contract})
+    return {
+        "address": address,
+        "eth_balance": round(eth_bal, 6),
+        "tx_count": tx_count,
+        "tokens": tokens,
+    }
+
+@app.route("/api/portfolio/create", methods=["POST"])
+def api_portfolio_create():
+    data = request.get_json(force=True)
+    name = (data.get("name") or "").strip()
+    wallets_raw = data.get("wallets", [])
+    if not name:
+        return jsonify({"error": "name required"}), 400
+    if not wallets_raw or not isinstance(wallets_raw, list):
+        return jsonify({"error": "wallets array required"}), 400
+    # Validate addresses
+    valid = []
+    for w in wallets_raw:
+        w = w.strip()
+        if re.match(r'^0x[a-fA-F0-9]{40}$', w):
+            valid.append(w.lower())
+    if not valid:
+        return jsonify({"error": "no valid ETH addresses"}), 400
+    import secrets
+    pid = secrets.token_hex(8)  # 16-char hex ID
+    portfolios = _load_portfolios()
+    portfolios[pid] = {
+        "id": pid,
+        "name": name,
+        "wallets": valid,
+        "created_at": int(time.time()),
+        "updated_at": int(time.time()),
+    }
+    _save_portfolios(portfolios)
+    return jsonify({"ok": True, "id": pid, "url": f"/portfolio/{pid}"})
+
+@app.route("/api/portfolio/<pid>")
+def api_portfolio(pid):
+    portfolios = _load_portfolios()
+    p = portfolios.get(pid)
+    if not p:
+        return jsonify({"error": "portfolio not found"}), 404
+    # Query all wallets
+    wallet_data = {}
+    for addr in p["wallets"]:
+        wallet_data[addr] = _pf_query_wallet(addr)
+    # Get ETH price for USD conversion
+    eth_price = 0
+    try:
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
+            timeout=6
+        )
+        eth_price = r.json().get("ethereum", {}).get("usd", 0)
+    except: pass
+    # Get token prices
+    token_ids = {"tether":"USDT","usd-coin":"USDC","wrapped-bitcoin":"WBTC",
+                 "chainlink":"LINK","matic-network":"MATIC","dai":"DAI",
+                 "weth":"WETH","the-sandbox":"SAND"}
+    token_prices = {}
+    try:
+        ids_str = ",".join(token_ids.keys())
+        r = requests.get(
+            f"https://api.coingecko.com/api/v3/simple/price?ids={ids_str}&vs_currencies=usd",
+            timeout=6
+        )
+        if r.ok:
+            token_prices = r.json()
+    except: pass
+    # Compute totals
+    total_usd = 0
+    wallets_out = []
+    for addr, w in wallet_data.items():
+        if w is None:
+            wallets_out.append({"address": addr, "error": "invalid address", "eth_balance": 0, "tokens": [], "total_usd": 0})
+            continue
+        eth_usd = w["eth_balance"] * eth_price
+        tok_usd = 0
+        tok_out = []
+        for t in w["tokens"]:
+            sym_lower = t["symbol"].lower()
+            # Map symbol to CG ID
+            cg_id = None
+            for cg_id_candidate, sym_candidate in token_ids.items():
+                if sym_candidate.lower() == sym_lower:
+                    cg_id = cg_id_candidate
+                    break
+            if not cg_id:
+                cg_id = sym_lower
+            price_data = token_prices.get(cg_id, {})
+            price = price_data.get("usd", 0) if isinstance(price_data, dict) else 0
+            usd_val = t["balance"] * price
+            tok_usd += usd_val
+            tok_out.append({"symbol": t["symbol"], "balance": round(t["balance"], 4), "usd_value": round(usd_val, 2)})
+        wallet_total = eth_usd + tok_usd
+        total_usd += wallet_total
+        wallets_out.append({
+            "address": addr,
+            "eth_balance": w["eth_balance"],
+            "tx_count": w["tx_count"],
+            "tokens": tok_out,
+            "eth_usd": round(eth_usd, 2),
+            "total_usd": round(wallet_total, 2),
+        })
+    # P&L — compare current vs creation snapshot
+    pnl = None
+    if p.get("snapshot_total"):
+        pnl = round(total_usd - p["snapshot_total"], 2)
+    return jsonify({
+        "id": pid,
+        "name": p["name"],
+        "wallets": wallets_out,
+        "total_usd": round(total_usd, 2),
+        "total_usd_fmt": f"${total_usd:,.2f}",
+        "wallet_count": len(p["wallets"]),
+        "created_at": p["created_at"],
+        "pnl": pnl,
+        "eth_price": eth_price,
+        "updated_at": int(time.time()),
+    })
+
+
+PORTFOLIO_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portfolio Tracker — Crypto Empire</title>
+""" + SHARED_HEAD + r"""
+<style>
+body{margin:0;padding:20px;background:#000;color:#b0b0b0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;min-height:100vh;}
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;background:repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0,rgba(0,0,0,.3) 1px,transparent 1px,transparent 3px);}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 0,rgba(0,0,0,.8) 100%);}
+:root{--bg:#000;--surface:#050505;--border:#181818;--text:#b0b0b0;--text-dim:#555;--green:#0f0;--red:#f00;--white:#fff;}
+a{color:var(--green);text-decoration:none;}a:hover{color:var(--white);}
+.container{max-width:900px;margin:0 auto;position:relative;z-index:1;}
+h1{font-size:18px;color:var(--white);font-weight:400;margin-bottom:4px;}
+h1:before{content:'> ';color:var(--green);}
+h2{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:3px;margin:24px 0 10px;}
+.back{margin-bottom:14px;}
+.back a{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);}
+.back a:hover{color:var(--white);}
+.back a:before{content:'<< ';color:var(--text-muted);}
+.pf-form{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}
+.pf-form input,.pf-form textarea{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:inherit;font-size:11px;outline:none;}
+.pf-form input:focus,.pf-form textarea:focus{border-color:var(--white);}
+.pf-form textarea{min-height:60px;resize:vertical;}
+.pf-form button{border:1px solid var(--white);color:var(--white);background:transparent;padding:10px 24px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:3px;cursor:pointer;transition:.15s;}
+.pf-form button:hover{background:var(--white);color:var(--bg);}
+.pf-form button:disabled{opacity:.3;cursor:not-allowed;}
+.summary-row{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap;}
+.summary-box{border:1px solid var(--border);padding:12px 16px;flex:1;min-width:120px;}
+.summary-box .lbl{font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-bottom:4px;}
+.summary-box .val{font-size:18px;color:var(--white);font-weight:700;font-variant-numeric:tabular-nums;}
+.summary-box .sub{font-size:9px;color:var(--text-dim);margin-top:2px;}
+.pnl-up{color:var(--green);} .pnl-down{color:var(--red);}
+.wallet-card{border:1px solid var(--border);padding:14px;margin-bottom:10px;}
+.wallet-card .addr{font-size:10px;color:var(--text-dim);letter-spacing:.5px;margin-bottom:8px;word-break:break-all;}
+.wallet-card .bal-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;}
+.wallet-card .bal-row .sym{color:var(--white);}
+.wallet-card .bal-row .usd{color:var(--text-dim);font-family:monospace;}
+.loading{text-align:center;color:var(--text-dim);padding:40px 0;font-size:10px;animation:ld .8s ease-in-out infinite;}
+@keyframes ld{0%,100%{opacity:.3}50%{opacity:1}}
+.error{text-align:center;color:var(--red);padding:20px;font-size:11px;}
+.copy-box{border:1px solid var(--border);padding:8px 12px;margin:10px 0;font-size:10px;color:var(--text-dim);word-break:break-all;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+.copy-box:hover{border-color:var(--white);}
+.copy-box .hint{font-size:8px;text-transform:uppercase;letter-spacing:1px;color:var(--green);}
+.empty{text-align:center;color:var(--text-dim);padding:40px 0;font-size:10px;text-transform:uppercase;letter-spacing:2px;}
+.tok-row{display:flex;justify-content:space-between;font-size:10px;padding:2px 0;color:var(--text-dim);border-bottom:1px solid var(--border);}
+.tok-row:last-child{border:none;}
+.tok-row .sym{color:var(--white);}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="back"><a href="/portfolio"><< BACK TO PORTFOLIOS</a></div>
+<div id="pf-view">
+  <h1>Portfolio Tracker</h1>
+  <div id="pf-content" class="loading">Loading...</div>
+</div>
+</div>
+<script>
+const __path = window.location.pathname;
+const __m = __path.match(/^\/portfolio\/([a-f0-9]+)$/);
+const el=document.getElementById('pf-content');
+
+if(!__m){
+  // Create mode
+  el.innerHTML=`\
+<div style="margin:16px 0;padding:0;">
+<table class="slot-table" style="width:100%;border-collapse:collapse;margin:16px 0;">
+<thead><tr><th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;font-size:9px;">Addresses</th><th style="text-align:right;border-bottom:1px solid var(--border);color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-size:9px;">ETH + ERC-20</th></tr></thead>
+<tbody>
+<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">1 wallet</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--white);">Free</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">2-5 wallets</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--white);">Free</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">6+ wallets</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--green);">Premium</td></tr>
+</tbody>
+</table>
+</div>
+<div class="pf-form">
+<input id="pf-name" placeholder="Portfolio name (e.g. My Portfolio)" style="width:100%;margin-bottom:8px;">
+<textarea id="pf-addrs" placeholder="ETH addresses (one per line or comma-separated)&#10;0x..." style="width:100%;"></textarea>
+<button id="pf-create-btn" onclick="createPortfolio()">Create Portfolio</button>
+</div>
+<div id="pf-result"></div>`;
+  el.className='';
+}
+
+async function createPortfolio(){
+  const name=document.getElementById('pf-name').value.trim();
+  const raw=document.getElementById('pf-addrs').value;
+  const addrs=raw.split(/[,\\n]+/).map(s=>s.trim()).filter(Boolean);
+  if(!name){alert('Enter a portfolio name');return;}
+  if(addrs.length<1){alert('Enter at least one ETH address');return;}
+  const btn=document.getElementById('pf-create-btn');
+  btn.disabled=true;btn.textContent='Creating...';
+  try{
+    const r=await fetch('/api/portfolio/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,wallets:addrs})});
+    const d=await r.json();
+    if(d.error){document.getElementById('pf-result').innerHTML='<div class="error">'+d.error+'</div>';return;}
+    window.location.href='/portfolio/'+d.id;
+  }catch(e){
+    document.getElementById('pf-result').innerHTML='<div class="error">'+e.message+'</div>';
+    btn.disabled=false;btn.textContent='Create Portfolio';
+  }
+}
+
+if(__m){
+  // View mode
+  const pid=__m[1];
+  const api='/api/portfolio/'+encodeURIComponent(pid);
+  (async()=>{
+    try{
+      const r=await fetch(api);
+      const d=await r.json();
+      if(d.error){el.innerHTML='<div class="error">'+d.error+'</div>';return;}
+      let html='';
+      html+='<div class="summary-row">';
+      html+='<div class="summary-box"><div class="lbl">Total Value</div><div class="val">'+d.total_usd_fmt+'</div></div>';
+      html+='<div class="summary-box"><div class="lbl">Wallets</div><div class="val">'+d.wallet_count+'</div></div>';
+      if(d.pnl!==null) html+='<div class="summary-box"><div class="lbl">P&L (Since Creation)</div><div class="val '+(d.pnl>=0?'pnl-up':'pnl-down')+'">'+(d.pnl>=0?'+':'')+'$'+Number(d.pnl).toLocaleString()+'</div></div>';
+      html+='<div class="summary-box"><div class="lbl">ETH Price</div><div class="val">$'+Number(d.eth_price).toLocaleString()+'</div><div class="sub">CoinGecko</div></div>';
+      html+='</div>';
+      const shareUrl=window.location.href;
+      html+='<div class="copy-box" id="share-box"><span>'+shareUrl+'</span><span class="hint">COPY</span></div>';
+      html+='<h2>Wallets</h2>';
+      for(const w of d.wallets){
+        html+='<div class="wallet-card">';
+        html+='<div class="addr">'+w.address+' <span style="color:var(--text-dim);font-size:9px;">('+w.tx_count+' tx)</span></div>';
+        html+='<div class="bal-row"><span class="sym">ETH</span><span>'+(Number(w.eth_balance)||0).toLocaleString()+' <span class="usd">($'+Number(w.eth_usd).toLocaleString()+')</span></span></div>';
+        for(const t of w.tokens){
+          html+='<div class="bal-row"><span class="sym">'+t.symbol+'</span><span>'+t.balance+' <span class="usd">($'+Number(t.usd_value).toLocaleString()+')</span></span></div>';
+        }
+        html+='<div style="font-size:10px;color:var(--text-dim);text-align:right;margin-top:6px;border-top:1px solid var(--border);padding-top:4px;">Total: $'+Number(w.total_usd).toLocaleString()+'</div>';
+        html+='</div>';
+      }
+      el.innerHTML=html;
+      // Wire copy box
+      const sb=document.getElementById('share-box');
+      if(sb)sb.onclick=function(){navigator.clipboard.writeText(this.firstChild.textContent.trim());this.querySelector('.hint').textContent='Copied!';};
+    }catch(e){
+      el.innerHTML='<div class="error">Failed to load portfolio: '+e.message+'</div>';
+    }
+  })();
+}
+</script>
+</body>
+</html>"""
+
+
+@app.route("/portfolio")
+def portfolio_page():
+    return render_template_string(PORTFOLIO_HTML)
+
+
+@app.route("/portfolio/<pid>")
+def portfolio_view(pid):
+    return render_template_string(PORTFOLIO_HTML)
 
 
 # ============================================================
