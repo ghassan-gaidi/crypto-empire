@@ -379,6 +379,7 @@ def cmd_premium(chat_id, args=None):
         "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         "Unlock premium features:\n\n"
         "• Telegram whale alerts — real-time $100K+ push\n"
+        "• Multi-wallet portfolio — track 6+ ETH addresses\n"
         "• Priority price alerts — instant threshold notifications\n"
         "• Premium sentiment indicators — buy/sell signals\n"
         "• Ad-free across all pages\n"

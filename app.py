@@ -66,6 +66,18 @@ def _load_ads():
         except: pass
     return dict(DEFAULT_ADS)
 
+def _seed_ads():
+    """Seed demo ads on first cold start (ephemeral /tmp on Vercel)."""
+    if not AD_CACHE_FILE.exists():
+        ads = dict(DEFAULT_ADS)
+        ads["spotlight"] = {
+            "coin_id": "bitcoin",
+            "name": "Advertise Here — $200/mo",
+            "link": f"{BASE_URL}/advertise",
+            "expires": "2027-01-01T00:00:00"
+        }
+        _save_ads(ads)
+
 def _save_ads(data):
     AD_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
     AD_CACHE_FILE.write_text(json.dumps(data, indent=2))
@@ -153,6 +165,7 @@ def init_db():
     conn.close()
 
 init_db()
+_seed_ads()
 
 # ============================================================
 # API helpers
@@ -1758,7 +1771,9 @@ def premium_page():
                 <span style="color:var(--green);">&#10003;</span> Gas tracker (ETH/BSC/Polygon)<br>
                 <span style="color:var(--green);">&#10003;</span> Whale tracker (web page)<br>
                 <span style="color:var(--green);">&#10003;</span> Trending coins<br>
+                <span style="color:var(--green);">&#10003;</span> Portfolio tracker (1-5 wallets)<br>
                 <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Telegram whale alerts</span><br>
+                <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Multi-wallet portfolio (6+ wallets)</span><br>
                 <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Priority price alerts</span><br>
                 <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Premium indicators</span>
             </p>
@@ -1768,6 +1783,7 @@ def premium_page():
             <h3 style="font-size:12px;margin-bottom:12px;color:var(--green);">PREMIUM TIER -- $9.99 / month</h3>
             <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
                 <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Telegram whale alerts</strong> -- real-time push on every $100K+ move<br>
+                <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Multi-wallet portfolio (unlimited wallets)</strong> -- track 6+ ETH addresses<br>
                 <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Priority price alerts</strong> -- instant notifications on key thresholds<br>
                 <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Premium sentiment indicators</strong> -- buy/sell signals<br>
                 <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Ad-free</strong> across all pages<br>
@@ -2843,6 +2859,7 @@ def api_portfolio_create():
     data = request.get_json(force=True)
     name = (data.get("name") or "").strip()
     wallets_raw = data.get("wallets", [])
+    customer_id = (data.get("customer_id") or "").strip()
     if not name:
         return jsonify({"error": "name required"}), 400
     if not wallets_raw or not isinstance(wallets_raw, list):
@@ -2855,6 +2872,11 @@ def api_portfolio_create():
             valid.append(w.lower())
     if not valid:
         return jsonify({"error": "no valid ETH addresses"}), 400
+    # 6+ wallet limit: requires premium subscription
+    if len(valid) > 5:
+        is_premium = customer_id and _is_premium(customer_id)
+        if not is_premium:
+            return jsonify({"error": "6+ wallets requires Premium subscription. Subscribe at /premium or pass a valid customer_id"}), 403
     import secrets
     pid = secrets.token_hex(8)  # 16-char hex ID
     portfolios = _load_portfolios()
@@ -3022,18 +3044,20 @@ if(!__m){
 <div style="margin:16px 0;padding:0;">
 <table class="slot-table" style="width:100%;border-collapse:collapse;margin:16px 0;">
 <thead><tr><th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;font-size:9px;">Addresses</th><th style="text-align:right;border-bottom:1px solid var(--border);color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-size:9px;">ETH + ERC-20</th></tr></thead>
-<tbody>
-<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">1 wallet</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--white);">Free</td></tr>
-<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">2-5 wallets</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--white);">Free</td></tr>
-<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">6+ wallets</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--green);">Premium</td></tr>
-</tbody>
-</table>
-</div>
-<div class="pf-form">
-<input id="pf-name" placeholder="Portfolio name (e.g. My Portfolio)" style="width:100%;margin-bottom:8px;">
-<textarea id="pf-addrs" placeholder="ETH addresses (one per line or comma-separated)&#10;0x..." style="width:100%;"></textarea>
-<button id="pf-create-btn" onclick="createPortfolio()">Create Portfolio</button>
-</div>
+|<tbody>
+|<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">1 wallet</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--white);">Free</td></tr>
+|<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">2-5 wallets</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--white);">Free</td></tr>
+|<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">6+ wallets</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--green);">Premium</td></tr>
+|</tbody>
+|</table>
+|<div style="font-size:9px;color:var(--text-dim);margin-bottom:12px;letter-spacing:.5px;">Already a Premium subscriber? <a href="/premium" style="color:var(--green);">Check your status</a> to find your customer ID.</div>
+|</div>
+|<div class="pf-form">
+|<input id="pf-name" placeholder="Portfolio name (e.g. My Portfolio)" style="width:100%;margin-bottom:8px;">
+|<textarea id="pf-addrs" placeholder="ETH addresses (one per line or comma-separated)&#10;0x..." style="width:100%;"></textarea>
+|<input id="pf-customer-id" placeholder="Premium customer ID (for 6+ wallets) — leave blank for free tier" style="width:100%;margin-bottom:8px;font-size:10px;">
+|<button id="pf-create-btn" onclick="createPortfolio()">Create Portfolio</button>
+|</div>
 <div id="pf-result"></div>`;
   el.className='';
 }
@@ -3041,15 +3065,23 @@ if(!__m){
 async function createPortfolio(){
   const name=document.getElementById('pf-name').value.trim();
   const raw=document.getElementById('pf-addrs').value;
-  const addrs=raw.split(/[,\\n]+/).map(s=>s.trim()).filter(Boolean);
+  const customerId=document.getElementById('pf-customer-id').value.trim();
+  const addrs=raw.split(/[,\\\n]+/).map(s=>s.trim()).filter(Boolean);
   if(!name){alert('Enter a portfolio name');return;}
   if(addrs.length<1){alert('Enter at least one ETH address');return;}
+  if(addrs.length>5&&!customerId){alert('6+ wallets requires a Premium customer ID. Subscribe at /premium first.');return;}
   const btn=document.getElementById('pf-create-btn');
   btn.disabled=true;btn.textContent='Creating...';
   try{
-    const r=await fetch('/api/portfolio/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,wallets:addrs})});
+    const body={name,wallets:addrs};
+    if(customerId) body.customer_id=customerId;
+    const r=await fetch('/api/portfolio/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
-    if(d.error){document.getElementById('pf-result').innerHTML='<div class="error">'+d.error+'</div>';return;}
+    if(d.error){
+      let msg=d.error;
+      if(d.error.includes('Premium')) msg+=' <a href="/premium" style="color:var(--green);">Subscribe now</a>';
+      document.getElementById('pf-result').innerHTML='<div class="error">'+msg+'</div>';return;
+    }
     window.location.href='/portfolio/'+d.id;
   }catch(e){
     document.getElementById('pf-result').innerHTML='<div class="error">'+e.message+'</div>';
@@ -3073,6 +3105,13 @@ if(__m){
       if(d.pnl!==null) html+='<div class="summary-box"><div class="lbl">P&L (Since Creation)</div><div class="val '+(d.pnl>=0?'pnl-up':'pnl-down')+'">'+(d.pnl>=0?'+':'')+'$'+Number(d.pnl).toLocaleString()+'</div></div>';
       html+='<div class="summary-box"><div class="lbl">ETH Price</div><div class="val">$'+Number(d.eth_price).toLocaleString()+'</div><div class="sub">CoinGecko</div></div>';
       html+='</div>';
+      // Premium upsell for 6+ wallet portfolios
+      if(d.wallet_count>5){
+        html+='<div style="border:1px solid var(--green);padding:10px 14px;margin:12px 0;font-size:10px;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
+        html+='<span style="color:var(--green);text-transform:uppercase;letter-spacing:1px;">PREMIUM FEATURE</span>';
+        html+='<span>Unlimited wallets with Premium. <a href="/premium" style="color:var(--green);">Subscribe $9.99/mo</a></span>';
+        html+='</div>';
+      }
       const shareUrl=window.location.href;
       html+='<div class="copy-box" id="share-box"><span>'+shareUrl+'</span><span class="hint">COPY</span></div>';
       html+='<h2>Wallets</h2>';
