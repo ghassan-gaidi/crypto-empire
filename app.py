@@ -41,6 +41,34 @@ if _api_keys_raw:
 # Sponsored coin config
 SPONSORED_COIN_ID = os.environ.get("SPONSORED_COIN_ID", "bitcoin")
 SPONSORED_COIN_MSG = os.environ.get("SPONSORED_COIN_MSG", "Bitcoin — The Original Asset")
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "crypto-empire-admin-2026")
+
+# Ad placement system cache
+AD_CACHE_FILE = DATA_DIR / "ads_cache.json"
+
+DEFAULT_ADS = {
+    "spotlight": None,       # {"coin_id":str, "name":str, "link":str, "expires":str}
+    "banner_top": None,      # {"image_url":str, "link":str, "expires":str}
+    "banner_mid": None,      # {"image_url":str, "link":str, "expires":str}
+    "featured_launch": None, # {"name":str, "link":str, "expires":str}
+    "whale_sponsor": None,   # {"name":str, "link":str, "expires":str}
+}
+
+def _load_ads():
+    if AD_CACHE_FILE.exists():
+        try:
+            data = json.loads(AD_CACHE_FILE.read_text())
+            for k in DEFAULT_ADS:
+                if k in data and data[k] and data[k].get("expires"):
+                    if datetime.now().isoformat() > data[k]["expires"]:
+                        data[k] = None
+            return data
+        except: pass
+    return dict(DEFAULT_ADS)
+
+def _save_ads(data):
+    AD_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    AD_CACHE_FILE.write_text(json.dumps(data, indent=2))
 
 # Polar.sh premium subscription config
 POLAR_ACCESS_TOKEN = os.environ.get("POLAR_ACCESS_TOKEN", "")
@@ -474,6 +502,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
                 <a href="/api-keys">Keys</a>
+                <a href="/advertise" style="color:var(--green);">Advertise</a>
                 <a class="premium" href="#premium">Premium</a>
             </div>
         </div>
@@ -545,6 +574,8 @@ INDEX_HTML = """<!DOCTYPE html>
 
         <div class="divider"></div>
 
+        <div id="banner-top" style="display:none;margin-bottom:16px;"></div>
+
         <!-- Market Table -->
         <div class="s-title" id="market">TOP 20 CRYPTOCURRENCIES</div>
         <div class="tbl">
@@ -572,14 +603,16 @@ INDEX_HTML = """<!DOCTYPE html>
         <div class="divider"></div>
 
         <!-- Sponsored Coin Spotlight (paid placement) -->
+        <a id="sponsored-link" href="#" target="_blank" rel="noopener" style="text-decoration:none;color:unset;display:block;">
         <div class="sponsor-box">
             <span class="sponsor-label">SPONSORED SPOTLIGHT — <span id="sponsored-name" style="color:var(--green);">--</span></span>
             <div class="aff-links">
                 <span id="sponsored-price" style="font-size:11px;color:var(--white);font-weight:700;">--</span>
                 <span id="sponsored-change" style="font-size:9px;">--</span>
-                <a class="aff-link" href="#premium">Your project here →</a>
+                <span class="aff-link sponsor-slot" onclick="event.stopPropagation();window.open('/advertise','_blank')">Your project here →</span>
             </div>
         </div>
+        </a>
 
         <div class="divider"></div>
 
@@ -593,6 +626,8 @@ INDEX_HTML = """<!DOCTYPE html>
         </div>
 
         <div class="divider"></div>
+
+        <div id="banner-mid" style="display:none;margin-bottom:16px;"></div>
 
         <!-- Trending Coins -->
         <div class="s-title" id="trending">TRENDING COINS</div>
@@ -796,12 +831,14 @@ INDEX_HTML = """<!DOCTYPE html>
         fetchTVL();
         fetchMovers();
         fetchSponsored();
+        fetchBanners();
         setInterval(fetchGas,30000);
         setInterval(fetchDEXs,120000);
         setInterval(fetchTrending,120000);
         setInterval(fetchTVL,120000);
         setInterval(fetchMovers,120000);
         setInterval(fetchSponsored,60000);
+        setInterval(fetchBanners,120000);
 
         async function fetchMovers(){
             try{
@@ -839,12 +876,31 @@ INDEX_HTML = """<!DOCTYPE html>
                 var nameEl=document.getElementById('sponsored-name');
                 var priceEl=document.getElementById('sponsored-price');
                 var chgEl=document.getElementById('sponsored-change');
+                var linkEl=document.getElementById('sponsored-link');
                 if(nameEl)nameEl.textContent=data.name;
                 if(priceEl)priceEl.textContent='$'+data.price;
                 if(chgEl){
                     chgEl.textContent=data.change_24h+'%';
                     chgEl.className=data.change_24h>=0?'up':'down';
                 }
+                if(linkEl&&data.link)linkEl.href=data.link;
+            }catch(e){}
+        }
+
+        async function fetchBanners(){
+            try{
+                var r=await fetch('/api/ads');
+                var ads=await r.json();
+                var topEl=document.getElementById('banner-top');
+                var midEl=document.getElementById('banner-mid');
+                if(topEl&&ads.banner_top){
+                    topEl.innerHTML='<a href="'+ads.banner_top.link+'" target="_blank" rel="noopener" style="display:block;padding:8px 12px;border:1px dashed var(--border);font-size:10px;text-align:center;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;text-decoration:none;">ADVERTISEMENT — '+ads.banner_top.name+'</a>';
+                    topEl.style.display='block';
+                }else if(topEl){topEl.style.display='none';}
+                if(midEl&&ads.banner_mid){
+                    midEl.innerHTML='<a href="'+ads.banner_mid.link+'" target="_blank" rel="noopener" style="display:block;padding:8px 12px;border:1px dashed var(--border);font-size:10px;text-align:center;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;text-decoration:none;">ADVERTISEMENT — '+ads.banner_mid.name+'</a>';
+                    midEl.style.display='block';
+                }else if(midEl){midEl.style.display='none';}
             }catch(e){}
         }
 
@@ -1110,7 +1166,25 @@ def api_movers():
 
 @app.route("/api/sponsored")
 def api_sponsored():
-    """Live price for the sponsored coin"""
+    """Live price for the sponsored coin (from ads cache)"""
+    ads = _load_ads()
+    ad = ads.get("spotlight")
+    if ad and ad.get("coin_id"):
+        coin_id = ad["coin_id"]
+        data = fetch_sync(f"{COINGECKO_API}/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true")
+        price = 0
+        change_24h = 0
+        if data and coin_id in data:
+            price = data[coin_id].get("usd", 0)
+            change_24h = round(data[coin_id].get("usd_24h_change", 0) or 0, 2)
+        return jsonify({
+            "id": coin_id,
+            "name": ad.get("name", coin_id),
+            "link": ad.get("link", ""),
+            "price": f"{price:,.2f}" if price else "0",
+            "change_24h": change_24h,
+        })
+    # Fallback to env var
     data = fetch_sync(f"{COINGECKO_API}/simple/price?ids={SPONSORED_COIN_ID}&vs_currencies=usd&include_24hr_change=true")
     price = 0
     change_24h = 0
@@ -1123,6 +1197,180 @@ def api_sponsored():
         "price": f"{price:,.2f}" if price else "0",
         "change_24h": change_24h,
     })
+
+
+# ── Ad Placement System ──────────────────────────────────────────────
+
+@app.route("/api/ads")
+def api_ads():
+    """Return all active ad placements"""
+    ads = _load_ads()
+    active = {}
+    for k, v in ads.items():
+        if v is not None:
+            active[k] = v
+    return jsonify(active)
+
+
+@app.route("/api/ads/admin", methods=["GET", "POST", "DELETE"])
+def api_ads_admin():
+    """Admin CRUD for ad placements. Protected by ADMIN_SECRET header."""
+    if request.headers.get("X-Admin-Key") != ADMIN_SECRET:
+        return jsonify({"error": "unauthorized"}), 401
+    ads = _load_ads()
+    if request.method == "POST":
+        data = request.get_json(force=True)
+        slot = data.get("slot")
+        if slot not in DEFAULT_ADS:
+            return jsonify({"error": f"invalid slot: {slot}"}), 400
+        content = data.get("content")
+        if content is None:
+            ads[slot] = None  # clear slot
+        else:
+            content["expires"] = content.get("expires", "")
+            ads[slot] = content
+        _save_ads(ads)
+        return jsonify({"ok": True, "slot": slot, "content": ads[slot]})
+    if request.method == "DELETE":
+        slot = request.args.get("slot") or (request.get_json(force=True) or {}).get("slot")
+        if slot and slot in DEFAULT_ADS:
+            ads[slot] = None
+            _save_ads(ads)
+            return jsonify({"ok": True, "slot": slot, "cleared": True})
+        return jsonify({"error": "no slot specified"}), 400
+    # GET — return raw ads cache
+    return jsonify(ads)
+
+
+ADVERTISE_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Crypto Empire — Advertise</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'JetBrains Mono',monospace;background:#000;color:#b0b0b0;font-size:13px;line-height:1.6;min-height:100vh;}
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;background:repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0,rgba(0,0,0,.3) 1px,transparent 1px,transparent 3px);}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 0,rgba(0,0,0,.8) 100%);}
+:root{--bg:#000;--surface:#050505;--border:#181818;--text:#b0b0b0;--text-dim:#555;--green:#0f0;--red:#f00;--white:#fff;}
+a{color:var(--green);text-decoration:none;}
+a:hover{color:var(--white);}
+.container{max-width:800px;margin:0 auto;padding:40px 20px;}
+h1{font-size:22px;color:var(--white);margin-bottom:8px;font-weight:400;}
+h1:before{content:'> ';color:var(--green);}
+h2{font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:3px;margin:32px 0 12px;font-weight:400;}
+h2:before{content:'# ';color:var(--text-dim);}
+p{color:var(--text);margin-bottom:16px;font-size:12px;}
+.divider{height:1px;background:var(--border);margin:24px 0;}
+.tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0;}
+.tier{border:1px solid var(--border);padding:20px;background:var(--surface);}
+.tier.featured{border-color:var(--green);}
+.tier-name{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
+.tier-price{font-size:24px;color:var(--white);margin:8px 0 4px;}
+.tier-desc{font-size:10px;color:var(--text-dim);margin-bottom:12px;}
+.tier ul{list-style:none;font-size:10px;color:var(--text);}
+.tier ul li{padding:4px 0;border-bottom:1px solid var(--border);}
+.tier .cta{display:inline-block;margin-top:12px;padding:6px 16px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--white);}
+.tier .cta:hover{border-color:var(--green);color:var(--green);}
+.slot-table{width:100%;border-collapse:collapse;margin:16px 0;}
+.slot-table th,.slot-table td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;}
+.slot-table th{color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;font-size:9px;}
+.slot-table td{color:var(--text);}
+.slot-table tr:hover td{background:var(--surface);}
+.nav{position:fixed;top:0;left:0;width:100%;padding:12px 20px;background:#000;border-bottom:1px solid var(--border);z-index:9997;display:flex;gap:20px;font-size:11px;text-transform:uppercase;letter-spacing:1px;}
+.nav a{color:var(--text-dim);}
+.nav a:hover{color:var(--white);}
+</style>
+</head>
+<body>
+<div class="nav">
+<a href="/">DASHBOARD</a>
+<a href="/advertise" style="color:var(--green);">ADVERTISE</a>
+</div>
+<div class="container">
+<h1>Advertise on Crypto Empire</h1>
+<p>Reach 10,000+ monthly active crypto traders, whales, and degens. All placements are CRT terminal style — no popups, no banners blocking content.</p>
+
+<div class="divider"></div>
+
+<h2>Available Slots</h2>
+<table class="slot-table">
+<thead><tr><th>Slot</th><th>Location</th><th>Price/mo</th><th>Min. Term</th></tr></thead>
+<tbody>
+<tr><td>Sponsored Spotlight</td><td>Homepage — featured coin with live price/change</td><td>$200</td><td>7 days</td></tr>
+<tr><td>Top Banner</td><td>Homepage — above market table (prime real estate)</td><td>$300</td><td>14 days</td></tr>
+<tr><td>Mid Banner</td><td>Homepage — between sections</td><td>$200</td><td>14 days</td></tr>
+<tr><td>Featured Launch</td><td>Launches page — pinned highlight</td><td>$100</td><td>14 days</td></tr>
+<tr><td>Whale Sponsor</td><td>Whale alert messages — "brought to you by"</td><td>$150</td><td>30 days</td></tr>
+</tbody>
+</table>
+
+<h2>Pricing Tiers</h2>
+<div class="tier-grid">
+<div class="tier">
+<div class="tier-name">Spotlight</div>
+<div class="tier-price">$200<span style="font-size:11px;color:var(--text-dim);">/mo</span></div>
+<div class="tier-desc">Featured coin on homepage</div>
+<ul>
+<li>Live price + 24h change display</li>
+<li>Your project name & link</li>
+<li>7-day minimum commitment</li>
+<li>CoinGecko ID required</li>
+</ul>
+<a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank">Contact →</a>
+</div>
+<div class="tier featured">
+<div class="tier-name" style="color:var(--green);">★ Premium Bundle</div>
+<div class="tier-price">$500<span style="font-size:11px;color:var(--text-dim);">/mo</span></div>
+<div class="tier-desc">Maximum visibility</div>
+<ul>
+<li>Sponsored Spotlight</li>
+<li>Top Banner placement</li>
+<li>Featured Launch pin</li>
+<li>Whale alert sponsorship</li>
+<li>Priority support</li>
+</ul>
+<a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank">Contact →</a>
+</div>
+<div class="tier">
+<div class="tier-name">Banner</div>
+<div class="tier-price">$300<span style="font-size:11px;color:var(--text-dim);">/mo</span></div>
+<div class="tier-desc">Premium banner placement</div>
+<ul>
+<li>Top banner homepage slot</li>
+<li>30-day minimum commitment</li>
+<li>Text or logo accepted</li>
+<li>Direct link to your site</li>
+</ul>
+<a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank">Contact →</a>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<h2>Requirements</h2>
+<p style="font-size:11px;">
+• Crypto projects only (exchanges, DeFi, NFT, L1/L2, tools, wallets)<br>
+• No scams, rugs, or pump & dumps — we reserve the right to reject any ad<br>
+• Payment via ETH/USDC to our treasury wallet or monthly subscription<br>
+• All placements managed via admin panel — live updates within 1 hour of payment<br>
+• Ad expiration enforced automatically — no manual removal needed
+</p>
+
+<div class="divider"></div>
+
+<h2>Get Started</h2>
+<p>Contact us on Telegram to reserve your slot. Payment in ETH or stablecoin accepted.</p>
+<p style="margin-top:12px;">
+<a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="display:inline-block;padding:8px 20px;border:1px solid var(--green);font-size:11px;letter-spacing:2px;text-transform:uppercase;">Contact via Telegram →</a>
+</p>
+</div>
+</body>
+</html>"""
+
+@app.route("/advertise")
+def advertise():
+    return render_template_string(ADVERTISE_HTML)
 
 
 # ── Yield Aggregator ──────────────────────────────────────────────────
