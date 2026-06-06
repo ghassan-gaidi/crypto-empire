@@ -1019,9 +1019,9 @@ def api_trending_now():
 def api_gas():
     chains = {
         "ethereum": "https://ethereum-rpc.publicnode.com",
-        "polygon": "https://polygon-rpc.com",
-        "arbitrum": "https://arb1.arbitrum.io/rpc",
-        "base": "https://mainnet.base.org",
+        "polygon": "https://polygon.drpc.org",
+        "arbitrum": "https://arbitrum-rpc.publicnode.com",
+        "base": "https://base-rpc.publicnode.com",
     }
     results = {}
     for name, url in chains.items():
@@ -1030,7 +1030,7 @@ def api_gas():
             data = r.json()
             if "result" in data:
                 gwei = int(data["result"], 16) / 1e9
-                results[name] = {"gas_gwei": round(gwei, 1)}
+                results[name] = {"gas_gwei": round(gwei, 4)}
         except:
             results[name] = {"error": "unavailable"}
     return jsonify(results)
