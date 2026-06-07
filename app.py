@@ -512,7 +512,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <div class="prompt">><span class="cr"></span></div>
                 <div>
                     <div class="site-title">Crypto Empire</div>
-                    <div class="site-sub">Autonomous Intelligence System</div>
+                    <div class="site-sub">Live Crypto Intelligence</div>
                 </div>
             </div>
             <div class="top-nav">
@@ -529,10 +529,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
-                <a href="/api-keys">Keys</a>
-                <a href="/portfolio">Portfolio</a>
                 <a href="/advertise" style="color:var(--green);">Advertise</a>
-                <a class="premium" href="#premium">Premium</a>
             </div>
         </div>
 
@@ -804,7 +801,7 @@ INDEX_HTML = """<!DOCTYPE html>
                         el.className='gas-gwei '+(g<5?'low':g<30?'med':'high');
                     }
                 }
-            }catch(e){}
+            }catch(e){console.warn('fetchGas error:',e)}
         }
 
         async function fetchDEXs(){
@@ -822,7 +819,7 @@ INDEX_HTML = """<!DOCTYPE html>
                     html+='<tr><td class="rank">'+(i+1)+'</td><td><span class="cname">'+d.name+'</span></td><td>'+v24+'</td><td>'+v7+'</td><td class="'+cls+'">'+d.change1d+'%</td><td class="csym">'+(d.chains||[]).join(', ')+'</td></tr>';
                 }
                 tbody.innerHTML=html;
-            }catch(e){}
+            }catch(e){console.warn('fetchDEXs error:',e)}
         }
 
         async function fetchTrending(){
@@ -837,7 +834,7 @@ INDEX_HTML = """<!DOCTYPE html>
                     html+='<div class="gas-item"><div class="gas-chain" style="font-size:11px;">'+c.name+'</div><div class="gas-gwei" style="font-size:16px;color:var(--text-dim);">'+(c.symbol||'').toUpperCase()+'</div><div style="font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Rank '+(c.market_cap_rank||'--')+'</div></div>';
                 }
                 grid.innerHTML=html;
-            }catch(e){}
+            }catch(e){console.warn('fetchTrending error:',e)}
         }
 
         async function fetchTVL(){
@@ -851,7 +848,7 @@ INDEX_HTML = """<!DOCTYPE html>
                     val.textContent=tvl;
                     card.style.display='block';
                 }
-            }catch(e){}
+            }catch(e){console.warn('fetchTVL error:',e)}
         }
 
         fetchGas();
@@ -895,7 +892,7 @@ INDEX_HTML = """<!DOCTYPE html>
                         '<div style="text-align:right;"><div class="down" style="font-size:13px;font-weight:700;">'+(c.change||0).toFixed(2)+'%</div></div></div>';
                 }
                 grid.innerHTML=html;
-            }catch(e){}
+            }catch(e){console.warn('fetchMovers error:',e)}
         }
 
         async function fetchSponsored(){
@@ -913,7 +910,7 @@ INDEX_HTML = """<!DOCTYPE html>
                     chgEl.className=data.change_24h>=0?'up':'down';
                 }
                 if(linkEl&&data.link)linkEl.href=data.link;
-            }catch(e){}
+            }catch(e){console.warn('fetchSponsored error:',e)}
         }
 
         async function fetchBanners(){
@@ -930,7 +927,7 @@ INDEX_HTML = """<!DOCTYPE html>
                     midEl.innerHTML='<a href="'+ads.banner_mid.link+'" target="_blank" rel="noopener" style="display:block;padding:8px 12px;border:1px dashed var(--border);font-size:10px;text-align:center;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;text-decoration:none;">ADVERTISEMENT — '+ads.banner_mid.name+'</a>';
                     midEl.style.display='block';
                 }else if(midEl){midEl.style.display='none';}
-            }catch(e){}
+            }catch(e){console.warn('fetchBanners error:',e)}
         }
 
         function submitAlert(){
