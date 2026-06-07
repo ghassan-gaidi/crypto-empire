@@ -724,19 +724,12 @@ INDEX_HTML = """<!DOCTYPE html>
         <!-- Premium Section -->
         <div class="prem-box" id="premium">
             <h3>PREMIUM ACCESS</h3>
-            <p>10K API requests/day + arbitrage signals + priority support.<br>Unlock by sending <strong>0.005 ETH</strong> to the wallet below.</p>
-            <div class="ctags">
-                <span class="ctag">Ethereum</span>
-                <span class="ctag">Arbitrum</span>
-                <span class="ctag">Base</span>
-                <span class="ctag">Polygon</span>
-                <span class="ctag">Optimism</span>
-                <span class="ctag">BSC</span>
-                <span class="ctag">Avalanche</span>
-                <span class="ctag">Solana</span>
+            <p>Whale alerts &bull; Unlimited portfolio wallets &bull; Priority alerts &bull; Ad-free</p>
+            <p style="font-size:10px;color:var(--text-dim);margin-top:8px;">10K API requests/day + arbitrage signals + priority support included.</p>
+            <div style="margin-top:14px;">
+                <a href="/premium" style="display:inline-block;padding:8px 24px;background:var(--white);color:var(--bg);font-size:10px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;">Subscribe $9.99/mo</a>
             </div>
-            <div class="waddr" onclick="copyWallet(this)">{{ wallet }}</div>
-            <div style="font-size:8px;color:var(--text-dim);margin-top:4px;text-transform:uppercase;letter-spacing:1px;">Click to copy — All EVM chains supported</div>
+            <p style="font-size:8px;color:var(--text-dim);margin-top:8px;">Powered by Polar.sh &bull; Cancel anytime</p>
         </div>
 
         <div style="text-align:center;margin-bottom:20px;">
@@ -1970,7 +1963,7 @@ def api_keys_page():
         </div>
 
         <div class="prem-box" style="text-align:left;border-color:var(--white);">
-            <h3 style="font-size:12px;margin-bottom:12px;">PREMIUM TIER — 0.005 ETH</h3>
+            <h3 style="font-size:12px;margin-bottom:12px;">PREMIUM TIER — $9.99 / month</h3>
             <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
                 <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">10,000 requests/day</strong><br>
                 <span style="color:var(--green);">&#10003;</span> Priority rate limit on all endpoints<br>
@@ -1981,14 +1974,12 @@ def api_keys_page():
         </div>
 
         <div class="prem-box">
-            <h3>HOW TO GET YOUR KEY</h3>
-            <ol style="text-align:left;font-size:10px;color:var(--text-dim);line-height:2;max-width:400px;margin:0 auto;">
-                <li>Send <strong style="color:var(--white);">0.005 ETH</strong> to the wallet below</li>
-                <li>Send a message to <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="color:var(--white);">@Crypt0Emp1reBot</a> with your tx hash</li>
-                <li>We'll issue your API key within 24 hours</li>
-            </ol>
-            <div class="waddr" onclick="copyWallet(this)" style="margin-top:12px;">{{ wallet }}</div>
-            <div style="font-size:8px;color:var(--text-dim);margin-top:4px;text-transform:uppercase;letter-spacing:1px;">Click to copy — Any EVM chain</div>
+            <h3>GET PREMIUM</h3>
+            <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">Subscribe via Polar.sh. Your API key is automatically provisioned after payment.</p>
+            <div style="margin-top:12px;">
+                <a href="/premium" style="display:inline-block;padding:10px 24px;background:var(--white);color:var(--bg);font-size:10px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;">Subscribe $9.99/mo</a>
+            </div>
+            <p style="font-size:8px;color:var(--text-dim);margin-top:8px;">Cancel anytime &bull; No manual processing</p>
         </div>
 
         <div class="post">
@@ -2285,7 +2276,7 @@ def docs():
         <p style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">Free public API. No authentication required. 100 req/day free, 10K req/day premium.</p>
 
         <div class="prem-box" style="text-align:left;padding:12px 16px;margin-bottom:20px;">
-            <p style="font-size:10px;color:var(--text-dim);"><span style="color:var(--green);">FREE:</span> 100 req/day &nbsp;|&nbsp; <span style="color:var(--white);">PREMIUM:</span> 10K req/day &nbsp;|&nbsp; Send 0.005 ETH to <code style="font-size:9px;">{{ wallet[:8] }}...{{ wallet[-4:] }}</code></p>
+            <p style="font-size:10px;color:var(--text-dim);"><span style="color:var(--green);">FREE:</span> 100 req/day &nbsp;|&nbsp; <span style="color:var(--white);">PREMIUM:</span> 10K req/day &nbsp;|&nbsp; Get premium at <a href="/premium" style="color:var(--white);">/premium</a> &mdash; $9.99/mo</p>
         </div>
 
         <div class="post">
