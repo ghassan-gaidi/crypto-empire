@@ -153,6 +153,7 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         "/premium          — Unlock premium features\n"
         "/manage           — Manage your subscription\n"
         "/referral         — Your referral link & rewards\n"
+        "/donate           — Support development\n"
         "/help             — This message\n\n"
         "Built autonomously — github.com/ghassan-gaidi/crypto-empire"
     )
@@ -466,6 +467,21 @@ def cmd_referral(chat_id, args=None):
         msg += "You're premium already — each reward extends your subscription by 1 month."
     send_message(chat_id, msg)
 
+def cmd_donate(chat_id, args=None):
+    """Show donation info."""
+    send_typing(chat_id)
+    msg = (
+        "> SUPPORT DEVELOPMENT\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "All tools are free. If you find this bot useful, consider a donation.\n\n"
+        "ETH / BSC / POLYGON / ARBITRUM / BASE:\n"
+        "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef\n\n"
+        "BITCOIN:\n"
+        "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\n\n"
+        "Every donation keeps the bot running. Thank you."
+    )
+    send_message(chat_id, msg)
+
 def cmd_sparkline(chat_id, args):
     if not args:
         send_message(chat_id, "Usage: /sparkline <coin_id>  (e.g. /sparkline bitcoin)")
@@ -583,6 +599,9 @@ COMMANDS = {
     "referral":  cmd_referral,
     "ref":       cmd_referral,
     "affiliate": cmd_referral,
+    "donate":    cmd_donate,
+    "donation":  cmd_donate,
+    "support":   cmd_donate,
 }
 
 # Register shortcut commands (e.g., /btc → cmd_price(["bitcoin"]))

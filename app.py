@@ -549,6 +549,56 @@ SHARED_HEAD = """<meta charset="UTF-8">
   }
   .toast.show{opacity:1;}
 
+  /* ===== DONATION CARD ===== */
+  .donate-box{
+    border:1px solid var(--border);padding:16px;margin-bottom:24px;
+    background:var(--surface);text-align:center;
+  }
+  .donate-box h4{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;}
+  .donate-box h4::before{content:'> ';color:var(--green);}
+  .donate-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
+  .daddr{
+    border:1px solid var(--border);padding:6px 12px;font-family:monospace;
+    font-size:10px;color:var(--white);cursor:pointer;user-select:all;
+    background:var(--bg);transition:.15s;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  }
+  .daddr:hover{border-color:var(--white);}
+  .dcopy{
+    border:1px solid var(--border);padding:6px 12px;font-size:8px;
+    text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);cursor:pointer;
+    background:var(--surface);transition:.15s;
+  }
+  .dcopy:hover{border-color:var(--white);color:var(--white);}
+  .dcopy.copied{background:var(--green);color:var(--bg);border-color:var(--green);}
+
+  /* ===== FOOTER GRID ===== */
+  .footer-grid{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;
+    border:1px solid var(--border);margin-bottom:0;
+  }
+  .footer-col{padding:14px;background:var(--surface);}
+  .footer-col h5{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;}
+  .footer-col a{display:block;font-size:10px;color:var(--text);padding:3px 0;transition:.15s;}
+  .footer-col a:hover{color:var(--white);}
+  .footer-col .daddr{font-size:9px;padding:5px 10px;}
+  .footer-col .dcopy{font-size:7px;padding:5px 10px;}
+  .footer-bottom{text-align:center;padding:12px 0;font-size:8px;color:var(--text-muted);border-top:1px solid var(--border);}
+  @media(max-width:700px){
+    .footer-grid{grid-template-columns:1fr;}
+  }
+
+  /* ===== NAV DIVIDER / GROUP ===== */
+  .nav-divider{display:inline-block;width:1px;height:14px;background:var(--border);margin:0 6px;vertical-align:middle;}
+  .top-nav a.premium-nav{color:var(--green)!important;border-color:var(--green);}
+  .top-nav a.premium-nav:hover{background:var(--green);color:var(--bg)!important;}
+
+  /* ===== BADGE ===== */
+  .badge{
+    display:inline-block;padding:2px 6px;font-size:7px;font-weight:700;
+    letter-spacing:1px;text-transform:uppercase;vertical-align:middle;
+    background:var(--green);color:var(--bg);line-height:1;
+  }
+
   /* ===== WALLET PAGE ===== */
   .winput{border:1px solid var(--border);padding:10px 14px;background:var(--surface);color:var(--white);font-family:monospace;font-size:13px;outline:none;width:100%;display:block;transition:.15s;}
   .winput:focus{border-color:var(--white);}
@@ -640,15 +690,18 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="#news">News</a>
                 <a href="/trending">Trending</a>
                 <a href="/whales">Whales</a>
-                <a href="/premium" style="color:var(--green);">Premium</a>
+                <span class="nav-divider"></span>
                 <a href="/profiler">Profiler</a>
                 <a href="/launches">Launches</a>
                 <a href="/yields">Yields</a>
                 <a href="/ticker">Ticker</a>
+                <span class="nav-divider"></span>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
                 <a href="/wallet-check">Wallet</a>
-                <a href="/advertise" style="color:var(--green);">Advertise</a>
+                <a href="/advertise">Advertise</a>
+                <span class="nav-divider"></span>
+                <a href="/premium" class="premium-nav">Premium</a>
             </div>
         </div>
 
@@ -856,27 +909,90 @@ INDEX_HTML = """<!DOCTYPE html>
             <a href="/wallet-check" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:8px 20px;font-size:9px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;transition:.15s;margin:0 4px;">Wallet Checker</a>
         </div>
 
-        <footer>
-            <p>Built autonomously — Zero KYC — Zero Budget</p>
-            <p style="margin-top:4px;font-size:8px;">
-                <span onclick="navigator.clipboard.writeText('{{ wallet }}');document.getElementById('tip-toast').style.display='block';setTimeout(function(){document.getElementById('tip-toast').style.display='none';},1200);" style="cursor:pointer;border:1px solid var(--border);padding:2px 8px;letter-spacing:1px;text-transform:uppercase;">☕ Donate ETH</span>
-                <code style="font-size:8px;margin-left:4px;">{{ wallet[:10] }}...{{ wallet[-4:] }}</code>
+        <!-- Donation Section -->
+        <div class="donate-box">
+            <h4>Support Development</h4>
+            <p style="font-size:9px;color:var(--text-dim);margin-bottom:8px;">
+                All tools are free. If this helps you, consider a donation.
             </p>
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">ETH / BSC / POLYGON / ARBITRUM / BASE</div>
+            <div class="donate-row">
+                <span class="daddr" id="eth-addr">0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</span>
+                <span class="dcopy" onclick="copyAddr('eth-addr',this)">COPY</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:6px 0 4px;">BITCOIN</div>
+            <div class="donate-row">
+                <span class="daddr" id="btc-addr">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</span>
+                <span class="dcopy" onclick="copyAddr('btc-addr',this)">COPY</span>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h5>Product</h5>
+                    <a href="/">Dashboard</a>
+                    <a href="/premium">Premium</a>
+                    <a href="/whales">Whale Tracker</a>
+                    <a href="/launches">Token Launches</a>
+                    <a href="/yields">DeFi Yields</a>
+                </div>
+                <div class="footer-col">
+                    <h5>Resources</h5>
+                    <a href="/docs">API Documentation</a>
+                    <a href="/blog">Blog</a>
+                    <a href="/wallet-check">Wallet Checker</a>
+                    <a href="/ticker">Live Ticker</a>
+                    <a href="/advertise">Advertise</a>
+                </div>
+                <div class="footer-col">
+                    <h5>Support</h5>
+                    <div style="font-size:9px;color:var(--text-dim);margin-bottom:4px;">Telegram</div>
+                    <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">@Crypt0Emp1reBot</a>
+                    <div style="font-size:9px;color:var(--text-dim);margin-top:8px;margin-bottom:4px;">Donate ETH</div>
+                    <span class="daddr" onclick="navigator.clipboard.writeText('0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef');copyToast()" style="font-size:8px;">0x2902...C7Ef</span>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                Built autonomously &mdash; Zero KYC &mdash; Zero Budget &mdash; Data by CoinGecko, DeFiLlama, Etherscan
+            </div>
         </footer>
     </div>
-    <div class="toast" id="tip-toast" style="display:none;">ADDRESS COPIED</div>
+
+    <div class="toast" id="copy-toast">ADDRESS COPIED</div>
 
     <!-- Bottom Status Bar -->
     <div class="b-bar">
         <span><span class="dot"></span> ONLINE</span>
-        <span><span class="sp">|</span> {{ wallet[:6] }}...{{ wallet[-4:] }}</span>
         <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-        <span><span class="sp">|</span> NODES 4/4</span>
+        <span><span class="sp">|</span> BTC $<span id="btc-foot">--</span></span>
+        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
     </div>
 
     <div class="toast" id="toast">COPIED</div>
 
     <script>
+        // ===== TOAST =====
+        function copyToast(){
+            var t=document.getElementById('copy-toast');
+            t.style.display='block';
+            t.style.opacity='1';
+            setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.style.display='none';},300);},1000);
+        }
+        function copyAddr(id,btn){
+            var txt=document.getElementById(id).textContent;
+            navigator.clipboard.writeText(txt).then(function(){
+                btn.textContent='COPIED';
+                btn.classList.add('copied');
+                setTimeout(function(){btn.textContent='COPY';btn.classList.remove('copied');},1500);
+            });
+        }
+        document.querySelector('.daddr')&&document.querySelector('.daddr').addEventListener('click',function(){
+            navigator.clipboard.writeText(this.textContent);
+            copyToast();
+        });
+
         // ===== LIVE CLOCK =====
         (function(){
             function u(){
@@ -1045,6 +1161,17 @@ INDEX_HTML = """<!DOCTYPE html>
                 }else if(midEl){midEl.style.display='none';}
             }catch(e){console.warn('fetchBanners error:',e)}
         }
+
+        async function fetchBTCPrice(){
+            try{
+                var r=await fetch('/api/price/bitcoin');
+                var data=await r.json();
+                var el=document.getElementById('btc-foot');
+                if(el&&data.data)el.textContent=data.data.usd.toLocaleString();
+            }catch(e){}
+        }
+        fetchBTCPrice();
+        setInterval(fetchBTCPrice,60000);
 
         function submitAlert(){
             var coin=document.getElementById('alert-coin');
@@ -2112,14 +2239,21 @@ def api_keys_page():
         </div>
 
         <footer>
-            <p>Crypto Empire — Wallet: <code style="font-size:8px;">{{ wallet }}</code> <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:2px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:6px;">☕ Donate</span></p>
+            <p>Crypto Empire — <a href="/" style="color:var(--text-dim);">Dashboard</a> — <a href="/docs" style="color:var(--text-dim);">API</a> — Built autonomously</p>
         </footer>
     </div>
     <div class="b-bar">
         <span><span class="dot"></span> API KEYS</span>
-        <span>v1.0</span>
+        <span><span class="sp">|</span> <span id="live-clock">--</span></span>
+        <span><span class="sp">|</span> <a href="/" style="color:var(--text-dim);">Dashboard</a></span>
     </div>
+    <div class="toast" id="copy-toast">ADDRESS COPIED</div>
     <script>
+        function copyToast(){
+            var t=document.getElementById('copy-toast');
+            t.style.display='block';t.style.opacity='1';
+            setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.style.display='none';},300);},1000);
+        }
         (function(){
             function u(){
                 var n=new Date();
@@ -2464,15 +2598,38 @@ Send: /help</pre>
             <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/dexs</pre>
         </div>
 
+        <!-- Donation -->
+        <div class="donate-box">
+            <h4>Support Development</h4>
+            <div class="donate-row">
+                <span class="daddr" id="docs-eth">0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</span>
+                <span class="dcopy" onclick="copyAddr('docs-eth',this)">COPY</span>
+            </div>
+        </div>
+
         <footer>
-            <p>Crypto Empire — Wallet: <code style="font-size:8px;">{{ wallet }}</code> <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:2px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:6px;">☕ Donate</span></p>
+            <p>Crypto Empire — <a href="/" style="color:var(--text-dim);">Dashboard</a> — <a href="/premium" style="color:var(--text-dim);">Premium</a> — Built autonomously</p>
         </footer>
     </div>
     <div class="b-bar">
         <span><span class="dot" style="background:var(--green);"></span> API DOCS</span>
-        <span>v1.0</span>
+        <span><span class="sp">|</span> <span id="live-clock">--</span></span>
+        <span><span class="sp">|</span> <a href="/" style="color:var(--text-dim);">Dashboard</a></span>
     </div>
+    <div class="toast" id="copy-toast">ADDRESS COPIED</div>
     <script>
+        function copyAddr(id,btn){
+            var txt=document.getElementById(id).textContent;
+            navigator.clipboard.writeText(txt).then(function(){
+                btn.textContent='COPIED';btn.classList.add('copied');
+                setTimeout(function(){btn.textContent='COPY';btn.classList.remove('copied');},1500);
+            });
+        }
+        function copyToast(){
+            var t=document.getElementById('copy-toast');
+            t.style.display='block';t.style.opacity='1';
+            setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.style.display='none';},300);},1000);
+        }
         (function(){
             function u(){
                 var n=new Date();
