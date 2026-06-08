@@ -2285,6 +2285,7 @@ def premium_page():
     }
     updateClock();setInterval(updateClock,1000);
     </script>
+    <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
 </body>
 </html>""", customer_status=status, customer_id=customer)
 
@@ -2459,9 +2460,7 @@ def api_keys_page():
   https://crypto-empire-ten.vercel.app/api/price/bitcoin</pre>
         </div>
 
-        <footer>
-            <p>Crypto Empire — <a href="/" style="color:var(--text-dim);">Dashboard</a> — <a href="/docs" style="color:var(--text-dim);">API</a> — Built autonomously</p>
-        </footer>
+        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
     </div>
     <div class="b-bar">
         <span><span class="dot"></span> API KEYS</span>
@@ -2828,9 +2827,7 @@ Send: /help</pre>
             </div>
         </div>
 
-        <footer>
-            <p>Crypto Empire — <a href="/" style="color:var(--text-dim);">Dashboard</a> — <a href="/premium" style="color:var(--text-dim);">Premium</a> — Built autonomously</p>
-        </footer>
+        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
     </div>
     <div class="b-bar">
         <span><span class="dot" style="background:var(--green);"></span> API DOCS</span>
@@ -4200,9 +4197,7 @@ def blog_index():
             <p style="font-size:9px;color:var(--text-dim);">Send ETH to <code style="font-size:9px;">{{ wallet }}</code></p>
         </div>
         
-        <footer>
-            <p>Crypto Empire &middot; <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:1px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;">☕ Donate ETH</span></p>
-        </footer>
+        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
     </div>
     <div class="b-bar">
         <span><span class="dot"></span> BLOG</span>
@@ -4276,9 +4271,7 @@ def blog_post(slug):
             <p style="font-size:9px;color:var(--text-dim);">Send ETH to <code style="font-size:9px;">{{ wallet }}</code></p>
         </div>
         
-        <footer>
-            <p><a href="/blog" style="color:var(--text-dim);text-decoration:none;font-size:9px;text-transform:uppercase;letter-spacing:1px;">More articles</a> &middot; <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:1px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:4px;">☕ Donate ETH</span></p>
-        </footer>
+        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
     </div>
     <div class="b-bar">
         <span><span class="dot"></span> ARTICLE</span>
@@ -4768,7 +4761,7 @@ WHALE_HTML = r"""<!DOCTYPE html>
 Data from Ethereum mainnet via public RPC &middot; Updates every 30 seconds
 </div>
 
-<footer><p>Crypto Empire &middot; <a href="/api/whales" style="color:var(--text-dim);">API</a> &middot; <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:1px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:4px;">☕ Donate ETH</span></p></footer>
+<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
 </div>
 <div class="b-bar"><span><span class="dot"></span> whale tracker</span><span>v3.0</span></div>
 
@@ -5164,7 +5157,7 @@ TRENDING_HTML = r"""<!DOCTYPE html>
 Data from CoinGecko &middot; Updates every 60 seconds &middot; Coin cards are shareable — copy the URL while highlighted
 </div>
 
-<footer><p>Crypto Empire &middot; <a href="/api/trending-now" style="color:var(--text-dim);">API</a></p></footer>
+<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
 </div>
 <div class="b-bar"><span><span class="dot"></span> trending this hour</span><span>v2.4</span></div>
 
@@ -5327,9 +5320,7 @@ def page_not_found(e):
             <div style="font-size:11px;color:var(--text-dim);margin:12px 0 24px;text-transform:uppercase;letter-spacing:3px;">The requested resource was not found on this chain.</div>
             <a href="/" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:10px 28px;font-size:10px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;">Return to Dashboard</a>
         </div>
-        <footer>
-            <p>Crypto Empire &middot; <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:1px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;">☕ Donate ETH</span></p>
-        </footer>
+        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
     </div>
     <div class="b-bar">
         <span><span class="dot" style="background:var(--red);"></span> 404</span>
