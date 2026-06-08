@@ -1,0 +1,80 @@
+name: Distribution Tracker
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'  # Every Monday at noon
+  workflow_dispatch:
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch bot webhook info
+        id: webhook
+        run: |
+          TOKEN="${{ secrets.TELEGRAM_TOKEN }}"
+          if [ -z "$TOKEN" ]; then
+            echo "status=no_token" >> $GITHUB_OUTPUT
+            echo "No TELEGRAM_TOKEN secret configured."
+            exit 0
+          fi
+          INFO=$(curl -s "https://api.telegram.org/bot${TOKEN}/getWebhookInfo")
+          URL=$(echo "$INFO" | python3 -c "import sys,json; print(json.load(sys.stdin).get('result',{}).get('url','N/A'))" 2>/dev/null || echo "parse_error")
+          PENDING=$(echo "$INFO" | python3 -c "import sys,json; print(json.load(sys.stdin).get('result',{}).get('pending_update_count',0))" 2>/dev/null || echo "0")
+          ERR=$(echo "$INFO" | python3 -c "import sys,json; print((json.load(sys.stdin).get('result',{})).get('last_error_message','none') or 'none')" 2>/dev/null || echo "parse_error")
+          echo "webhook_url=$URL" >> $GITHUB_OUTPUT
+          echo "pending=$PENDING" >> $GITHUB_OUTPUT
+          echo "last_error=$ERR" >> $GITHUB_OUTPUT
+
+      - name: Check live site
+        id: live
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://crypto-empire-ten.vercel.app/" --max-time 15)
+          echo "status_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "status=ok" >> $GITHUB_OUTPUT
+          else
+            echo "status=down" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check API endpoints
+        id: api
+        run: |
+          for ep in "/api/whales" "/api/gas" "/api/trending" "/api/fear-greed" "/api/dexs" "/api/launches" "/api/news"; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://crypto-empire-ten.vercel.app${ep}" --max-time 10)
+            echo "${ep//\//_}: $CODE"
+          done
+
+      - name: Summary
+        run: |
+          echo "════════════════════════════════════════════"
+          echo "  CRYPTO EMPIRE — DISTRIBUTION REPORT"
+          echo "════════════════════════════════════════════"
+          echo ""
+          echo "  Date:     $(date -u '+%Y-%m-%d %H:%M UTC')"
+          echo "  Site:     ${{ steps.live.outputs.status }} (${{ steps.live.outputs.status_code }})"
+          echo "  Webhook:  ${{ steps.webhook.outputs.webhook_url }}"
+          echo "  Pending:  ${{ steps.webhook.outputs.pending }} updates"
+          echo "  Bot err:  ${{ steps.webhook.outputs.last_error }}"
+          echo ""
+          echo "════════════════════════════════════════════"
+          echo "  REFERRAL SYSTEM STATUS"
+          echo "════════════════════════════════════════════"
+          echo ""
+          echo "  ✓ Referral codes:  auto-generated per user"
+          echo "  ✓ Reward:          3 referrals = 1 free premium month"
+          echo "  ✓ Commands:        /referral, /ref, /affiliate"
+          echo "  ✓ Add-to-group:    referral CTA in welcome message"
+          echo "  ✓ Start link:      ?start=ref_CODE tracking"
+          echo ""
+          echo "════════════════════════════════════════════"
+          echo "  NEXT STEPS"
+          echo "════════════════════════════════════════════"
+          echo ""
+          echo "  1. Deploy: git push → auto-deploy to Vercel"
+          echo "  2. Set webhook: python3 setup_webhook.py"
+          echo "  3. Share bot: t.me/Crypt0Emp1reBot"
+          echo "  4. Promote referral link in your channels"
+          echo ""

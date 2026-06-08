@@ -160,12 +160,131 @@ def init_db():
             user_agent TEXT,
             visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS referrals (
+            chat_id INTEGER PRIMARY KEY,
+            ref_code TEXT UNIQUE,
+            referred_count INTEGER DEFAULT 0,
+            rewards_earned INTEGER DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS referred_users (
+            ref_code TEXT,
+            referred_chat_id INTEGER,
+            referred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            subscribed INTEGER DEFAULT 0,
+            PRIMARY KEY (ref_code, referred_chat_id)
+        );
     """)
     conn.commit()
     conn.close()
 
 init_db()
 _seed_ads()
+
+# ============================================================
+# Referral / Affiliate System
+# ============================================================
+REFERRAL_BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+def _chat_id_to_ref_code(chat_id):
+    """Convert a chat_id into a short base62 referral code."""
+    n = abs(chat_id)
+    code = ""
+    while n > 0:
+        code = REFERRAL_BASE62[n % 62] + code
+        n //= 62
+    return code or "0"
+
+def get_or_create_ref_code(chat_id):
+    """Get existing ref_code for chat_id, or create & store one."""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute("SELECT ref_code FROM referrals WHERE chat_id = ?", (chat_id,))
+        row = c.fetchone()
+        if row:
+            return row[0]
+        code = _chat_id_to_ref_code(chat_id)
+        c.execute("INSERT OR IGNORE INTO referrals (chat_id, ref_code) VALUES (?, ?)", (chat_id, code))
+        conn.commit()
+        conn.close()
+        return code
+    except Exception:
+        return ""
+
+def get_ref_stats(chat_id):
+    """Get (ref_code, referred_count, rewards_earned) for a chat_id."""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute("SELECT ref_code, referred_count, rewards_earned FROM referrals WHERE chat_id = ?", (chat_id,))
+        row = c.fetchone()
+        conn.close()
+        if row:
+            return {"ref_code": row[0], "referred_count": row[1], "rewards_earned": row[2]}
+    except:
+        pass
+    return {"ref_code": "", "referred_count": 0, "rewards_earned": 0}
+
+def record_referral(ref_code, new_chat_id):
+    """Record a new referral. Returns True if first time, False if duplicate."""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute("SELECT 1 FROM referred_users WHERE ref_code = ? AND referred_chat_id = ?", (ref_code, new_chat_id))
+        if c.fetchone():
+            conn.close()
+            return False
+        c.execute("INSERT INTO referred_users (ref_code, referred_chat_id) VALUES (?, ?)", (ref_code, new_chat_id))
+        c.execute("UPDATE referrals SET referred_count = referred_count + 1 WHERE ref_code = ?", (ref_code,))
+        conn.commit()
+        conn.close()
+        _check_referral_reward(ref_code)
+        return True
+    except Exception:
+        return False
+
+def _check_referral_reward(ref_code):
+    """Check if referrer earned a reward (every 3 referrals = 1 free month)."""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute("SELECT referred_count, rewards_earned, chat_id FROM referrals WHERE ref_code = ?", (ref_code,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return
+        count, rewards, chat_id = row
+        new_rewards = count // 3  # every 3 referrals = 1 reward
+        if new_rewards > rewards:
+            c.execute("UPDATE referrals SET rewards_earned = ? WHERE ref_code = ?", (new_rewards, ref_code))
+            conn.commit()
+            # Auto-activate premium if enough rewards and not already premium
+            from datetime import datetime, timedelta
+            subs = _load_subs()
+            sub = subs.get(str(chat_id), {})
+            if sub.get("status") in ("active", "trialing"):
+                conn.close()
+                return
+            # Add a free month via the subscriptions cache
+            subs[str(chat_id)] = {
+                "status": "active",
+                "customer_id": f"ref_reward_{ref_code}",
+                "price_id": "referral_free_month",
+                "product_id": "referral",
+                "started_at": datetime.now().isoformat(),
+                "current_period_end": (datetime.now() + timedelta(days=30)).isoformat(),
+                "external_customer_id": str(chat_id),
+                "source": "referral"
+            }
+            _save_subs(subs)
+            # Also add to WAHLRE_ALERT_CHAT_IDS for whale alerts
+            alert_ids = os.environ.get("WAHLRE_ALERT_CHAT_IDS", "8947012639")
+            chat_ids = set(x.strip() for x in alert_ids.split(",") if x.strip())
+            chat_ids.add(str(chat_id))
+            os.environ["WAHLRE_ALERT_CHAT_IDS"] = ",".join(sorted(chat_ids))
+        conn.close()
+    except Exception:
+        pass
 
 # ============================================================
 # API helpers

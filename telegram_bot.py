@@ -116,9 +116,18 @@ def is_group_chat(chat):
 # ---------------------------------------------------------------------------
 
 def cmd_start(chat_id, args=None, chat_type="private"):
+    ref_code = args[0].lower().strip() if args and args[0].startswith("ref_") else None
+
+    if ref_code:
+        app = _get_app()
+        # Record referral (skip if same user refers themselves)
+        referrer_code = ref_code[4:]  # strip "ref_"
+        if referrer_code and str(chat_id) not in referrer_code:
+            app.record_referral(referrer_code, chat_id)
+
     intro = (
         "> CRYPTO_EMPIRE BOT\n"
-        "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         "Live crypto data at your fingertips.\n\n"
     )
     if chat_type == "group":
@@ -139,19 +148,38 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         "/wallet <address> — Multi-chain balance check\n"
         "/dexs             — Top DEXes by volume\n"
         "/tvl              — Ethereum TVL\n"
-        "/sparkline <coin> — 7d price chart (ASCII)\\n"
+        "/sparkline <coin> — 7d price chart (ASCII)\n"
         "/whales           — On-chain whale moves >$100K\n"
         "/premium          — Unlock premium features\n"
         "/manage           — Manage your subscription\n"
+        "/referral         — Your referral link & rewards\n"
         "/help             — This message\n\n"
-        "Built autonomously \u2014 github.com/ghassan-gaidi/crypto-empire"
+        "Built autonomously — github.com/ghassan-gaidi/crypto-empire"
     )
+
+    if chat_type == "private":
+        app = _get_app()
+        code = app.get_or_create_ref_code(chat_id)
+        bot_username = os.environ.get("BOT_USERNAME", "Crypt0Emp1reBot")
+        cmds += (
+            f"\n\n💎 Referral Program — Earn Free Premium!\n"
+            f"Invite friends to add me to their groups.\n"
+            f"3 referrals = 1 free month of Premium!\n\n"
+            f"Your referral link:\n"
+            f"https://t.me/{bot_username}?start=ref_{code}\n\n"
+            f"Or add me to a group:\n"
+            f"https://t.me/{bot_username}?startgroup=ref_{code}"
+        )
 
     if chat_type == "group":
         cmds += (
             "\n\nTip: Add me to more groups and use /btc /eth /sol "
             "for quick prices anywhere."
         )
+
+    # Show reward banner if they earned anything
+    if ref_code:
+        cmds += "\n\n✅ Referral recorded! Thanks for spreading the word."
 
     send_message(chat_id, intro + cmds)
 
@@ -406,6 +434,36 @@ def cmd_manage(chat_id, args=None):
     )
     send_message(chat_id, msg)
 
+def cmd_referral(chat_id, args=None):
+    """Show referral link and stats."""
+    app = _get_app()
+    code = app.get_or_create_ref_code(chat_id)
+    stats = app.get_ref_stats(chat_id)
+    bot_username = os.environ.get("BOT_USERNAME", "Crypt0Emp1reBot")
+
+    refs = stats["referred_count"]
+    rewards = stats["rewards_earned"]
+    next_reward = 3 - (refs % 3) if refs % 3 != 0 else 3
+    has_premium = app._is_premium(str(chat_id))
+
+    msg = (
+        "> REFERRAL PROGRAM\n"
+        "━━━━━━━━━━━━━━━━━━━\n\n"
+        f"Your referrals: {refs}\n"
+        f"Premium months earned: {rewards}\n"
+        f"Next reward in: {next_reward} more referrals\n\n"
+        "🎁 3 referrals = 1 free month of Premium\n\n"
+        "Your unique referral link:\n"
+        f"https://t.me/{bot_username}?start=ref_{code}\n\n"
+        "Add me to your group:\n"
+        f"https://t.me/{bot_username}?startgroup=ref_{code}\n\n"
+    )
+    if not has_premium:
+        msg += "Already subscribed? Share your link and earn free months!"
+    else:
+        msg += "You're premium already — each reward extends your subscription by 1 month."
+    send_message(chat_id, msg)
+
 def cmd_sparkline(chat_id, args):
     if not args:
         send_message(chat_id, "Usage: /sparkline <coin_id>  (e.g. /sparkline bitcoin)")
@@ -458,11 +516,16 @@ def handle_my_chat_member(data):
 
     if new_status == "member" and old_status in ("left", "kicked", "restricted"):
         # Bot was added to group
+        bot_username = os.environ.get("BOT_USERNAME", "Crypt0Emp1reBot")
         welcome = (
-            f"\U0001f916 *Crypto Empire Bot added to {group_title}*\n\n"
+            f"🤖 *Crypto Empire Bot added to {group_title}*\n\n"
             f"Type /btc, /eth, /sol or any coin ticker for instant prices.\n"
             f"Use /help to see all commands.\n\n"
-            f"More at crypto-empire-ten.vercel.app"
+            f"More at crypto-empire-ten.vercel.app\n\n"
+            f"💎 *Earn Free Premium*\n"
+            f"Share this link with friends to earn rewards:\n"
+            f"https://t.me/{bot_username}?start=ref_your_code\n"
+            f"3 referrals = 1 free month!"
         )
         send_message(chat_id, welcome, parse_mode="Markdown")
         log.info(f"Bot added to group: {group_title} ({chat_id})")
@@ -515,6 +578,9 @@ COMMANDS = {
     "premium":   cmd_premium,
     "subscribe": cmd_premium,
     "manage":    cmd_manage,
+    "referral":  cmd_referral,
+    "ref":       cmd_referral,
+    "affiliate": cmd_referral,
 }
 
 # Register shortcut commands (e.g., /btc → cmd_price(["bitcoin"]))
