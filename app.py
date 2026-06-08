@@ -348,69 +348,61 @@ def fetch_rss(url):
 SHARED_HEAD = """<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Noto+Sans+JP:wght@700;900&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;border-radius:0!important;-webkit-border-radius:0!important;}
   :root{
-    --bg:#000;
+    --bg:#050505;
     --surface:#0a0a0a;
-    --surface2:#050505;
-    --border:#181818;
-    --text:#c0c0c0;
-    --text-dim:#5a504a;
-    --text-muted:#2a2826;
+    --surface2:#111;
+    --border:#333;
+    --text:#e0e0e0;
+    --text-dim:#888;
+    --text-muted:#555;
     --green:#00ff41;
-    --red:#ff3333;
-    --accent:#b00818;
-    --accent-glow:#b00818;
+    --green-dim:rgba(0,255,65,0.2);
+    --red:#ff003c;
+    --red-dim:rgba(255,0,60,0.2);
+    --accent:#ff003c;
+    --accent-glow:#ff003c;
     --white:#f0f0f0;
-    --on-surface-variant:#b9ccb2;
-    --outline-variant:#3b4b37;
-    --surface-bright:#393939;
-    --glow:0 0 6px rgba(255,255,255,.06);
-    --glow-green:0 0 6px rgba(0,255,0,.10);
-    --glow-red:0 0 8px rgba(176,8,24,.15);
+    --glow:0 0 6px rgba(0,255,65,.05);
+    --glow-green:0 0 6px rgba(0,255,65,.12);
+    --glow-red:0 0 6px rgba(255,0,60,.12);
   }
   body{
     font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
     background:var(--bg);color:var(--text);font-size:12px;line-height:1.8;
     min-height:100vh;position:relative;overflow-x:hidden;
+    background-image:linear-gradient(to right,rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.03) 1px,transparent 1px);
+    background-size:40px 40px;
     -webkit-font-smoothing:antialiased;
   }
-  ::selection{background:var(--white);color:var(--bg);}
+  ::selection{background:var(--green);color:var(--bg);}
   a{color:var(--text);text-decoration:none;transition:color .12s;}
   a:hover{color:var(--white);}
 
-  /* ===== CRT EFFECTS (Stitch Design) ===== */
+  /* ===== CRT OVERLAY ===== */
   body::before{
     content:'';position:fixed;top:0;left:0;right:0;bottom:0;
     background:linear-gradient(rgba(18,16,16,0) 50%,rgba(0,0,0,.25) 50%),linear-gradient(90deg,rgba(255,0,0,.06),rgba(0,255,0,.02),rgba(0,0,255,.06));
-    z-index:9995;
     background-size:100% 2px,3px 100%;
-    pointer-events:none;opacity:.15;
+    pointer-events:none;z-index:9995;opacity:.15;
   }
-  @keyframes sweep{0%{top:-2%}100%{top:102%}}
   .sweep{
     position:fixed;left:0;right:0;height:3px;
     background:linear-gradient(to bottom,transparent,rgba(255,255,255,.03),transparent);
     pointer-events:none;z-index:9996;animation:sweep 12s linear infinite;
   }
-  .grid-bg{
+  @keyframes sweep{0%{top:-2%}100%{top:102%}}
+
+  /* ===== NOISE TEXTURE ===== */
+  .noise-bg{
     position:fixed;top:0;left:0;right:0;bottom:0;
-    background-image:linear-gradient(rgba(255,255,255,.006) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.006) 1px,transparent 1px);
-    background-size:48px 48px;pointer-events:none;z-index:-1;
+    opacity:.04;pointer-events:none;z-index:9994;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   }
-  .container{max-width:1100px;margin:0 auto;padding:24px 20px 80px;position:relative;}
-  .container::before{
-    content:'┌────────────────────────────────────────────────────────────────────────────────────────────────────────────┐';
-    position:absolute;top:12px;left:20px;right:20px;overflow:hidden;white-space:nowrap;
-    color:var(--text-muted);font-size:8px;letter-spacing:0;pointer-events:none;
-  }
-  .container::after{
-    content:'└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘';
-    position:absolute;bottom:56px;left:20px;right:20px;overflow:hidden;white-space:nowrap;
-    color:var(--text-muted);font-size:8px;letter-spacing:0;pointer-events:none;
-  }
-  hr{border:none;border-top:1px solid var(--border);margin:28px 0;}
+
+  .container{max-width:1600px;margin:0 auto;padding:24px 20px 80px;position:relative;}
 
   /* ===== TYPOGRAPHY SCALE ===== */
   .t-display{font-size:28px;font-weight:800;letter-spacing:6px;text-transform:uppercase;color:var(--white);line-height:1.2;}
@@ -422,11 +414,58 @@ SHARED_HEAD = """<meta charset="UTF-8">
   .t-label{font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
   .t-mono{font-family:monospace;}
 
-  /* ===== TOP BAR ===== */
+  /* ===== GLASS PANEL ===== */
+  .glass-panel{
+    background:rgba(15,15,15,.6);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:inset 0 0 20px rgba(0,255,65,.04);
+  }
+
+  /* ===== TECH BORDER ===== */
+  .tech-border{position:relative;border:1px solid var(--border);}
+  .tech-border::before,.tech-border::after{
+    content:'';position:absolute;width:8px;height:8px;border:1px solid var(--green);
+  }
+  .tech-border::before{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .tech-border::after{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+  .tech-border-red::before,.tech-border-red::after{border-color:var(--red);}
+
+  /* ===== GLITCH TEXT ===== */
+  .glitch-text{position:relative;}
+  .glitch-text::before,.glitch-text::after{
+    content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;background:var(--bg);
+  }
+  .glitch-text::before{left:2px;text-shadow:-1px 0 var(--red);clip:rect(24px,550px,90px,0);animation:glitch-anim-2 3s infinite linear alternate-reverse;}
+  .glitch-text::after{left:-2px;text-shadow:-1px 0 var(--green);clip:rect(85px,550px,140px,0);animation:glitch-anim 2.5s infinite linear alternate-reverse;}
+  @keyframes glitch-anim{
+    0%{clip:rect(10px,9999px,44px,0)}
+    20%{clip:rect(89px,9999px,12px,0)}
+    40%{clip:rect(33px,9999px,55px,0)}
+    60%{clip:rect(78px,9999px,2px,0)}
+    80%{clip:rect(4px,9999px,99px,0)}
+    100%{clip:rect(55px,9999px,33px,0)}
+  }
+  @keyframes glitch-anim-2{
+    0%{clip:rect(65px,9999px,100px,0)}
+    20%{clip:rect(2px,9999px,44px,0)}
+    40%{clip:rect(44px,9999px,66px,0)}
+    60%{clip:rect(89px,9999px,22px,0)}
+    80%{clip:rect(11px,9999px,77px,0)}
+    100%{clip:rect(99px,9999px,11px,0)}
+  }
+
+  /* ===== SECTION LABEL ===== */
+  .section-label{color:var(--text-dim);font-size:10px;text-transform:uppercase;margin-bottom:12px;letter-spacing:2px;display:flex;align-items:center;gap:8px;}
+  .section-label .gl{color:var(--green);font-weight:700;}
+
+  /* ===== TOP BAR / HEADER ===== */
   .top-bar{
     display:flex;justify-content:space-between;align-items:center;
-    border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:24px;
+    border-bottom:1px solid var(--border);padding:16px;margin-bottom:24px;
     flex-wrap:wrap;gap:12px;
+    background:rgba(15,15,15,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   }
   .brand{display:flex;align-items:center;gap:14px;}
   .prompt{color:var(--green);font-size:16px;font-weight:700;display:flex;align-items:center;}
@@ -439,11 +478,11 @@ SHARED_HEAD = """<meta charset="UTF-8">
     padding:6px 14px;font-size:9px;text-transform:uppercase;letter-spacing:2px;
     color:var(--text-dim);border:1px solid transparent;transition:.15s;
   }
-  .top-nav a:hover{color:var(--white);border-color:var(--border);}
+  .top-nav a:hover{color:var(--text);border-color:var(--border);}
   .top-nav a.premium{color:var(--green);}
   .top-nav a.premium:hover{background:var(--green);color:var(--bg);}
 
-  /* ===== STATUS LINE ===== */
+  /* ===== STATUS BAR ===== */
   .status-line{
     display:flex;justify-content:space-between;align-items:center;
     padding:5px 0;border-bottom:1px solid var(--border);margin-bottom:28px;
@@ -464,41 +503,59 @@ SHARED_HEAD = """<meta charset="UTF-8">
   }
   .s-title::before{content:'❯ ';color:var(--green);font-weight:700;}
 
-  /* ===== STAT ROW ===== */
-  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;border:1px solid var(--border);margin-bottom:24px;}
-  .stat-item{padding:14px 16px;background:var(--surface);transition:.15s;}
-  .stat-item:hover{background:rgba(255,255,255,.015);}
+  /* ===== STAT ROW (Ticker Cards) ===== */
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px;margin-bottom:24px;}
+  .stat-item{
+    padding:14px 16px;background:rgba(15,15,15,.6);
+    border:1px solid var(--border);position:relative;transition:.15s;
+  }
+  .stat-item::before,.stat-item::after{
+    content:'';position:absolute;width:6px;height:6px;border:1px solid var(--green);
+  }
+  .stat-item::before{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .stat-item::after{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+  .stat-item:hover{background:rgba(255,255,255,.03);}
   .stat-label{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
   .stat-value{font-size:22px;font-weight:700;color:var(--white);margin-top:4px;letter-spacing:-.5px;}
   .stat-sub{font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
-  .up{color:var(--green);}.down{color:var(--red);}
 
-  /* ===== GAS ===== */
-  .gas-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;border:1px solid var(--border);margin-bottom:24px;}
-  .gas-item{padding:12px;text-align:center;background:var(--surface);transition:.15s;}
-  .gas-item:hover{background:rgba(255,255,255,.015);}
-  .gas-chain{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
-  .gas-gwei{font-size:22px;font-weight:700;letter-spacing:1px;margin-top:4px;}
-  .gas-gwei.low{color:var(--green);}.gas-gwei.med{color:var(--white);}.gas-gwei.high{color:var(--red);}
+  /* ===== GAS STATION ===== */
+  .gas-card{
+    background:rgba(15,15,15,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--border);position:relative;padding:16px;margin-bottom:24px;
+  }
+  .gas-card::before,.gas-card::after{
+    content:'';position:absolute;width:8px;height:8px;border:1px solid var(--green);
+  }
+  .gas-card::before{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .gas-card::after{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+  .gas-row{display:flex;flex-direction:column;gap:4px;}
+  .gas-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(51,51,51,.4);}
+  .gas-item:last-child{border-bottom:none;}
+  .gas-chain{font-size:10px;color:var(--text);}
+  .gas-gwei{font-weight:700;color:var(--green);font-size:13px;}
 
-  /* ===== TABLE ===== */
-  .tbl{border:1px solid var(--border);margin-bottom:24px;overflow-x:auto;}
+  /* ===== MARKET TABLE ===== */
+  .tbl{background:rgba(15,15,15,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);position:relative;margin-bottom:24px;overflow-x:auto;}
+  .tbl::before,.tbl::after{
+    content:'';position:absolute;width:8px;height:8px;border:1px solid var(--green);
+  }
+  .tbl::before{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .tbl::after{bottom:-1px;right:-1px;border-left:none;border-top:none;}
   table{width:100%;border-collapse:collapse;min-width:600px;}
-  th,td{padding:8px 12px;text-align:left;font-size:11px;white-space:nowrap;border-bottom:1px solid var(--border);}
+  th,td{padding:10px 14px;text-align:left;font-size:11px;white-space:nowrap;border-bottom:1px solid rgba(51,51,51,.4);}
   th{
-    color:var(--text-dim);font-weight:500;font-size:8px;
-    text-transform:uppercase;letter-spacing:2px;background:var(--surface);
+    color:var(--text-dim);font-weight:500;font-size:9px;
+    text-transform:uppercase;letter-spacing:2px;
     position:sticky;top:0;
   }
   tr:last-child td{border-bottom:none;}
-  tr:hover td{background:rgba(255,255,255,.018);}
-  tr td:first-child{padding-left:16px;}
-  tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--green);}
-  .rank{color:var(--text-dim);width:20px;}
-  .cname{font-weight:500;color:var(--white);}
+  tr:hover td{background:rgba(0,255,65,.03);}
+  tr td:first-child{padding-left:18px;}
+  .rank{color:var(--text-dim);width:24px;}
+  .cname{font-weight:700;color:var(--green);}
   .csym{color:var(--text-muted);font-size:9px;}
   .mc,.vol{color:var(--text-dim);font-size:10px;}
-
   /* ===== AFFILIATE STRIP ===== */
   .aff-strip{
     border:1px solid var(--border);padding:10px 16px;margin-bottom:24px;
@@ -546,10 +603,18 @@ SHARED_HEAD = """<meta charset="UTF-8">
   .feat-item h4{font-size:10px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;color:var(--white);}
   .feat-item p{font-size:9px;color:var(--text-dim);line-height:1.6;}
 
-  /* ===== PREMIUM BOX ===== */
-  .prem-box{border:1px solid var(--border);padding:24px;margin-bottom:24px;text-align:center;background:var(--surface);transition:.15s;}
-  .prem-box:hover{border-color:var(--text-muted);}
-  .prem-box h3{font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:3px;color:var(--white);}
+  /* ===== PREMIUM BOX (Pro Upgrade CTA) ===== */
+  .prem-box{
+    border:1px solid var(--red);position:relative;padding:24px;margin-bottom:24px;text-align:center;
+    background:rgba(15,15,15,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    box-shadow:inset 0 0 20px rgba(255,0,60,.04);transition:.15s;
+  }
+  .prem-box::before,.prem-box::after{
+    content:'';position:absolute;width:8px;height:8px;border:1px solid var(--red);
+  }
+  .prem-box::before{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .prem-box::after{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+  .prem-box h3{font-size:18px;margin-bottom:8px;text-transform:uppercase;letter-spacing:3px;color:var(--red);}
   .prem-box h3::before{content:'$ ';color:var(--text-dim);}
   .prem-box p{font-size:10px;color:var(--text-dim);margin-bottom:10px;line-height:1.6;}
   .waddr{
@@ -561,8 +626,16 @@ SHARED_HEAD = """<meta charset="UTF-8">
   .ctags{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:8px 0;}
   .ctag{border:1px solid var(--border);padding:2px 10px;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
 
-  /* ===== FOOTER ===== */
-  footer{text-align:center;padding:20px 0;border-top:1px solid var(--border);color:var(--text-dim);font-size:9px;}
+  /* ===== FOOTER / STATUS BAR ===== */
+  footer{
+    border-top:1px solid var(--border);padding:8px 16px;margin-top:24px;
+    display:flex;justify-content:space-between;align-items:center;
+    background:rgba(10,10,10,.8);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    color:var(--text-dim);font-size:10px;flex-wrap:wrap;gap:8px;
+  }
+  footer .sys{display:flex;gap:12px;}
+  footer .sys .ok{color:var(--green);}
+  footer .info{display:flex;gap:12px;}
 
   /* ===== BOTTOM BAR ===== */
   .b-bar{
@@ -793,7 +866,7 @@ INDEX_HTML = """<!DOCTYPE html>
     <meta name="twitter:description" content="Free crypto dashboard. Live prices, gas tracker, wallet checker, Telegram bot @Crypt0Emp1reBot.">
 </head>
 <body>
-    <div class="grid-bg"></div>
+    <div class="noise-bg"></div>
     <div class="sweep"></div>
 
     <div class="container">
@@ -836,9 +909,9 @@ INDEX_HTML = """<!DOCTYPE html>
 
         <!-- Status Line -->
         <div class="status-line">
-            <span><span class="dot"></span> SYSTEM ONLINE</span>
+            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
             <span id="live-clock">--</span>
-            <span>NODES: 4/4</span>
+            <span>NODES: 4/4 &nbsp;//&nbsp; ENCRYPTION: AES-256</span>
             <span>v1.0</span>
         </div>
 
@@ -872,7 +945,7 @@ INDEX_HTML = """<!DOCTYPE html>
 
         <!-- Affiliate Strip -->
         <div class="aff-strip">
-            <span class="aff-label">EXCHANGES</span>
+            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> EXCHANGES <span class="gl">╗</span></div>
             <div class="aff-links">
                 <a class="aff-link" href="https://www.binance.com/en/register?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Binance</a>
                 <a class="aff-link" href="https://www.coinbase.com/join/CRYPTOEMPIRE" target="_blank" rel="noopener">Coinbase</a>
@@ -885,7 +958,7 @@ INDEX_HTML = """<!DOCTYPE html>
             </div>
         </div>
         <div class="aff-strip">
-            <span class="aff-label">TOOLS</span>
+            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> TOOLS <span class="gl">╗</span></div>
             <div class="aff-links">
                 <a class="aff-link" href="https://shop.ledger.com/?r=CRYPTOEMPIRE" target="_blank" rel="noopener">Ledger</a>
                 <a class="aff-link" href="https://crypto.com/exch/CRYPTOEMPIRE" target="_blank" rel="noopener">Crypto.com</a>
@@ -896,15 +969,13 @@ INDEX_HTML = """<!DOCTYPE html>
         <div class="divider-accent">GAS FEES</div>
 
         <!-- Gas tracker -->
-        <div class="term-box">
-            <div class="term-box-hd">REAL-TIME GAS <span style="font-size:7px;color:var(--text-muted);">gwei</span></div>
-            <div class="term-box-bd no-pad">
+        <div class="gas-card">
+            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> GAS_STATION (GWEI) <span class="gl">╗</span></div>
             <div class="gas-row" id="gas-grid" style="border:none;margin-bottom:0;">
                 <div class="gas-item"><div class="gas-chain">Ethereum</div><div class="gas-gwei" id="gas-eth">--</div></div>
                 <div class="gas-item"><div class="gas-chain">Polygon</div><div class="gas-gwei" id="gas-poly">--</div></div>
                 <div class="gas-item"><div class="gas-chain">Arbitrum</div><div class="gas-gwei" id="gas-arb">--</div></div>
                 <div class="gas-item"><div class="gas-chain">Base</div><div class="gas-gwei" id="gas-base">--</div></div>
-            </div>
             </div>
         </div>
 
@@ -943,7 +1014,7 @@ INDEX_HTML = """<!DOCTYPE html>
         <!-- Sponsored Coin Spotlight (paid placement) -->
         <a id="sponsored-link" href="#" target="_blank" rel="noopener" style="text-decoration:none;color:unset;display:block;">
         <div class="sponsor-box">
-            <span class="sponsor-label">SPONSORED SPOTLIGHT — <span id="sponsored-name" style="color:var(--green);">--</span></span>
+            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> SPONSORED SPOTLIGHT <span class="gl">╗</span> <span id="sponsored-name" style="color:var(--green);">--</span></div>
             <div class="aff-links">
                 <span id="sponsored-price" style="font-size:11px;color:var(--white);font-weight:700;">--</span>
                 <span id="sponsored-change" style="font-size:9px;">--</span>
@@ -995,7 +1066,7 @@ INDEX_HTML = """<!DOCTYPE html>
 
         <!-- News -->
         <div class="term-box" id="news">
-            <div class="term-box-hd">CRYPTO NEWS <span style="font-size:7px;color:var(--text-muted);">RSS</span></div>
+            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> CRYPTO NEWS <span class="gl">╗</span></div>
             <div class="term-box-bd no-pad">
             <div class="tbl" style="border:none;margin-bottom:0;">
                 <ul class="news-list">
@@ -1083,36 +1154,7 @@ INDEX_HTML = """<!DOCTYPE html>
             </div>
         </div>
 
-        <footer>
-            <div class="footer-grid">
-                <div class="footer-col">
-                    <h5>Product</h5>
-                    <a href="/">Dashboard</a>
-                    <a href="/premium">Premium</a>
-                    <a href="/whales">Whale Tracker</a>
-                    <a href="/launches">Token Launches</a>
-                    <a href="/yields">DeFi Yields</a>
-                </div>
-                <div class="footer-col">
-                    <h5>Resources</h5>
-                    <a href="/docs">API Documentation</a>
-                    <a href="/blog">Blog</a>
-                    <a href="/wallet-check">Wallet Checker</a>
-                    <a href="/ticker">Live Ticker</a>
-                    <a href="/advertise">Advertise</a>
-                </div>
-                <div class="footer-col">
-                    <h5>Support</h5>
-                    <div style="font-size:9px;color:var(--text-dim);margin-bottom:4px;">Telegram</div>
-                    <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">@Crypt0Emp1reBot</a>
-                    <div style="font-size:9px;color:var(--text-dim);margin-top:8px;margin-bottom:4px;">Donate ETH</div>
-                    <span class="daddr" onclick="navigator.clipboard.writeText('0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef');copyToast()" style="font-size:8px;">0x2902...C7Ef</span>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                Built autonomously &mdash; Zero KYC &mdash; Zero Budget &mdash; Data by CoinGecko, DeFiLlama, Etherscan
-            </div>
-        </footer>
+        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
     </div>
 
     <div class="toast" id="copy-toast">ADDRESS COPIED</div>
@@ -2148,7 +2190,7 @@ def premium_page():
     <meta name="description" content="Unlock premium features: advanced whale alerts, priority price alerts, and exclusive market data.">
 </head>
 <body>
-    <div class="grid-bg"></div>
+    <div class="noise-bg"></div>
     <div class="sweep"></div>
     <div class="container">
         <div class="top-bar">
@@ -2357,7 +2399,7 @@ def api_keys_page():
     <meta name="robots" content="noindex, follow">
 </head>
 <body>
-    <div class="grid-bg"></div>
+    <div class="noise-bg"></div>
     <div class="sweep"></div>
     <div class="container">
         <div class="top-bar">
@@ -2403,7 +2445,7 @@ def api_keys_page():
         </div>
 
         <div class="prem-box">
-            <h3>GET PREMIUM</h3>
+            <h3 class="glitch-text" data-text="&gt;_ CRYPTO_EMPIRE_PRO">&gt;_ CRYPTO_EMPIRE_PRO</h3>
             <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">Subscribe via Polar.sh. Your API key is automatically provisioned after payment.</p>
             <div style="margin-top:12px;">
                 <a href="/premium" style="display:inline-block;padding:10px 24px;background:var(--white);color:var(--bg);font-size:10px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;">Subscribe $9.99/mo</a>
@@ -2686,7 +2728,7 @@ def docs():
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/docs">
 </head>
 <body>
-    <div class="grid-bg"></div>
+    <div class="noise-bg"></div>
     <div class="sweep"></div>
     <div class="container">
         <div class="top-bar">
@@ -2839,7 +2881,7 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
     <meta name="description" content="Multi-chain Ethereum wallet balance checker. Check ETH, tokens and balances across Ethereum, Arbitrum, Polygon, Base, Optimism, BSC.">
 </head>
 <body>
-    <div class="grid-bg"></div>
+    <div class="noise-bg"></div>
     <div class="sweep"></div>
     <div class="container">
         <div class="top-bar">
@@ -3124,7 +3166,7 @@ PROFILER_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="grid-bg"></div>
+<div class="noise-bg"></div>
 <div class="sweep"></div>
 <div class="container">
 <div class="top-bar">
@@ -3827,7 +3869,7 @@ LAUNCHES_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="grid-bg"></div>
+<div class="noise-bg"></div>
 <div class="sweep"></div>
 <div class="container">
 <div class="top-bar">
@@ -4121,7 +4163,7 @@ def blog_index():
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog">
 </head>
 <body>
-    <div class="grid-bg"></div>
+    <div class="noise-bg"></div>
     <div class="sweep"></div>
     <div class="container">
         <div class="top-bar">
@@ -4203,7 +4245,7 @@ def blog_post(slug):
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog/{{ slug }}">
 </head>
 <body>
-    <div class="grid-bg"></div>
+    <div class="noise-bg"></div>
     <div class="sweep"></div>
     <div class="container">
         <div class="top-bar">
@@ -4683,7 +4725,7 @@ WHALE_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="grid-bg"></div>
+<div class="noise-bg"></div>
 <div class="sweep"></div>
 <div class="container">
 <div class="top-bar">
@@ -4879,7 +4921,7 @@ YIELDS_HTML = """<!DOCTYPE html>
 </head>
 <body>
 <div class="sweep"></div>
-<div class="grid-bg"></div>
+<div class="noise-bg"></div>
 <div class="container">
   <div class="top-bar">
     <div class="brand">
@@ -5080,7 +5122,7 @@ TRENDING_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="grid-bg"></div>
+<div class="noise-bg"></div>
 <div class="sweep"></div>
 <div class="container">
 <div class="top-bar">
@@ -5265,7 +5307,7 @@ def page_not_found(e):
     <meta name="robots" content="noindex">
 </head>
 <body>
-    <div class="grid-bg"></div>
+    <div class="noise-bg"></div>
     <div class="sweep"></div>
     <div class="container">
         <div class="top-bar">
