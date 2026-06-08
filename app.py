@@ -353,15 +353,19 @@ SHARED_HEAD = """<meta charset="UTF-8">
   :root{
     --bg:#000;
     --surface:#0a0a0a;
-    --border:#1a1a1a;
+    --surface2:#050505;
+    --border:#181818;
     --text:#c0c0c0;
-    --text-dim:#585858;
-    --text-muted:#2a2a2a;
+    --text-dim:#5a504a;
+    --text-muted:#2a2826;
     --green:#0f0;
     --red:#f00;
+    --accent:#b00818;
+    --accent-glow:#b00818;
     --white:#f0f0f0;
     --glow:0 0 6px rgba(255,255,255,.06);
     --glow-green:0 0 6px rgba(0,255,0,.10);
+    --glow-red:0 0 8px rgba(176,8,24,.15);
   }
   body{
     font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
@@ -633,6 +637,56 @@ SHARED_HEAD = """<meta charset="UTF-8">
     background:var(--green);color:var(--bg);line-height:1;
   }
 
+  /* ===== ASCII ART BANNER ===== */
+  .ascii-banner{
+    font-size:10px;line-height:1.25;letter-spacing:0;white-space:pre;
+    color:var(--text-dim);margin-bottom:20px;text-align:center;
+    font-family:'Courier New',monospace;
+  }
+  .ascii-banner .hl{color:var(--accent);}
+  .ascii-banner .hl2{color:var(--white);}
+  .ascii-banner .dim{color:var(--text-muted);}
+
+  /* ===== TERMINAL SECTION BOX ===== */
+  .term-box{
+    border:1px solid var(--border);margin-bottom:24px;
+    background:var(--surface);
+  }
+  .term-box-hd{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 14px;background:var(--surface2);
+    border-bottom:1px solid var(--border);
+    font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;
+  }
+  .term-box-hd::before{content:'╔══ ';color:var(--text-muted);font-size:8px;}
+  .term-box-hd::after{content:' ══╗';color:var(--text-muted);font-size:8px;}
+  .term-box-bd{padding:14px;}
+  .term-box-bd.no-pad{padding:0;}
+  .term-box-ft{
+    padding:8px 14px;border-top:1px solid var(--border);
+    font-size:9px;color:var(--text-dim);
+    text-transform:uppercase;letter-spacing:1px;text-align:center;
+  }
+
+  /* ===== CRIMSON ACCENT ===== */
+  .c-accent{color:var(--accent)!important;}
+  .c-accent-bg{background:var(--accent);color:var(--bg);border-color:var(--accent)!important;}
+  .c-accent-bg:hover{background:transparent;color:var(--accent)!important;}
+  .c-accent-border{border-color:var(--accent)!important;}
+  .c-accent-border:hover{background:rgba(176,8,24,.05);}
+
+  /* ===== ENHANCED DIVIDER ===== */
+  .divider-accent{text-align:center;color:var(--accent);font-size:8px;letter-spacing:2px;margin:24px 0 16px;text-transform:uppercase;}
+  .divider-accent::before{content:'══[ ';color:var(--text-muted);}
+  .divider-accent::after{content:' ]══';color:var(--text-muted);}
+
+  /* ===== DENSE GRID ===== */
+  .dense-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;}
+  .dense-item{padding:10px 12px;background:var(--surface);}
+  .dense-item:hover{background:rgba(255,255,255,.015);}
+  .dense-label{font-size:7px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
+  .dense-val{font-size:14px;font-weight:600;color:var(--white);margin-top:2px;letter-spacing:-.3px;}
+
   /* ===== WALLET PAGE ===== */
   .winput{border:1px solid var(--border);padding:10px 14px;background:var(--surface);color:var(--white);font-family:monospace;font-size:13px;outline:none;width:100%;display:block;transition:.15s;}
   .winput:focus{border-color:var(--white);box-shadow:var(--glow);}
@@ -732,6 +786,13 @@ INDEX_HTML = """<!DOCTYPE html>
     <div class="sweep"></div>
 
     <div class="container">
+
+        <!-- ASCII Banner -->
+        <div class="ascii-banner"><span class="dim">╔══════════════════════════════════════╗
+║</span>  <span class="hl2">▓▓▓▓▓</span>  <span class="hl">CRYPTO EMPIRE</span>  <span class="hl2">▓▓▓▓▓</span>  <span class="dim">║
+║</span>  autonomous intelligence<span class="dim">               ║
+╚══════════════════════════════════════╝</span></div>
+
         <!-- Top Bar -->
         <div class="top-bar">
             <div class="brand">
@@ -771,25 +832,30 @@ INDEX_HTML = """<!DOCTYPE html>
         </div>
 
         <!-- Top coins bar -->
-        <div class="stat-row">
-            {% for coin_id, data in top_coins.items() %}
-            <div class="stat-item">
-                <div class="stat-label">{{ coin_id|upper }}</div>
-                <div class="stat-value">${{ "%.2f"|format(data.usd) if data.usd < 1000 else "%.0f"|format(data.usd) }}</div>
-                <div class="stat-sub {{ 'up' if data.usd_24h_change >= 0 else 'down' }}">24h: {{ "%.2f"|format(data.usd_24h_change) }}%</div>
+        <div class="term-box">
+            <div class="term-box-hd">MARKET SNAPSHOT <span id="live-clock2" style="font-size:7px;color:var(--text-muted);"></span></div>
+            <div class="term-box-bd no-pad">
+            <div class="stat-row" style="border:none;margin-bottom:0;">
+                {% for coin_id, data in top_coins.items() %}
+                <div class="stat-item">
+                    <div class="stat-label">{{ coin_id|upper }}</div>
+                    <div class="stat-value">${{ "%.2f"|format(data.usd) if data.usd < 1000 else "%.0f"|format(data.usd) }}</div>
+                    <div class="stat-sub {{ 'up' if data.usd_24h_change >= 0 else 'down' }}">24h: {{ "%.2f"|format(data.usd_24h_change) }}%</div>
+                </div>
+                {% endfor %}
+                {% if fear_greed %}
+                <div class="stat-item">
+                    <div class="stat-label">FEAR & GREED</div>
+                    <div class="stat-value" style="color:{{ 'var(--green)' if fear_greed.value > 50 else 'var(--red)' }};">{{ fear_greed.value }}</div>
+                    <div class="stat-sub" style="color:var(--text-dim);">{{ fear_greed.classification|upper }}</div>
+                </div>
+                {% endif %}
+                <div class="stat-item" id="tvl-card" style="display:none;">
+                    <div class="stat-label">ETH TVL</div>
+                    <div class="stat-value" id="tvl-value">--</div>
+                    <div class="stat-sub">DefiLlama</div>
+                </div>
             </div>
-            {% endfor %}
-            {% if fear_greed %}
-            <div class="stat-item">
-                <div class="stat-label">FEAR & GREED</div>
-                <div class="stat-value" style="color:{{ 'var(--green)' if fear_greed.value > 50 else 'var(--red)' }};">{{ fear_greed.value }}</div>
-                <div class="stat-sub" style="color:var(--text-dim);">{{ fear_greed.classification|upper }}</div>
-            </div>
-            {% endif %}
-            <div class="stat-item" id="tvl-card" style="display:none;">
-                <div class="stat-label">ETH TVL</div>
-                <div class="stat-value" id="tvl-value">--</div>
-                <div class="stat-sub">DefiLlama</div>
             </div>
         </div>
 
@@ -816,46 +882,52 @@ INDEX_HTML = """<!DOCTYPE html>
             </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="divider-accent">GAS FEES</div>
 
         <!-- Gas tracker -->
-        <div class="s-title">GAS TRACKER</div>
-        <div class="gas-row" id="gas-grid">
-            <div class="gas-item"><div class="gas-chain">Ethereum</div><div class="gas-gwei" id="gas-eth">--</div></div>
-            <div class="gas-item"><div class="gas-chain">Polygon</div><div class="gas-gwei" id="gas-poly">--</div></div>
-            <div class="gas-item"><div class="gas-chain">Arbitrum</div><div class="gas-gwei" id="gas-arb">--</div></div>
-            <div class="gas-item"><div class="gas-chain">Base</div><div class="gas-gwei" id="gas-base">--</div></div>
+        <div class="term-box">
+            <div class="term-box-hd">REAL-TIME GAS <span style="font-size:7px;color:var(--text-muted);">gwei</span></div>
+            <div class="term-box-bd no-pad">
+            <div class="gas-row" id="gas-grid" style="border:none;margin-bottom:0;">
+                <div class="gas-item"><div class="gas-chain">Ethereum</div><div class="gas-gwei" id="gas-eth">--</div></div>
+                <div class="gas-item"><div class="gas-chain">Polygon</div><div class="gas-gwei" id="gas-poly">--</div></div>
+                <div class="gas-item"><div class="gas-chain">Arbitrum</div><div class="gas-gwei" id="gas-arb">--</div></div>
+                <div class="gas-item"><div class="gas-chain">Base</div><div class="gas-gwei" id="gas-base">--</div></div>
+            </div>
+            </div>
         </div>
 
-        <div class="divider"></div>
-
-        <div id="banner-top" style="display:none;margin-bottom:16px;"></div>
+        <div class="divider-accent">MARKET DATA</div>
 
         <!-- Market Table -->
-        <div class="s-title" id="market">TOP 20 CRYPTOCURRENCIES</div>
-        <div class="tbl">
-            <table>
-                <thead>
-                    <tr><th>#</th><th>Name</th><th>Price</th><th>24h</th><th>7d</th><th>Chart</th><th>Market Cap</th><th>Volume 24h</th></tr>
-                </thead>
-                <tbody>
-                    {% for coin in market_data %}
-                    <tr>
-                        <td class="rank">{{ coin.market_cap_rank }}</td>
-                        <td><span class="cname">{{ coin.name }}</span> <span class="csym">{{ coin.symbol|upper }}</span></td>
-                        <td>${{ "%.2f"|format(coin.current_price) if coin.current_price < 1000 else "%.0f"|format(coin.current_price) }}</td>
-                        <td class="{{ 'up' if coin.price_change_percentage_24h >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_24h) }}%</td>
-                        <td class="{{ 'up' if coin.price_change_percentage_7d_in_currency >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_7d_in_currency) }}%</td>
-                        <td>{{ coin.sparkline_svg|safe }}</td>
-                        <td class="mc">${{ "{:,.0f}".format(coin.market_cap) }}</td>
-                        <td class="vol">${{ "{:,.0f}".format(coin.total_volume) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="term-box" id="market">
+            <div class="term-box-hd">TOP 20 CRYPTOCURRENCIES <span style="font-size:7px;color:var(--text-muted);">CoinGecko</span></div>
+            <div class="term-box-bd no-pad">
+            <div class="tbl" style="border:none;margin-bottom:0;">
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Name</th><th>Price</th><th>24h</th><th>7d</th><th>Chart</th><th>Market Cap</th><th>Volume 24h</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for coin in market_data %}
+                        <tr>
+                            <td class="rank">{{ coin.market_cap_rank }}</td>
+                            <td><span class="cname">{{ coin.name }}</span> <span class="csym">{{ coin.symbol|upper }}</span></td>
+                            <td>${{ "%.2f"|format(coin.current_price) if coin.current_price < 1000 else "%.0f"|format(coin.current_price) }}</td>
+                            <td class="{{ 'up' if coin.price_change_percentage_24h >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_24h) }}%</td>
+                            <td class="{{ 'up' if coin.price_change_percentage_7d_in_currency >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_7d_in_currency) }}%</td>
+                            <td>{{ coin.sparkline_svg|safe }}</td>
+                            <td class="mc">${{ "{:,.0f}".format(coin.market_cap) }}</td>
+                            <td class="vol">${{ "{:,.0f}".format(coin.total_volume) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="divider-accent">SPONSORED</div>
 
         <!-- Sponsored Coin Spotlight (paid placement) -->
         <a id="sponsored-link" href="#" target="_blank" rel="noopener" style="text-decoration:none;color:unset;display:block;">
@@ -869,49 +941,65 @@ INDEX_HTML = """<!DOCTYPE html>
         </div>
         </a>
 
-        <div class="divider"></div>
+        <div class="divider-accent">DEX ACTIVITY</div>
 
         <!-- DEX Volume -->
-        <div class="s-title">DEX VOLUME</div>
-        <div class="tbl" id="dex-section">
-            <table>
-                <thead><tr><th>#</th><th>DEX</th><th>Volume 24h</th><th>Volume 7d</th><th>24h Change</th><th>Chains</th></tr></thead>
-                <tbody id="dex-tbody"></tbody>
-            </table>
+        <div class="term-box">
+            <div class="term-box-hd">DEX VOLUME <span style="font-size:7px;color:var(--text-muted);">DefiLlama</span></div>
+            <div class="term-box-bd no-pad">
+            <div class="tbl" style="border:none;margin-bottom:0;" id="dex-section">
+                <table>
+                    <thead><tr><th>#</th><th>DEX</th><th>Volume 24h</th><th>Volume 7d</th><th>24h Change</th><th>Chains</th></tr></thead>
+                    <tbody id="dex-tbody"></tbody>
+                </table>
+            </div>
+            </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="divider-accent">TRENDS</div>
 
         <div id="banner-mid" style="display:none;margin-bottom:16px;"></div>
 
         <!-- Trending Coins -->
-        <div class="s-title" id="trending">TRENDING COINS</div>
-        <div class="gas-row" id="trending-grid"></div>
+        <div class="term-box" id="trending">
+            <div class="term-box-hd">TRENDING COINS <span style="font-size:7px;color:var(--text-muted);">CoinGecko</span></div>
+            <div class="term-box-bd no-pad">
+            <div class="gas-row" id="trending-grid" style="border:none;margin-bottom:0;"></div>
+            </div>
+        </div>
 
-        <div class="divider"></div>
+        <div class="divider-accent">MOVERS</div>
 
         <!-- Market Movers -->
-        <div class="s-title" id="movers">MARKET MOVERS</div>
-        <div class="gas-row" id="movers-grid">
-            <div class="gas-item" style="grid-column:1/-1;"><div style="font-size:9px;color:var(--text-dim);">LOADING...</div></div>
+        <div class="term-box" id="movers">
+            <div class="term-box-hd">MARKET MOVERS <span style="font-size:7px;color:var(--text-muted);">24h gainers & losers</span></div>
+            <div class="term-box-bd no-pad">
+            <div class="gas-row" id="movers-grid" style="border:none;margin-bottom:0;">
+                <div class="gas-item" style="grid-column:1/-1;"><div style="font-size:9px;color:var(--text-dim);">LOADING...</div></div>
+            </div>
+            </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="divider-accent">NEWSFEED</div>
 
         <!-- News -->
-        <div class="s-title" id="news">CRYPTO NEWS</div>
-        <div class="tbl">
-            <ul class="news-list">
-                {% for item in news %}
-                <li>
-                    <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.title }}</a>
-                    <div class="n-date">{{ item.date[:22] if item.date else '' }}</div>
-                </li>
-                {% endfor %}
-            </ul>
+        <div class="term-box" id="news">
+            <div class="term-box-hd">CRYPTO NEWS <span style="font-size:7px;color:var(--text-muted);">RSS</span></div>
+            <div class="term-box-bd no-pad">
+            <div class="tbl" style="border:none;margin-bottom:0;">
+                <ul class="news-list">
+                    {% for item in news %}
+                    <li>
+                        <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.title }}</a>
+                        <div class="n-date">{{ item.date[:22] if item.date else '' }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="divider-accent">PLATFORM</div>
 
         <!-- Features -->
         <div class="s-title" id="features">FEATURES</div>
@@ -951,12 +1039,12 @@ INDEX_HTML = """<!DOCTYPE html>
         </div>
 
         <!-- Premium Section -->
-        <div class="prem-box" id="premium">
+        <div class="prem-box c-accent-border" id="premium" style="border-color:var(--accent)!important;">
             <h3>PREMIUM ACCESS</h3>
             <p>Whale alerts &bull; Unlimited portfolio wallets &bull; Priority alerts &bull; Ad-free</p>
             <p style="font-size:10px;color:var(--text-dim);margin-top:8px;">10K API requests/day + arbitrage signals + priority support included.</p>
             <div style="margin-top:14px;">
-                <a href="/premium" class="btn-primary btn" style="text-decoration:none;">Subscribe $9.99/mo</a>
+                <a href="/premium" class="btn c-accent-bg" style="text-decoration:none;color:var(--white);border-color:var(--accent);background:var(--accent);">Subscribe $9.99/mo</a>
             </div>
             <p style="font-size:8px;color:var(--text-dim);margin-top:8px;">Powered by Polar.sh &bull; Cancel anytime</p>
         </div>
@@ -2072,8 +2160,10 @@ def premium_page():
             <span id="live-clock">--</span>
         </div>
 
-        <div class="post" style="margin-bottom:16px;">
-            <h3 style="font-size:12px;color:var(--white);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">FREE TIER</h3>
+        <!-- Free Tier Box -->
+        <div class="term-box">
+            <div class="term-box-hd">FREE TIER</div>
+            <div class="term-box-bd">
             <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
                 <span style="color:var(--green);">&#10003;</span> Live crypto prices & charts<br>
                 <span style="color:var(--green);">&#10003;</span> Gas tracker (ETH/BSC/Polygon)<br>
@@ -2085,10 +2175,15 @@ def premium_page():
                 <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Priority price alerts</span><br>
                 <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Premium indicators</span>
             </p>
+            </div>
         </div>
 
-        <div class="prem-box" style="text-align:left;border-color:var(--white);">
-            <h3 style="font-size:12px;margin-bottom:12px;color:var(--green);">PREMIUM TIER -- $9.99 / month</h3>
+        <div class="divider-accent">UNLOCK MORE</div>
+
+        <div class="term-box" style="border-color:var(--accent);">
+            <div class="term-box-hd" style="background:var(--accent);color:var(--bg);">PREMIUM TIER</div>
+            <div class="term-box-bd">
+            <p style="font-size:12px;margin-bottom:12px;color:var(--accent);font-weight:700;">$9.99 / month</p>
             <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
                 <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Telegram whale alerts</strong> -- real-time push on every $100K+ move<br>
                 <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Multi-wallet portfolio (unlimited wallets)</strong> -- track 6+ ETH addresses<br>
@@ -2097,27 +2192,30 @@ def premium_page():
                 <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Ad-free</strong> across all pages<br>
                 <span style="color:var(--green);">&#10003;</span> Support development -- help keep the empire running
             </p>
-        </div>
+            </div>
 """ + ("{% if customer_status == \"active\" %}"
 """
-        <div style="margin-top:16px;padding:12px;border:1px solid var(--green);text-align:center;">
-            <span style="color:var(--green);font-size:10px;text-transform:uppercase;letter-spacing:2px;">&#10003; PREMIUM ACTIVE</span>
-        </div>
-        <div style="margin-top:8px;display:flex;gap:8px;">
-            <a href="/api/premium/manage?customer_id={{ customer_id }}" style="flex:1;display:block;padding:10px;background:transparent;color:var(--white);border:1px solid var(--white);text-align:center;text-decoration:none;font-size:10px;letter-spacing:1px;text-transform:uppercase;border-radius:0;">
-                Manage Subscription
-            </a>
+        <div class="term-box" style="border-color:var(--green);margin-top:16px;">
+            <div class="term-box-hd" style="background:var(--green);color:var(--bg);">&#10003; PREMIUM ACTIVE</div>
+            <div class="term-box-bd" style="text-align:center;">
+                <a href="/api/premium/manage?customer_id={{ customer_id }}" class="btn" style="display:inline-block;">
+                    Manage Subscription
+                </a>
+            </div>
         </div>
 """ + "{% else %}"
 """
-        <div style="margin-top:16px;display:flex;gap:8px;">
-            <a href=\"""" + POLAR_CHECKOUT_URL + """\" target="_blank" style="flex:1;display:block;padding:10px;background:var(--white);color:var(--bg);text-align:center;text-decoration:none;font-size:10px;letter-spacing:1px;text-transform:uppercase;border-radius:0;">
-                Subscribe $9.99/mo
-            </a>
+        <div class="term-box" style="border-color:var(--accent);margin-top:16px;">
+            <div class="term-box-hd" style="background:var(--accent);color:var(--bg);">SUBSCRIBE</div>
+            <div class="term-box-bd" style="text-align:center;">
+                <a href=\"""" + POLAR_CHECKOUT_URL + """\" target="_blank" class="btn c-accent-bg" style="display:inline-block;border-color:var(--accent);">
+                    Subscribe $9.99/mo
+                </a>
+                <p style="font-size:9px;color:var(--text-dim);margin-top:8px;">
+                    Powered by Polar.sh &bull; Cancel anytime
+                </p>
+            </div>
         </div>
-        <p style="font-size:9px;color:var(--text-dim);text-align:center;margin-top:8px;">
-            Powered by Polar.sh &bull; $9.99/month &bull; Cancel anytime
-        </p>
 """ + "{% endif %}")
 + """
         <div class="bnav" style="margin-top:16px;">
@@ -2127,8 +2225,10 @@ def premium_page():
     <script>
     function updateClock(){
         var d=new Date();
-        document.getElementById('live-clock').textContent=
-            d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC'})+' UTC';
+        var t=d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC'})+' UTC';
+        document.getElementById('live-clock').textContent=t;
+        var el=document.getElementById('live-clock2');
+        if(el)el.textContent=t;
     }
     updateClock();setInterval(updateClock,1000);
     </script>
