@@ -417,7 +417,9 @@ def cmd_premium(chat_id, args=None):
         "Price: $9.99/month — Cancel anytime\n"
         "Powered by Polar.sh\n\n"
         "Already subscribed? Manage at:\n"
-        "https://crypto-empire-ten.vercel.app/premium"
+        "https://crypto-empire-ten.vercel.app/premium\n\n"
+        "☕ Like the bot? Donate ETH:\n"
+        "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef"
     )
     send_message(chat_id, msg)
 

@@ -858,9 +858,13 @@ INDEX_HTML = """<!DOCTYPE html>
 
         <footer>
             <p>Built autonomously — Zero KYC — Zero Budget</p>
-            <p style="margin-top:4px;font-size:8px;">Wallet: <code style="font-size:8px;">{{ wallet }}</code></p>
+            <p style="margin-top:4px;font-size:8px;">
+                <span onclick="navigator.clipboard.writeText('{{ wallet }}');document.getElementById('tip-toast').style.display='block';setTimeout(function(){document.getElementById('tip-toast').style.display='none';},1200);" style="cursor:pointer;border:1px solid var(--border);padding:2px 8px;letter-spacing:1px;text-transform:uppercase;">☕ Donate ETH</span>
+                <code style="font-size:8px;margin-left:4px;">{{ wallet[:10] }}...{{ wallet[-4:] }}</code>
+            </p>
         </footer>
     </div>
+    <div class="toast" id="tip-toast" style="display:none;">ADDRESS COPIED</div>
 
     <!-- Bottom Status Bar -->
     <div class="b-bar">
@@ -2108,7 +2112,7 @@ def api_keys_page():
         </div>
 
         <footer>
-            <p>Crypto Empire — Wallet: <code style="font-size:8px;">{{ wallet }}</code></p>
+            <p>Crypto Empire — Wallet: <code style="font-size:8px;">{{ wallet }}</code> <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:2px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:6px;">☕ Donate</span></p>
         </footer>
     </div>
     <div class="b-bar">
@@ -2461,11 +2465,11 @@ Send: /help</pre>
         </div>
 
         <footer>
-            <p>Crypto Empire — Wallet: <code style="font-size:8px;">{{ wallet }}</code></p>
+            <p>Crypto Empire — Wallet: <code style="font-size:8px;">{{ wallet }}</code> <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:2px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:6px;">☕ Donate</span></p>
         </footer>
     </div>
     <div class="b-bar">
-        <span><span class="dot"></span> DOCS</span>
+        <span><span class="dot" style="background:var(--green);"></span> API DOCS</span>
         <span>v1.0</span>
     </div>
     <script>
@@ -3819,7 +3823,7 @@ def blog_index():
         </div>
         
         <footer>
-            <p>Crypto Empire</p>
+            <p>Crypto Empire &middot; <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:1px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;">☕ Donate ETH</span></p>
         </footer>
     </div>
     <div class="b-bar">
@@ -3895,7 +3899,7 @@ def blog_post(slug):
         </div>
         
         <footer>
-            <p><a href="/blog" style="color:var(--text-dim);text-decoration:none;font-size:9px;text-transform:uppercase;letter-spacing:1px;">More articles</a></p>
+            <p><a href="/blog" style="color:var(--text-dim);text-decoration:none;font-size:9px;text-transform:uppercase;letter-spacing:1px;">More articles</a> &middot; <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:1px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:4px;">☕ Donate ETH</span></p>
         </footer>
     </div>
     <div class="b-bar">
@@ -4386,7 +4390,7 @@ WHALE_HTML = r"""<!DOCTYPE html>
 Data from Ethereum mainnet via public RPC &middot; Updates every 30 seconds
 </div>
 
-<footer><p>Crypto Empire &middot; <a href="/api/whales" style="color:var(--text-dim);">API</a></p></footer>
+<footer><p>Crypto Empire &middot; <a href="/api/whales" style="color:var(--text-dim);">API</a> &middot; <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:1px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:4px;">☕ Donate ETH</span></p></footer>
 </div>
 <div class="b-bar"><span><span class="dot"></span> whale tracker</span><span>v3.0</span></div>
 
@@ -4946,7 +4950,7 @@ def page_not_found(e):
             <a href="/" style="display:inline-block;border:1px solid var(--white);color:var(--white);padding:10px 28px;font-size:10px;text-transform:uppercase;letter-spacing:3px;text-decoration:none;">Return to Dashboard</a>
         </div>
         <footer>
-            <p>Crypto Empire</p>
+            <p>Crypto Empire &middot; <span onclick="navigator.clipboard.writeText('{{ wallet }}');alert('Copied!');" style="cursor:pointer;border:1px solid var(--border);padding:1px 6px;font-size:8px;text-transform:uppercase;letter-spacing:1px;">☕ Donate ETH</span></p>
         </footer>
     </div>
     <div class="b-bar">
