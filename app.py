@@ -1722,56 +1722,70 @@ def api_ads_admin():
 
 ADVERTISE_HTML = r"""<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Crypto Empire — Advertise</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<head>""" + SHARED_HEAD + r"""
+    <title>Crypto Empire — Advertise</title>
+    <meta name="description" content="Advertise on Crypto Empire — reach 10,000+ monthly active crypto traders. Sponsored spotlight, banners, featured launches, whale sponsorship.">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'JetBrains Mono',monospace;background:#000;color:#b0b0b0;font-size:13px;line-height:1.6;min-height:100vh;}
-body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;background:repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0,rgba(0,0,0,.3) 1px,transparent 1px,transparent 3px);}
-body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 0,rgba(0,0,0,.8) 100%);}
-:root{--bg:#000;--surface:#050505;--border:#181818;--text:#b0b0b0;--text-dim:#555;--green:#0f0;--red:#f00;--white:#fff;}
-a{color:var(--green);text-decoration:none;}
-a:hover{color:var(--white);}
-.container{max-width:800px;margin:0 auto;padding:40px 20px;}
-h1{font-size:22px;color:var(--white);margin-bottom:8px;font-weight:400;}
-h1:before{content:'> ';color:var(--green);}
-h2{font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:3px;margin:32px 0 12px;font-weight:400;}
-h2:before{content:'# ';color:var(--text-dim);}
-p{color:var(--text);margin-bottom:16px;font-size:12px;}
-.divider{height:1px;background:var(--border);margin:24px 0;}
-.tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0;}
-.tier{border:1px solid var(--border);padding:20px;background:var(--surface);}
-.tier.featured{border-color:var(--green);}
-.tier-name{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
-.tier-price{font-size:24px;color:var(--white);margin:8px 0 4px;}
-.tier-desc{font-size:10px;color:var(--text-dim);margin-bottom:12px;}
-.tier ul{list-style:none;font-size:10px;color:var(--text);}
-.tier ul li{padding:4px 0;border-bottom:1px solid var(--border);}
-.tier .cta{display:inline-block;margin-top:12px;padding:6px 16px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--white);}
-.tier .cta:hover{border-color:var(--green);color:var(--green);}
+.container{max-width:800px;margin:0 auto;padding:24px 20px 80px;position:relative;}
+.sec-title{font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:var(--white);margin:32px 0 16px;}
+.sec-title:before{content:'# ';color:var(--text-muted);}
+.p-body{font-size:11px;color:var(--text-dim);line-height:1.8;margin-bottom:20px;}
 .slot-table{width:100%;border-collapse:collapse;margin:16px 0;}
 .slot-table th,.slot-table td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;}
 .slot-table th{color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;font-size:9px;}
 .slot-table td{color:var(--text);}
 .slot-table tr:hover td{background:var(--surface);}
-.nav{position:fixed;top:0;left:0;width:100%;padding:12px 20px;background:#000;border-bottom:1px solid var(--border);z-index:9997;display:flex;gap:20px;font-size:11px;text-transform:uppercase;letter-spacing:1px;}
-.nav a{color:var(--text-dim);}
-.nav a:hover{color:var(--white);}
+.tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:20px 0;}
+.tier{border:1px solid var(--border);padding:20px;background:var(--surface);transition:.15s;}
+.tier:hover{border-color:var(--white);}
+.tier.featured{border-color:var(--green);}
+.tier-name{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
+.tier-price{font-size:24px;color:var(--white);margin:8px 0 4px;letter-spacing:-1px;}
+.tier-desc{font-size:9px;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px;}
+.tier ul{list-style:none;font-size:10px;color:var(--text);}
+.tier ul li{padding:5px 0;border-bottom:1px solid var(--border);}
+.tier ul li:last-child{border-bottom:none;}
+.tier .cta{display:inline-block;margin-top:12px;padding:6px 16px;border:1px solid var(--border);font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--white);font-family:inherit;cursor:pointer;}
+.tier .cta:hover{border-color:var(--green);color:var(--green);}
+.dv{height:1px;background:var(--border);margin:32px 0;}
+.req-list{font-size:10px;color:var(--text);line-height:2.2;}
+.req-list span{color:var(--text-dim);}
+.cta-big{display:inline-block;padding:10px 24px;border:1px solid var(--green);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--green);font-family:inherit;cursor:pointer;transition:.15s;}
+.cta-big:hover{background:var(--green);color:var(--bg);}
 </style>
 </head>
 <body>
-<div class="nav">
-<a href="/">DASHBOARD</a>
-<a href="/advertise" style="color:var(--green);">ADVERTISE</a>
-</div>
+<div class="noise-bg"></div>
+<div class="sweep"></div>
+
 <div class="container">
-<h1>Advertise on Crypto Empire</h1>
-<p>Reach 10,000+ monthly active crypto traders, whales, and degens. All placements are CRT terminal style — no popups, no banners blocking content.</p>
 
-<div class="divider"></div>
+<div class="top-bar">
+<div class="brand">
+<div class="prompt">><span class="cr"></span></div>
+<div>
+<div class="site-title">Advertise</div>
+<div class="site-sub">reach crypto traders &amp; whales</div>
+</div>
+</div>
+<div class="top-nav">
+<a href="/">Dashboard</a>
+<a href="/advertise" style="color:var(--white);">Advertise</a>
+</div>
+</div>
 
-<h2>Available Slots</h2>
+<div class="status-line">
+<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
+<span id="live-clock">--</span>
+<span>AD PLACEMENT // MEDIA KIT</span>
+</div>
+
+<div class="t-h1" style="margin-top:24px;">> Advertise on Crypto Empire</div>
+<p class="p-body">Reach 10,000+ monthly active crypto traders, whales, and degens. All placements are CRT terminal style — no popups, no banners blocking content.</p>
+
+<div class="dv"></div>
+
+<div class="sec-title">Available Slots</div>
 <table class="slot-table">
 <thead><tr><th>Slot</th><th>Location</th><th>Price/mo</th><th>Min. Term</th></tr></thead>
 <tbody>
@@ -1783,15 +1797,15 @@ p{color:var(--text);margin-bottom:16px;font-size:12px;}
 </tbody>
 </table>
 
-<h2>Pricing Tiers</h2>
+<div class="sec-title">Pricing Tiers</div>
 <div class="tier-grid">
 <div class="tier">
 <div class="tier-name">Spotlight</div>
-<div class="tier-price">$200<span style="font-size:11px;color:var(--text-dim);">/mo</span></div>
+<div class="tier-price">$200<span style="font-size:10px;color:var(--text-dim);">/mo</span></div>
 <div class="tier-desc">Featured coin on homepage</div>
 <ul>
 <li>Live price + 24h change display</li>
-<li>Your project name & link</li>
+<li>Your project name &amp; link</li>
 <li>7-day minimum commitment</li>
 <li>CoinGecko ID required</li>
 </ul>
@@ -1799,7 +1813,7 @@ p{color:var(--text);margin-bottom:16px;font-size:12px;}
 </div>
 <div class="tier featured">
 <div class="tier-name" style="color:var(--green);">★ Premium Bundle</div>
-<div class="tier-price">$500<span style="font-size:11px;color:var(--text-dim);">/mo</span></div>
+<div class="tier-price">$500<span style="font-size:10px;color:var(--text-dim);">/mo</span></div>
 <div class="tier-desc">Maximum visibility</div>
 <ul>
 <li>Sponsored Spotlight</li>
@@ -1812,7 +1826,7 @@ p{color:var(--text);margin-bottom:16px;font-size:12px;}
 </div>
 <div class="tier">
 <div class="tier-name">Banner</div>
-<div class="tier-price">$300<span style="font-size:11px;color:var(--text-dim);">/mo</span></div>
+<div class="tier-price">$300<span style="font-size:10px;color:var(--text-dim);">/mo</span></div>
 <div class="tier-desc">Premium banner placement</div>
 <ul>
 <li>Top banner homepage slot</li>
@@ -1824,25 +1838,40 @@ p{color:var(--text);margin-bottom:16px;font-size:12px;}
 </div>
 </div>
 
-<div class="divider"></div>
+<div class="dv"></div>
 
-<h2>Requirements</h2>
-<p style="font-size:11px;">
+<div class="sec-title">Requirements</div>
+<div class="req-list">
 • Crypto projects only (exchanges, DeFi, NFT, L1/L2, tools, wallets)<br>
-• No scams, rugs, or pump & dumps — we reserve the right to reject any ad<br>
+• No scams, rugs, or pump &amp; dumps — we reserve the right to reject any ad<br>
 • Payment via ETH/USDC to our treasury wallet or monthly subscription<br>
 • All placements managed via admin panel — live updates within 1 hour of payment<br>
 • Ad expiration enforced automatically — no manual removal needed
-</p>
-
-<div class="divider"></div>
-
-<h2>Get Started</h2>
-<p>Contact us on Telegram to reserve your slot. Payment in ETH or stablecoin accepted.</p>
-<p style="margin-top:12px;">
-<a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="display:inline-block;padding:8px 20px;border:1px solid var(--green);font-size:11px;letter-spacing:2px;text-transform:uppercase;">Contact via Telegram →</a>
-</p>
 </div>
+
+<div class="dv"></div>
+
+<div class="sec-title">Get Started</div>
+<p class="p-body">Contact us on Telegram to reserve your slot. Payment in ETH or stablecoin accepted.</p>
+<p style="margin-top:16px;">
+<a href="https://t.me/Crypt0Emp1reBot" target="_blank" class="cta-big">Contact via Telegram →</a>
+</p>
+
+<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
+</div>
+
+<div class="b-bar">
+<span><span class="dot"></span> ADVERTISE</span>
+<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+</div>
+
+<script>
+(function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);})();
+</script>
 </body>
 </html>"""
 
@@ -2209,8 +2238,9 @@ def premium_page():
             </div>
         </div>
         <div class="status-line">
-            <span><span class="dot"></span> PREMIUM TIER</span>
+            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
             <span id="live-clock">--</span>
+            <span>PREMIUM TIER // SUBSCRIPTION</span>
         </div>
 
         <!-- Free Tier Box -->
@@ -2271,9 +2301,14 @@ def premium_page():
         </div>
 """ + "{% endif %}")
 + """
-        <div class="bnav" style="margin-top:16px;">
-            <a href="/">&#8592; Dashboard</a>
-        </div>
+    </div>
+    <div class="b-bar">
+        <span><span class="dot"></span> PREMIUM TIER</span>
+        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
     </div>
     <script>
     function updateClock(){
@@ -2418,11 +2453,11 @@ def api_keys_page():
             </div>
         </div>
         <div class="status-line">
-            <span><span class="dot"></span> API KEYS</span>
+            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
             <span id="live-clock">--</span>
+            <span>API KEYS // PREMIUM MANAGEMENT</span>
         </div>
-        <div class="bnav"><a href="/">Dashboard</a></div>
-        <div class="s-title">PREMIUM API KEYS</div>
+        <div class="t-h1" style="margin-top:24px;">> Premium API Keys</div>
 
         <div class="post">
             <h3 style="font-size:12px;color:var(--white);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">Free Tier</h3>
@@ -2464,8 +2499,11 @@ def api_keys_page():
     </div>
     <div class="b-bar">
         <span><span class="dot"></span> API KEYS</span>
-        <span><span class="sp">|</span> <span id="live-clock">--</span></span>
-        <span><span class="sp">|</span> <a href="/" style="color:var(--text-dim);">Dashboard</a></span>
+        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
     </div>
     <div class="toast" id="copy-toast">ADDRESS COPIED</div>
     <script>
@@ -2485,6 +2523,8 @@ def api_keys_page():
                 var s=String(n.getUTCSeconds()).padStart(2,'0');
                 var e=document.getElementById('live-clock');
                 if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+                var e2=document.getElementById('live-clock2');
+                if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;
             }
             u();setInterval(u,1000);
         })();
@@ -2745,11 +2785,11 @@ def docs():
             </div>
         </div>
         <div class="status-line">
-            <span><span class="dot"></span> DOCS v1.0</span>
+            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
             <span id="live-clock">--</span>
+            <span>API DOCS // PUBLIC ENDPOINTS</span>
         </div>
-        <div class="bnav"><a href="/">Dashboard</a></div>
-        <div class="s-title">API REFERENCE</div>
+        <div class="t-h1" style="margin-top:24px;">> API Reference</div>
         <p style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">Free public API. No authentication required. 100 req/day free, 10K req/day premium.</p>
 
         <div class="prem-box" style="text-align:left;padding:12px 16px;margin-bottom:20px;">
@@ -2831,8 +2871,11 @@ Send: /help</pre>
     </div>
     <div class="b-bar">
         <span><span class="dot" style="background:var(--green);"></span> API DOCS</span>
-        <span><span class="sp">|</span> <span id="live-clock">--</span></span>
-        <span><span class="sp">|</span> <a href="/" style="color:var(--text-dim);">Dashboard</a></span>
+        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+        <span><span class="sp">|</span> <a href="/blog" style="color:var(--text-dim);">Blog</a></span>
+        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
     </div>
     <div class="toast" id="copy-toast">ADDRESS COPIED</div>
     <script>
@@ -2859,6 +2902,8 @@ Send: /help</pre>
                 var s=String(n.getUTCSeconds()).padStart(2,'0');
                 var e=document.getElementById('live-clock');
                 if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+                var e2=document.getElementById('live-clock2');
+                if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;
             }
             u();setInterval(u,1000);
         })();
@@ -2893,23 +2938,30 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
                 <a href="/">Dashboard</a>
                 <a href="/blog">Blog</a>
                 <a href="/docs">API</a>
+                <a href="/wallet-check" style="color:var(--white);">Wallet</a>
             </div>
         </div>
         <div class="status-line">
-            <span><span class="dot"></span> WALLET CHECK v1.0</span>
+            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
             <span id="live-clock">--</span>
+            <span>WALLET CHECK // MULTI-CHAIN</span>
         </div>
-        <div class="bnav"><a href="/">Dashboard</a></div>
-        <div class="s-title">WALLET CHECKER</div>
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:16px;">Check ETH balances across Ethereum, Arbitrum, Base, and Polygon.</p>
+        <div class="t-h1" style="margin-top:24px;">> Wallet Checker</div>
+        <p class="t-body" style="margin-bottom:16px;">Check ETH balances across Ethereum, Arbitrum, Base, and Polygon.</p>
         <input type="text" style="width:100%;max-width:440px;background:var(--surface);color:var(--white);border:1px solid var(--border);padding:10px 12px;font-size:11px;font-family:inherit;outline:none;" id="address" placeholder="0x... or ENS name" value="0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef">
         <br>
         <button style="margin-top:10px;background:var(--surface);color:var(--white);border:1px solid var(--white);padding:8px 20px;font-size:11px;text-transform:uppercase;letter-spacing:3px;cursor:pointer;font-family:inherit;" onclick="checkWallet()">Check Wallet</button>
         <div id="results" class="result"></div>
+        
+        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
     </div>
     <div class="b-bar">
         <span><span class="dot"></span> WALLET CHECK</span>
-        <span>v1.0</span>
+        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
     </div>
     <script>
     (function(){
@@ -2923,6 +2975,8 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
             var s=String(n.getUTCSeconds()).padStart(2,'0');
             var e=document.getElementById('live-clock');
             if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+            var e2=document.getElementById('live-clock2');
+            if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;
         }
         u();setInterval(u,1000);
     })();
@@ -3174,14 +3228,17 @@ PROFILER_HTML = r"""<!DOCTYPE html>
 <div class="site-sub">inspect any ethereum address</div>
 </div>
 </div>
-<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;">
-<a href="/" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Dashboard</a>
-<a href="/wallet-check" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Checker</a>
+<div class="top-nav">
+<a href="/">Dashboard</a>
+<a href="/wallet-check">Checker</a>
+<a href="/profiler" style="color:var(--white);">Profiler</a>
 </div>
 </div>
 
 <div class="status-line">
-<span><span class="dot"></span> Live data</span>
+<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
+<span id="live-clock">--</span>
+<span>WALLET PROFILER // ON-CHAIN</span>
 </div>
 
 <form class="profiler-form" id="profiler-form" onsubmit="return loadProfile()">
@@ -3192,8 +3249,17 @@ PROFILER_HTML = r"""<!DOCTYPE html>
 <div class="share-note">Shareable URL — bookmark or send any address as <code style="color:var(--white);font-size:10px;">/profiler?address=0x...</code></div>
 
 <div id="results"></div>
+
+<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
 </div>
-<div class="b-bar"><span><span class="dot"></span> wallet profiler</span><span>v2.7</span></div>
+<div class="b-bar">
+<span><span class="dot"></span> WALLET PROFILER</span>
+<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+</div>
 
 <script>
 var form=document.getElementById('profiler-form');
@@ -3279,6 +3345,9 @@ function renderProfile(d){
 
   results.innerHTML=html;
 }
+</script>
+<script>
+(function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);})();
 </script>
 </body>
 </html>"""
@@ -3468,15 +3537,8 @@ PORTFOLIO_HTML = r"""<!DOCTYPE html>
 <title>Portfolio Tracker — Crypto Empire</title>
 """ + SHARED_HEAD + r"""
 <style>
-body{margin:0;padding:20px;background:#000;color:#b0b0b0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;min-height:100vh;}
-body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;background:repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0,rgba(0,0,0,.3) 1px,transparent 1px,transparent 3px);}
-body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 0,rgba(0,0,0,.8) 100%);}
-:root{--bg:#000;--surface:#050505;--border:#181818;--text:#b0b0b0;--text-dim:#555;--green:#0f0;--red:#f00;--white:#fff;}
-a{color:var(--green);text-decoration:none;}a:hover{color:var(--white);}
-.container{max-width:900px;margin:0 auto;position:relative;z-index:1;}
-h1{font-size:18px;color:var(--white);font-weight:400;margin-bottom:4px;}
-h1:before{content:'> ';color:var(--green);}
-h2{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:3px;margin:24px 0 10px;}
+body{padding:0!important;}
+.container{max-width:900px;margin:0 auto;padding:24px 20px 80px;position:relative;}
 .back{margin-bottom:14px;}
 .back a{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);}
 .back a:hover{color:var(--white);}
@@ -3512,13 +3574,50 @@ h2{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:
 </style>
 </head>
 <body>
+<div class="noise-bg"></div>
+<div class="sweep"></div>
 <div class="container">
-<div class="back"><a href="/portfolio"><< BACK TO PORTFOLIOS</a></div>
+
+<div class="top-bar">
+<div class="brand">
+<div class="prompt">><span class="cr"></span></div>
+<div>
+<div class="site-title">Portfolio Tracker</div>
+<div class="site-sub">track your wallets in one place</div>
+</div>
+</div>
+<div class="top-nav">
+<a href="/">Dashboard</a>
+<a href="/profiler">Profiler</a>
+<a href="/portfolio" style="color:var(--white);">Portfolio</a>
+</div>
+</div>
+
+<div class="status-line">
+<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
+<span id="live-clock">--</span>
+<span>PORTFOLIO TRACKER // WALLET AGGREGATION</span>
+</div>
+
 <div id="pf-view">
-  <h1>Portfolio Tracker</h1>
+  <div class="t-h1" style="margin-top:24px;">> Portfolio Tracker</div>
   <div id="pf-content" class="loading">Loading...</div>
 </div>
+
+<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
 </div>
+<div class="b-bar">
+<span><span class="dot"></span> PORTFOLIO TRACKER</span>
+<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+</div>
+
+<script>
+(function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);})();
+</script>
 <script>
 const __path = window.location.pathname;
 const __m = __path.match(/^\/portfolio\/([a-f0-9]+)$/);
@@ -3600,7 +3699,7 @@ if(__m){
       }
       const shareUrl=window.location.href;
       html+='<div class="copy-box" id="share-box"><span>'+shareUrl+'</span><span class="hint">COPY</span></div>';
-      html+='<h2>Wallets</h2>';
+      html+='<div class="t-h2" style="margin:24px 0 10px;">> Wallets</div>';
       for(const w of d.wallets){
         html+='<div class="wallet-card">';
         html+='<div class="addr">'+w.address+' <span style="color:var(--text-dim);font-size:9px;">('+w.tx_count+' tx)</span></div>';
@@ -3877,12 +3976,17 @@ LAUNCHES_HTML = r"""<!DOCTYPE html>
 <div class="site-sub">upcoming token launches &amp; TGEs</div>
 </div>
 </div>
-<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;">
-<a href="/" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Dashboard</a>
-<a href="/profiler" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Profiler</a>
+<div class="top-nav">
+<a href="/">Dashboard</a>
+<a href="/profiler">Profiler</a>
+<a href="/launches" style="color:var(--white);">Launches</a>
 </div>
 </div>
-<div class="status-line"><span><span class="dot"></span> Live calendar</span><span>+0000 UTC</span></div>
+<div class="status-line">
+<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
+<span id="live-clock">--</span>
+<span>LAUNCH CALENDAR // TOKEN TGE</span>
+</div>
 
 <div class="filter-row" id="filters">
 <button class="filter-btn active" data-filter="all">All</button>
@@ -3897,8 +4001,17 @@ LAUNCHES_HTML = r"""<!DOCTYPE html>
 <div style="margin-top:24px;padding:12px;border:1px solid var(--border);font-size:9px;color:var(--text-dim);text-align:center;letter-spacing:1px;">
 Launch dates are estimates from public sources. Use exchange affiliate links to support Crypto Empire.
 </div>
+
+<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
 </div>
-<div class="b-bar"><span><span class="dot"></span> launch calendar</span><span>v2.8</span></div>
+<div class="b-bar">
+<span><span class="dot"></span> LAUNCH CALENDAR</span>
+<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+</div>
 
 <script>
 var launches=[];
@@ -3997,6 +4110,9 @@ document.getElementById('filters').addEventListener('click',function(e){
 });
 
 loadLaunches();
+</script>
+<script>
+(function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);})();
 </script>
 </body>
 </html>"""
@@ -4178,12 +4294,12 @@ def blog_index():
             </div>
         </div>
         <div class="status-line">
-            <span><span class="dot"></span> BLOG</span>
+            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
             <span id="live-clock">--</span>
+            <span>BLOG // TOOLS & GUIDES</span>
         </div>
-        <div class="bnav"><a href="/">Dashboard</a></div>
-        <div class="s-title">BLOG</div>
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">Free crypto tools, guides, and market analysis.</p>
+        <div class="t-h1" style="margin-top:24px;">> Blog</div>
+        <p class="t-body">Free crypto tools, guides, and market analysis.</p>
         
         {% for post in posts %}
         <div style="border:1px solid var(--border);padding:14px;margin-bottom:10px;">
@@ -4201,7 +4317,11 @@ def blog_index():
     </div>
     <div class="b-bar">
         <span><span class="dot"></span> BLOG</span>
-        <span>v1.0</span>
+        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
     </div>
     <script>
         (function(){
@@ -4215,6 +4335,8 @@ def blog_index():
                 var s=String(n.getUTCSeconds()).padStart(2,'0');
                 var e=document.getElementById('live-clock');
                 if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+                var e2=document.getElementById('live-clock2');
+                if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;
             }
             u();setInterval(u,1000);
         })();
@@ -4258,11 +4380,11 @@ def blog_post(slug):
             </div>
         </div>
         <div class="status-line">
-            <span><span class="dot"></span> ARTICLE</span>
+            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
             <span id="live-clock">--</span>
+            <span>BLOG // ARTICLE</span>
         </div>
-        <div class="bnav"><a href="/blog">Blog</a></div>
-        <div class="s-title" style="font-size:14px;">{{ title }}</div>
+        <div class="t-h1" style="margin-top:24px;">> {{ title }}</div>
         <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">{{ date }} — Tags: {{ tags|join(", ") }}</div>
         <div style="font-size:12px;line-height:1.8;color:var(--text);">{{ content|safe }}</div>
         
@@ -4275,7 +4397,11 @@ def blog_post(slug):
     </div>
     <div class="b-bar">
         <span><span class="dot"></span> ARTICLE</span>
-        <span>v1.0</span>
+        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
     </div>
     <script>
         (function(){
@@ -4289,6 +4415,8 @@ def blog_post(slug):
                 var s=String(n.getUTCSeconds()).padStart(2,'0');
                 var e=document.getElementById('live-clock');
                 if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+                var e2=document.getElementById('live-clock2');
+                if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;
             }
             u();setInterval(u,1000);
         })();
@@ -4938,10 +5066,9 @@ YIELDS_HTML = """<!DOCTYPE html>
     </div>
   </div>
   <div class="status-line">
-    <span><span class="dot"></span> YIELD AGGREGATOR ONLINE</span>
+    <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
     <span id="live-clock">--</span>
-    <span>DEFI LLAMA</span>
-    <span>v1.0</span>
+    <span>YIELD AGGREGATOR // DEFI LLAMA</span>
   </div>
   <div class="y-filters">
     <button class="y-filt active" data-cat="all">All</button>
