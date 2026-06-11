@@ -77,6 +77,21 @@ SYMBOL_TO_ID = {
     "ethfi": "ether-fi",
     "rezt": "rezzle",
     "om": "mantra-dao",
+    "rndr": "render-token",
+    "aave": "aave",
+    "mkr": "maker",
+    "xlm": "stellar",
+    "hbar": "hedera-hashgraph",
+    "vet": "vechain",
+    "ftm": "fantom",
+    "cro": "crypto-com-chain",
+    "grt": "the-graph",
+    "imx": "immutable-x",
+    "sand": "the-sandbox",
+    "gala": "gala",
+    "axs": "axie-infinity",
+    "xtz": "tezos",
+    "eos": "eos",
 }
 
 # ---------------------------------------------------------------------------
@@ -150,6 +165,12 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         "/tvl              — Ethereum TVL\n"
         "/sparkline <coin> — 7d price chart (ASCII)\n"
         "/whales           — On-chain whale moves >$100K\n"
+        "/movers           — Top 24h gainers & losers\n"
+        "/yields           — Top DeFi yield/APR pools\n"
+        "/profiler <addr>  — Wallet profiler (ETH + tokens)\n"
+        "/top              — Top coins by market cap\n"
+        "/convert <amt> <from> <to> — Crypto converter\n"
+        "/alerts           — Your active price alerts\n"
         "/premium          — Unlock premium features\n"
         "/manage           — Manage your subscription\n"
         "/referral         — Your referral link & rewards\n"
@@ -516,6 +537,205 @@ def cmd_sparkline(chat_id, args):
     send_message(chat_id, msg)
 
 # ---------------------------------------------------------------------------
+# New command handlers (v3.5 expansion)
+# ---------------------------------------------------------------------------
+
+def cmd_movers(chat_id, args=None):
+    """Top 24h gainers & losers."""
+    send_typing(chat_id)
+    app = _get_app()
+    data = app.fetch_sync("https://crypto-empire-ten.vercel.app/api/movers")
+    if data and data.get("top_gainers"):
+        g = data["top_gainers"][:5]
+        l = data["top_losers"][:5]
+        lines = ["> MARKET MOVERS (24h)", "\u2501" * 22]
+        lines.append("\n\U0001f3c6 TOP GAINERS")
+        for c in g:
+            sym = (c.get("symbol") or "").upper()
+            chg = c.get("change", 0) or 0
+            p = c.get("price", "?")
+            lines.append(f"  {sym:<6} +{chg:.2f}%  ${p}")
+        lines.append("\n\U0001f4a9 TOP LOSERS")
+        for c in l:
+            sym = (c.get("symbol") or "").upper()
+            chg = c.get("change", 0) or 0
+            p = c.get("price", "?")
+            arrow = "\u25bc" if chg < 0 else "\u2014"
+            lines.append(f"  {sym:<6} {arrow}{chg:.2f}%  ${p}")
+        msg = "\n".join(lines)
+    else:
+        msg = "Movers unavailable right now."
+    send_message(chat_id, msg)
+
+def cmd_yields(chat_id, args=None):
+    """Top yield/APR pools from DeFi Llama."""
+    send_typing(chat_id)
+    app = _get_app()
+    data = app.fetch_sync("https://crypto-empire-ten.vercel.app/api/yields")
+    if data:
+        lines = ["> YIELD AGGREGATOR", "\u2501" * 18]
+        for cat in ["lending", "stablecoin"]:
+            pools = data.get(cat, [])[:3]
+            if pools:
+                lines.append(f"\n{'=' * 4} {cat.upper()} {'=' * 4}")
+                for p in pools:
+                    apy = p.get("apy", 0) or 0
+                    sym = p.get("symbol", "?")
+                    chain = p.get("chain", "?")
+                    tvl = p.get("tvlUsd", 0) or 0
+                    tvl_s = f"${tvl/1e6:.1f}M" if tvl >= 1e6 else f"${tvl/1e3:.0f}K"
+                    lines.append(f"  {sym:<8} {apy:.2f}% | {chain} | {tvl_s}")
+        lines.append(f"\n{'=' * 18}")
+        lines.append("crypto-empire-ten.vercel.app/yields")
+        msg = "\n".join(lines)
+    else:
+        msg = "Yields unavailable."
+    send_message(chat_id, msg)
+
+def cmd_profiler(chat_id, args):
+    """Wallet profiler — check ETH balance + ERC-20 tokens."""
+    if not args:
+        send_message(chat_id, "Usage: /profiler <0x address>")
+        return
+    addr = args[0].strip()
+    if not addr.startswith("0x"):
+        send_message(chat_id, "Invalid address \u2014 must start with 0x")
+        return
+    send_typing(chat_id)
+    app = _get_app()
+    data = app.fetch_sync(f"https://crypto-empire-ten.vercel.app/api/profiler/{addr}")
+    if data:
+        eth_bal = data.get("ethBalance", "0")
+        usd_val = data.get("totalUsdValue", 0) or 0
+        tokens = data.get("tokens", [])
+        tx_count = data.get("txCount", "?")
+        lines = [
+            f"> WALLET PROFILER",
+            f"{'=' * 22}",
+            f"",
+            f"{addr[:10]}...{addr[-6:]}",
+            f"",
+            f"ETH:  {eth_bal}  ${usd_val:,.2f}",
+            f"TXs:  {tx_count}",
+        ]
+        if tokens:
+            lines.append(f"\nTOKENS:")
+            for t in tokens[:8]:
+                sym = t.get("symbol", "?")
+                bal = t.get("balance", "0")
+                val = t.get("usdValue", 0) or 0
+                lines.append(f"  {sym:<8} {bal}  ${val:,.2f}")
+        msg = "\n".join(lines)
+    else:
+        msg = f"Profiler unavailable for {addr[:10]}..."
+    send_message(chat_id, msg)
+
+def cmd_top(chat_id, args=None):
+    """Top coins by market cap."""
+    send_typing(chat_id)
+    app = _get_app()
+    data = app.fetch_sync(
+        f"{app.COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&sparkline=false"
+    )
+    if data:
+        lines = ["> TOP COINS (by Market Cap)", "\u2501" * 26]
+        for i, c in enumerate(data, 1):
+            sym = (c.get("symbol") or "").upper()
+            p = c.get("current_price", 0) or 0
+            chg = c.get("price_change_percentage_24h", 0) or 0
+            mc = c.get("market_cap", 0) or 0
+            arrow = "\u25b2" if chg >= 0 else "\u25bc"
+            p_s = f"{p:,.2f}" if p < 1000 else f"${p:,.0f}"
+            lines.append(f"{i:2}. {sym:<6} {p_s}  {arrow}{abs(chg):.2f}%")
+        msg = "\n".join(lines)
+    else:
+        msg = "Top coins unavailable."
+    send_message(chat_id, msg)
+
+def cmd_convert(chat_id, args):
+    """Convert between coins (e.g. /convert 1 btc usd)."""
+    if len(args) < 3:
+        send_message(chat_id, "Usage: /convert <amount> <from> <to>\n  e.g., /convert 1 btc usd")
+        return
+    try:
+        amount = float(args[0])
+    except ValueError:
+        send_message(chat_id, "Invalid amount.")
+        return
+    from_coin = args[1].lower()
+    to_currency = args[2].lower()
+
+    send_typing(chat_id)
+    app = _get_app()
+
+    # Map common symbols → CoinGecko IDs
+    alias = {"usd": "usd", "usdt": "tether", "usdc": "usd-coin",
+             "btc": "bitcoin", "eth": "ethereum", "sol": "solana",
+             "bnb": "binancecoin", "xrp": "xrp", "ada": "cardano"}
+    from_id = alias.get(from_coin, from_coin)
+    to_id = alias.get(to_currency, to_currency)
+
+    ids = [from_id]
+    if to_id not in ("usd", from_id):
+        ids.append(to_id)
+
+    price_data = app.fetch_sync(
+        f"{app.COINGECKO_API}/simple/price?ids={','.join(ids)}&vs_currencies=usd"
+    )
+    if not price_data:
+        send_message(chat_id, f"Could not fetch price for {from_coin}.")
+        return
+
+    from_usd = (price_data.get(from_id) or {}).get("usd", 0)
+    if from_usd == 0:
+        send_message(chat_id, f"Could not find '{from_coin}'.")
+        return
+
+    from_total = amount * from_usd
+
+    if to_currency in ("usd",):
+        msg = f"> CONVERT\n{'-' * 12}\n\n{amount} {from_coin.upper()} = ${from_total:,.2f}"
+    else:
+        to_usd = (price_data.get(to_id) or {}).get("usd", 0)
+        if to_usd == 0:
+            send_message(chat_id, f"Could not find '{to_currency}'.")
+            return
+        result = from_total / to_usd
+        msg = f"> CONVERT\n{'-' * 12}\n\n{amount} {from_coin.upper()} = {result:,.6f} {to_currency.upper()}"
+    send_message(chat_id, msg)
+
+def cmd_alerts(chat_id, args=None):
+    """Show your active price alerts."""
+    app = _get_app()
+    conn = sqlite3.connect(str(app.DB_PATH))
+    try:
+        cur = conn.execute(
+            "SELECT coin, target_price, chat_id FROM alerts WHERE chat_id = ? ORDER BY created_at DESC",
+            (str(chat_id),)
+        )
+        rows = cur.fetchall()
+    except:
+        rows = []
+    finally:
+        conn.close()
+
+    if not rows:
+        msg = (
+            "> PRICE ALERTS\n"
+            "---------------\n\n"
+            "No active alerts.\n\n"
+            "Set alerts on the dashboard:\n"
+            "https://crypto-empire-ten.vercel.app/#alerts\n\n"
+            "Premium users get priority alert delivery."
+        )
+    else:
+        lines = [f"> YOUR ALERTS ({len(rows)})", "\u2501" * 14]
+        for coin, price, _ in rows[:10]:
+            lines.append(f"\n{coin.upper()} → ${price}")
+        msg = "\n".join(lines)
+    send_message(chat_id, msg)
+
+# ---------------------------------------------------------------------------
 # Group event handlers
 # ---------------------------------------------------------------------------
 
@@ -602,6 +822,19 @@ COMMANDS = {
     "donate":    cmd_donate,
     "donation":  cmd_donate,
     "support":   cmd_donate,
+    "movers":    cmd_movers,
+    "gainers":   cmd_movers,
+    "losers":    cmd_movers,
+    "yields":    cmd_yields,
+    "yield":     cmd_yields,
+    "apy":       cmd_yields,
+    "profiler":  cmd_profiler,
+    "top":       cmd_top,
+    "convert":   cmd_convert,
+    "conv":      cmd_convert,
+    "alerts":    cmd_alerts,
+    "alert":     cmd_alerts,
+    "myalerts":  cmd_alerts,
 }
 
 # Register shortcut commands (e.g., /btc → cmd_price(["bitcoin"]))
