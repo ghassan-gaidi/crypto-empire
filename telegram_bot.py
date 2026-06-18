@@ -92,6 +92,24 @@ SYMBOL_TO_ID = {
     "axs": "axie-infinity",
     "xtz": "tezos",
     "eos": "eos",
+    # v3.7 expansion — meme coins, AI, DeFi
+    "wif": "dogwifhat",
+    "bonk": "bonk",
+    "popcat": "popcat",
+    "mew": "cat-in-a-dogs-world",
+    "not": "notcoin",
+    "jup": "jupiter",
+    "pyth": "pyth-network",
+    "fetch": "fetch-ai",
+    "tao": "bittensor",
+    "stx": "stacks",
+    "rune": "thorchain",
+    "kas": "kaspa",
+    "ordi": "ordinals",
+    "zro": "layerzero",
+    "jto": "jito-governance-token",
+    "hmstr": "hamster-kombat",
+    "dogs": "dogs",
 }
 
 # ---------------------------------------------------------------------------
@@ -204,9 +222,9 @@ def cmd_start(chat_id, args=None, chat_type="private"):
     # ASCII art banner
     banner = (
         "┌───────────────────────────┐\n"
-        "│   CRYPTO EMPIRE  v3.5     │\n"
+        "│   CRYPTO EMPIRE  v3.7     │\n"
         "│   ──────────────────────  │\n"
-        "│   terminal crypto bot     │\n"
+        "│   56+ coin shortcuts      │\n"
         "│   @Crypt0Emp1reBot       │\n"
         "└───────────────────────────┘\n\n"
         "Live crypto data at your fingertips.\n\n"
@@ -237,6 +255,8 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         "  🔍 /profiler <addr>  — Wallet profiler (ETH + tokens)\n"
         "  🏆 /top              — Top coins by market cap\n"
         "  🔄 /convert <amt> <f> <t> — Crypto converter\n"
+        "  🌐 /global          — Global market overview\n"
+        "  📂 /categories      — Top crypto categories\n"
         "  🔔 /alerts           — Your active price alerts\n"
         "  ⭐ /premium          — Unlock premium features\n"
         "  ⚙️  /manage           — Manage subscription\n"
@@ -772,6 +792,74 @@ def cmd_alerts(chat_id, args=None):
     send_message(chat_id, msg)
 
 # ---------------------------------------------------------------------------
+# v3.7 expansion — global market + categories
+# ---------------------------------------------------------------------------
+
+def cmd_global(chat_id, args=None):
+    """Global crypto market overview: total cap, volume, BTC dominance."""
+    send_typing(chat_id)
+    msg_id = send_loading(chat_id, "GLOBAL MARKET")
+    app = _get_app()
+    data = app.fetch_sync(f"{app.COINGECKO_API}/global")
+    if data and "data" in data:
+        d = data["data"]
+        active = d.get("active_cryptocurrencies", "?")
+        total_mc = d.get("total_market_cap", {}).get("usd", 0)
+        total_vol = d.get("total_volume", {}).get("usd", 0)
+        btc_dom = d.get("market_cap_percentage", {}).get("btc", 0)
+        eth_dom = d.get("market_cap_percentage", {}).get("eth", 0)
+        mc_chg = d.get("market_cap_change_percentage_24h_usd", 0) or 0
+        exchanges = d.get("markets", "?")
+        def fmt_b(n):
+            if n >= 1e12: return f"${n/1e12:.2f}T"
+            if n >= 1e9:  return f"${n/1e9:.2f}B"
+            return f"${n:,.0f}"
+        arrow = "▲" if mc_chg >= 0 else "▼"
+        lines = [
+            fmt_header("GLOBAL MARKET"),
+            "",
+            f"Active coins: {active}",
+            f"Exchanges:    {exchanges}",
+            "",
+            f"Market Cap:   {fmt_b(total_mc)}",
+            f"24h Volume:   {fmt_b(total_vol)}",
+            f"24h Change:   {arrow}{abs(mc_chg):.2f}%",
+            "",
+            f"BTC Dominance: {btc_dom:.1f}%",
+            f"ETH Dominance: {eth_dom:.1f}%",
+        ]
+        msg = "\n".join(lines)
+    else:
+        msg = "Global market data unavailable."
+    edit_or_send(chat_id, msg_id, msg)
+
+def cmd_categories(chat_id, args=None):
+    """Top crypto categories by market cap from CoinGecko."""
+    send_typing(chat_id)
+    msg_id = send_loading(chat_id, "CATEGORIES")
+    app = _get_app()
+    data = app.fetch_sync(f"{app.COINGECKO_API}/coins/categories")
+    if data and isinstance(data, list):
+        sorted_cats = sorted(data, key=lambda x: x.get("market_cap", 0) or 0, reverse=True)[:12]
+        lines = [fmt_header("TOP CATEGORIES (by Market Cap)")]
+        for i, c in enumerate(sorted_cats, 1):
+            name = c.get("name", "?")
+            mc = c.get("market_cap", 0) or 0
+            chg = c.get("market_cap_change_24h", 0) or 0
+            if mc >= 1e9:
+                mc_s = f"${mc/1e9:.1f}B"
+            elif mc >= 1e6:
+                mc_s = f"${mc/1e6:.1f}M"
+            else:
+                mc_s = f"${mc:,.0f}"
+            arrow = "▲" if chg >= 0 else "▼"
+            lines.append(f"{i:2}. {name:<20} {mc_s:>8}  {arrow}{abs(chg):.1f}%")
+        msg = "\n".join(lines)
+    else:
+        msg = "Categories data unavailable."
+    edit_or_send(chat_id, msg_id, msg)
+
+# ---------------------------------------------------------------------------
 # Group event handlers
 # ---------------------------------------------------------------------------
 
@@ -871,6 +959,12 @@ COMMANDS = {
     "alerts":    cmd_alerts,
     "alert":     cmd_alerts,
     "myalerts":  cmd_alerts,
+    # v3.7 expansion
+    "global":    cmd_global,
+    "market":    cmd_global,
+    "categories": cmd_categories,
+    "cats":      cmd_categories,
+    "sectors":   cmd_categories,
 }
 
 # Register shortcut commands (e.g., /btc → cmd_price(["bitcoin"]))
