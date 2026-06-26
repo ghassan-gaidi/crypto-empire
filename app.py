@@ -904,6 +904,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 <a href="/advertise">Advertise</a>
                 <span class="nav-divider"></span>
                 <a href="/premium" class="premium-nav">Premium</a>
+                <a href="/admin" style="color:var(--text-dim);font-size:9px;">Admin</a>
             </div>
         </div>
 
@@ -1718,6 +1719,216 @@ def api_ads_admin():
         return jsonify({"error": "no slot specified"}), 400
     # GET — return raw ads cache
     return jsonify(ads)
+
+
+@app.route("/api/admin/stats")
+def api_admin_stats():
+    """Admin stats endpoint — protected by ADMIN_SECRET header."""
+    if request.headers.get("X-Admin-Key") != ADMIN_SECRET:
+        return jsonify({"error": "unauthorized"}), 401
+    subs = _load_subs()
+    active_subs = {k: v for k, v in subs.items() if v.get("status") in ("active", "trialing")}
+    expired_subs = {k: v for k, v in subs.items() if v.get("status") not in ("active", "trialing")}
+    # Referral stats from SQLite
+    ref_stats = {"total_codes": 0, "total_referrals": 0, "total_rewards": 0, "referrers": []}
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*), COALESCE(SUM(referred_count),0), COALESCE(SUM(rewards_earned),0) FROM referrals")
+        row = c.fetchone()
+        if row:
+            ref_stats["total_codes"] = row[0]
+            ref_stats["total_referrals"] = row[1]
+            ref_stats["total_rewards"] = row[2]
+        c.execute("SELECT ref_code, referred_count, rewards_earned FROM referrals ORDER BY referred_count DESC LIMIT 20")
+        ref_stats["referrers"] = [{"ref_code": r[0], "referrals": r[1], "rewards": r[2]} for r in c.fetchall()]
+        conn.close()
+    except Exception:
+        pass
+    # Alert stats
+    alert_count = 0
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM price_alerts")
+        row = c.fetchone()
+        if row:
+            alert_count = row[0]
+        conn.close()
+    except Exception:
+        pass
+    # Whale cache stats
+    whale_stats = {"move_count": 0, "last_updated": None}
+    whale_path = DATA_DIR / "whale_cache.json"
+    if whale_path.exists():
+        try:
+            wdata = json.loads(whale_path.read_text())
+            whale_stats["move_count"] = len(wdata.get("moves", []))
+            whale_stats["last_updated"] = wdata.get("lastUpdated")
+        except Exception:
+            pass
+    # Ad slot status
+    ads = _load_ads()
+    filled_slots = {k: v.get("name", k) for k, v in ads.items() if v and v.get("name")}
+    # Portfolio count
+    portfolio_count = 0
+    pf_path = DATA_DIR / "portfolios.json"
+    if pf_path.exists():
+        try:
+            pf_data = json.loads(pf_path.read_text())
+            portfolio_count = len(pf_data) if isinstance(pf_data, dict) else len(pf_data)
+        except Exception:
+            pass
+    return jsonify({
+        "premium": {
+            "total": len(subs),
+            "active": len(active_subs),
+            "expired": len(expired_subs),
+            "subscribers": dict(list(active_subs.items())[:20])
+        },
+        "referrals": ref_stats,
+        "alerts": {"total": alert_count},
+        "whales": whale_stats,
+        "ads": {"filled_slots": filled_slots, "total_slots": len(DEFAULT_ADS)},
+        "portfolios": portfolio_count,
+    })
+
+
+ADMIN_DASHBOARD_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>""" + SHARED_HEAD + r"""
+    <title>Admin — Crypto Empire</title>
+    <meta name="robots" content="noindex, nofollow">
+<style>
+body{background:var(--bg);}
+.container{max-width:1000px;margin:0 auto;padding:24px 20px 80px;position:relative;}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0;}
+.g-stat{border:1px solid var(--border);padding:16px;background:var(--surface);}
+.g-stat .lbl{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;}
+.g-stat .val{font-size:22px;color:var(--white);font-weight:600;}
+.g-stat .sub{font-size:9px;color:var(--text-dim);margin-top:4px;}
+.adm-section{margin:28px 0 12px;font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:3px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+.adm-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:10px;}
+.adm-table th{padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;font-size:8px;}
+.adm-table td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text);}
+.adm-table tr:hover td{background:var(--surface);}
+.key{font-size:9px;color:var(--green);}
+.empty{color:var(--text-dim);font-size:10px;padding:12px 0;}
+.badge{display:inline-block;padding:1px 6px;font-size:8px;border:1px solid var(--border);margin-left:4px;}
+.badge.active{border-color:var(--green);color:var(--green);}
+.badge.expired{border-color:var(--red);color:var(--red);}
+</style>
+</head>
+<body>
+<div class="noise-bg"></div>
+<div class="sweep"></div>
+
+<div class="container">
+
+<div class="top-bar">
+<div class="brand">
+<div class="prompt">><span class="cr"></span></div>
+<div>
+<div class="site-title">Admin</div>
+<div class="site-sub">crypto empire ops</div>
+</div>
+</div>
+<div class="top-nav">
+<a href="/">Dashboard</a>
+<a href="/admin" style="color:var(--white);">Admin</a>
+<a href="/advertise">Advertise</a>
+<a href="/premium">Premium</a>
+</div>
+</div>
+
+<div class="status-line">
+<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
+<span id="live-clock">--</span>
+<span>ADMIN PANEL</span>
+</div>
+
+<div class="t-h1" style="margin-top:24px;">> Admin Dashboard</div>
+<p style="font-size:10px;color:var(--text-dim);margin:0 0 4px;">Key metrics at a glance. Protected endpoint.</p>
+
+<div id="admin-content" style="margin-top:12px;">
+<div class="g2" id="stat-cards">
+<div class="g-stat"><div class="lbl">PREMIUM ACTIVE</div><div class="val" id="s-premium">--</div><div class="sub" id="s-premium-sub"></div></div>
+<div class="g-stat"><div class="lbl">REFERRALS</div><div class="val" id="s-refs">--</div><div class="sub" id="s-refs-sub"></div></div>
+<div class="g-stat"><div class="lbl">PRICE ALERTS</div><div class="val" id="s-alerts">--</div><div class="sub">active subscriptions</div></div>
+<div class="g-stat"><div class="lbl">WHALE MOVES</div><div class="val" id="s-whales">--</div><div class="sub" id="s-whales-sub"></div></div>
+<div class="g-stat"><div class="lbl">PORTFOLIOS</div><div class="val" id="s-portfolios">--</div><div class="sub">tracked portfolios</div></div>
+<div class="g-stat"><div class="lbl">AD SLOTS FILLED</div><div class="val" id="s-ads">--</div><div class="sub" id="s-ads-sub"></div></div>
+</div>
+
+<div class="adm-section">Active Premium Subscribers</div>
+<div id="subs-table"><div class="empty">Loading...</div></div>
+
+<div class="adm-section">Top Referrers</div>
+<div id="refs-table"><div class="empty">Loading...</div></div>
+
+<div class="adm-section">Ad Slot Status</div>
+<div id="ads-table"><div class="empty">Loading...</div></div>
+
+<div class="adm-section">Quick Actions</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+<button class="btn btn-sm" onclick="refresh()">⟳ Refresh Data</button>
+<a class="btn btn-sm" href="/api/premium/subscribers?key=" onclick="this.href='/api/premium/subscribers?key='+prompt('Enter whale refresh secret:')">List All Subs (API)</a>
+<a class="btn btn-sm" href="/api/whales?limit=5" target="_blank">Latest Whales</a>
+</div>
+</div>
+
+<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ACCESS: RESTRICTED</span></div><div class="info"><span>ADMIN: v1.0</span><span>DATA: LIVE</span></div></footer>
+</div>
+
+<div class="b-bar">
+<span><span class="dot"></span> ADMIN</span>
+<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
+<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
+<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
+<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
+<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+</div>
+
+<script>
+var _adminKey = '';
+(function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);
+fetch('/api/admin/stats',{headers:{'X-Admin-Key':_adminKey}}).then(function(r){return r.json()}).then(function(d){
+document.getElementById('s-premium').textContent=d.premium.active;
+document.getElementById('s-premium-sub').textContent='of '+d.premium.total+' total';
+document.getElementById('s-refs').textContent=d.referrals.total_referrals;
+document.getElementById('s-refs-sub').textContent=d.referrals.total_codes+' codes, '+d.referrals.total_rewards+' rewards';
+document.getElementById('s-alerts').textContent=d.alerts.total;
+document.getElementById('s-whales').textContent=d.whales.move_count;
+document.getElementById('s-whales-sub').textContent=d.whales.last_updated||'never';
+document.getElementById('s-portfolios').textContent=d.portfolios;
+var filled=Object.keys(d.ads.filled_slots).length;
+document.getElementById('s-ads').textContent=filled+'/'+d.ads.total_slots;
+document.getElementById('s-ads-sub').textContent=Object.values(d.ads.filled_slots).join(', ');
+// Subscribers table
+var subsHtml='';
+if(Object.keys(d.premium.subscribers).length===0){subsHtml='<div class="empty">No active premium subscribers</div>';}else{subsHtml='<table class="adm-table"><thead><tr><th>Customer ID</th><th>Status</th><th>Started</th><th>Period End</th><th>Source</th></tr></thead><tbody>';for(var cid in d.premium.subscribers){var s=d.premium.subscribers[cid];subsHtml+='<tr><td class="key">'+cid+'</td><td><span class="badge active">'+s.status+'</span></td><td>'+(s.started_at||'-').slice(0,10)+'</td><td>'+(s.current_period_end||'-').slice(0,10)+'</td><td>'+(s.source||'polar')+'</td></tr>';}subsHtml+='</tbody></table>';}
+document.getElementById('subs-table').innerHTML=subsHtml;
+// Referrals table
+var refHtml='';
+if(d.referrals.referrers.length===0){refHtml='<div class="empty">No referrals yet</div>';}else{refHtml='<table class="adm-table"><thead><tr><th>Ref Code</th><th>Referrals</th><th>Rewards</th></tr></thead><tbody>';for(var i=0;i<d.referrals.referrers.length;i++){var r=d.referrals.referrers[i];if(r.referrals===0)continue;refHtml+='<tr><td class="key">'+r.ref_code+'</td><td>'+r.referrals+'</td><td>'+r.rewards+'</td></tr>';}refHtml+='</tbody></table>';}
+document.getElementById('refs-table').innerHTML=refHtml;
+// Ads table
+var adsHtml='<table class="adm-table"><thead><tr><th>Slot</th><th>Content</th></tr></thead><tbody>';
+for(var slot in d.ads.filled_slots){adsHtml+='<tr><td>'+slot+'</td><td>'+d.ads.filled_slots[slot]+'</td></tr>';}
+var emptySlots=d.ads.total_slots-Object.keys(d.ads.filled_slots).length;
+if(emptySlots>0){adsHtml+='<tr><td style="color:var(--text-dim);">+ '+emptySlots+' empty slots</td><td class="empty">—</td></tr>';}
+adsHtml+='</tbody></table>';
+document.getElementById('ads-table').innerHTML=adsHtml;
+}).catch(function(){document.getElementById('stat-cards').innerHTML='<div style="color:var(--red);font-size:11px;">Failed to load admin data. Check X-Admin-Key.</div>';});
+})();
+</script>
+</body>
+</html>"""
+
+
+@app.route("/admin")
+def admin_dashboard():
+    return render_template_string(ADMIN_DASHBOARD_HTML)
 
 
 ADVERTISE_HTML = r"""<!DOCTYPE html>
