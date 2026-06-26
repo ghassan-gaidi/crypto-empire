@@ -1723,8 +1723,9 @@ def api_ads_admin():
 
 @app.route("/api/admin/stats")
 def api_admin_stats():
-    """Admin stats endpoint — protected by ADMIN_SECRET header."""
-    if request.headers.get("X-Admin-Key") != ADMIN_SECRET:
+    """Admin stats endpoint — protected by ADMIN_SECRET header or ?key= param."""
+    key = request.headers.get("X-Admin-Key", "") or request.args.get("key", "")
+    if key != ADMIN_SECRET:
         return jsonify({"error": "unauthorized"}), 401
     subs = _load_subs()
     active_subs = {k: v for k, v in subs.items() if v.get("status") in ("active", "trialing")}
@@ -1890,7 +1891,7 @@ body{background:var(--bg);}
 </div>
 
 <script>
-var _adminKey = '';
+var _adminKey = (function(){var m=location.search.match(/[?&]key=([^&]+)/);return m?decodeURIComponent(m[1]):'';})();
 (function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);
 fetch('/api/admin/stats',{headers:{'X-Admin-Key':_adminKey}}).then(function(r){return r.json()}).then(function(d){
 document.getElementById('s-premium').textContent=d.premium.active;
