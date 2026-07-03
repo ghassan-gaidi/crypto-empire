@@ -1,4 +1,4 @@
-# 👑 Crypto Empire — Autonomous Crypto Intelligence
+# ⛰️ Dominion — Autonomous Crypto Intelligence
 
 > **Live market dashboard + Telegram bot with 50+ commands, whale tracking, and premium monetization.**
 
@@ -6,13 +6,13 @@
 [![Bot](https://img.shields.io/badge/TG-%40Crypt0Emp1reBot-26A5E4)](https://t.me/Crypt0Emp1reBot)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000)](https://flask.palletsprojects.com)
-[![Polar](https://img.shields.io/badge/premium-Polar.sh-FF4785)](https://polar.sh)
+[![Polar](https://img.shields.io/badge/premium-Polar.sh-DC2626)](https://polar.sh)
 
 ---
 
 ## 🎯 What It Does
 
-Crypto Empire is a **two-in-one crypto intelligence system**:
+Dominion is a **two-in-one crypto intelligence system**:
 
 1. **🌐 Web Dashboard** — Live prices, gas tracker, whale moves, DEX volumes, portfolio tracking, yield aggregation, token launch calendar — all at `crypto-empire-ten.vercel.app`
 2. **🤖 Telegram Bot** — 50+ commands via `@Crypt0Emp1reBot` — price lookups, gas checks, wallet profiling, whale alerts, and more
@@ -87,7 +87,7 @@ Crypto Empire is a **two-in-one crypto intelligence system**:
 │          Home Server (Systemd)                  │
 │  ┌──────────────────────────────────────────┐   │
 │  │   bot.py — Telegram polling mode          │   │
-│  │   crypto-bot.service — always-on daemon   │   │
+│  │   dominion-bot.service — always-on daemon │   │
 │  └──────────────────────────────────────────┘   │
 └──────────────────────┬──────────────────────────┘
                        │
@@ -115,7 +115,7 @@ Crypto Empire is a **two-in-one crypto intelligence system**:
 | **Database** | SQLite (price cache, alerts, subscriptions) |
 | **Deploy** | Vercel (web) + Systemd daemon (TG bot) |
 | **CI** | 4 GitHub Actions workflows (monitor, whales, alerts, distribution) |
-| **Design** | Terminal monochrome + crimson, JetBrains Mono |
+| **Design** | Void dark (#08080E) + Crimson (#DC2626), Space Grotesk + JetBrains Mono, sharp 4px corners |
 
 ---
 

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="200" y2="200">
+      <stop offset="0%" stop-color="#0E0E14"/>
+      <stop offset="100%" stop-color="#08080E"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="200" y2="200">
+      <stop offset="0%" stop-color="#DC2626" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#DC2626" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Void background -->
+  <rect width="200" height="200" fill="url(#bg)" rx="16"/>
+  <!-- Glow radiance -->
+  <circle cx="100" cy="100" r="100" fill="url(#glow)"/>
+  <!-- Bold geometric D -->
+  <g transform="translate(100,100)">
+    <!-- Vertical stem -->
+    <rect x="-36" y="-70" width="28" height="140" rx="4" fill="#DC2626"/>
+    <!-- Curved body -->
+    <path d="M -8 -70
+             Q 70 -70 70 0
+             Q 70 70 -8 70
+             L -8 42
+             Q 36 42 36 0
+             Q 36 -42 -8 -42
+             Z"
+          fill="#DC2626"/>
+    <!-- Inner cutout -->
+    <path d="M -8 -42
+             Q 36 -42 36 0
+             Q 36 42 -8 42
+             L -8 14
+             Q 8 14 8 0
+             Q 8 -14 -8 -14
+             Z"
+          fill="#08080E"/>
+  </g>
+</svg>

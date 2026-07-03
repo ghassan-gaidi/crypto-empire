@@ -1,5 +1,5 @@
 """
-Crypto Empire Telegram Bot — Webhook mode for Vercel serverless
+Dominion Telegram Bot — Webhook mode for Vercel serverless
 """
 import os
 import json
@@ -880,7 +880,7 @@ def handle_my_chat_member(data):
         # Bot was added to group
         bot_username = os.environ.get("BOT_USERNAME", "Crypt0Emp1reBot")
         welcome = (
-            f"🤖 *Crypto Empire Bot added to {group_title}*\n\n"
+            f"🤖 *Dominion Bot added to {group_title}*\n\n"
             f"Type /btc, /eth, /sol or any coin ticker for instant prices.\n"
             f"Use /help to see all commands.\n\n"
             f"More at crypto-empire-ten.vercel.app\n\n"

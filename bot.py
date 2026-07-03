@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Crypto Empire Telegram Bot - Autonomous crypto intelligence & trading
+Dominion Telegram Bot - Autonomous crypto intelligence & trading
 Monetized via premium subscriptions (paid in crypto)
 """
 
@@ -31,7 +31,7 @@ import requests
 # Configuration
 # ============================================================
 WALLET_ADDRESS = "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef"
-DATA_DIR = Path.home() / "crypto-empire" / "data"
+DATA_DIR = Path.home() / "dominion" / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # CoinGecko API
@@ -154,7 +154,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db_conn.close()
 
     welcome = f"""
-⚡ *Crypto Empire Bot* ⚡
+⚡ *Dominion Bot* ⚡
 
 Your autonomous crypto intelligence hub. Track prices, get alerts, discover opportunities.
 
@@ -333,7 +333,7 @@ async def watchlist_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def premium_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show premium plans"""
     text = f"""
-💎 *Crypto Empire Premium* 💎
+💎 *Dominion Premium* 💎
 
 Unlock the full power of autonomous crypto intelligence:
 
@@ -393,7 +393,7 @@ async def portfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show help"""
     help_text = """
-*🤖 Crypto Empire Bot Commands*
+*🤖 Dominion Bot Commands*
 
 *Prices & Market*
 /price <coin> - Check coin price
@@ -631,7 +631,7 @@ def main():
         print("\nTo deploy, set TELEGRAM_BOT_TOKEN and run.")
         return
 
-    logger.info(f"Starting Crypto Empire Bot...")
+    logger.info(f"Starting Dominion Bot...")
 
     # Create application
     application = Application.builder().token(token).build()

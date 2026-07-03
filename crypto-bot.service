@@ -1,5 +1,5 @@
 [Unit]
-Description=Crypto Empire Telegram Bot
+Description=Dominion Telegram Bot
 After=network.target
 
 [Service]

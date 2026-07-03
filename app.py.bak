@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Crypto Empire - Web Dashboard & API
+Dominion - Web Dashboard & API
 Autonomous crypto intelligence platform with monetization
 """
 import os
@@ -21,14 +21,14 @@ import requests
 # ============================================================
 WALLET_ADDRESS = "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef"
 if os.environ.get("VERCEL"):
-    DATA_DIR = Path("/tmp") / "crypto-empire-data"
+    DATA_DIR = Path("/tmp") / "dominion-data"
 else:
-    DATA_DIR = Path.home() / "crypto-empire" / "data"
+    DATA_DIR = Path.home() / "dominion" / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = os.environ.get("FLASK_SECRET", "crypto-empire-secret-key-2026")
+app.secret_key = os.environ.get("FLASK_SECRET", "dominion-secret-key-2026")
 
 # ============================================================
 # Database
@@ -104,7 +104,7 @@ INDEX_HTML = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Empire — Autonomous Crypto Intelligence</title>
+    <title>Dominion — Autonomous Crypto Intelligence</title>
     <meta name="description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data for Ethereum, Bitcoin, Arbitrum, Polygon & Base.">
     <meta name="keywords" content="crypto dashboard, wallet checker, gas tracker, Ethereum gas, Bitcoin price, crypto prices, portfolio tracker, blockchain tools">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/">
@@ -416,7 +416,7 @@ INDEX_HTML = """<!DOCTYPE html>
 
         <!-- Donation Section -->
         <div class="donation-box" id="donate">
-            <h3>☕ Support Crypto Empire</h3>
+            <h3>☕ Support Dominion</h3>
             <p style="color: var(--muted); margin-bottom: 12px; font-size: 14px;">
                 If you find this tool useful, send a tip in ETH, USDC, or any ERC-20 token.<br>
                 Premium access (10K API req/day + arbitrage signals) — send 0.005 ETH (~$10).
@@ -623,7 +623,7 @@ def docs():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Empire — API Docs</title>
+    <title>Dominion — API Docs</title>
     <style>
         :root { --bg: #0a0b0e; --card: #13151a; --border: #1e2030; --accent: #00d4aa; --text: #e2e8f0; --muted: #64748b; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -643,7 +643,7 @@ def docs():
 <body>
     <div class="container">
         <a href="/" style="color: var(--muted); font-size: 14px;">← Back to Dashboard</a>
-        <h1>Crypto Empire API</h1>
+        <h1>Dominion API</h1>
         <p>Free public API for crypto data. No auth required.</p>
         
         <div style="background:#1e2030;padding:12px;border-radius:8px;margin:16px 0;">
@@ -675,7 +675,7 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallet Checker — Crypto Empire</title>
+    <title>Wallet Checker — Dominion</title>
     <style>
         :root { --bg: #0a0b0e; --card: #13151a; --border: #1e2030; --accent: #00d4aa; --text: #e2e8f0; --muted: #64748b; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -830,7 +830,7 @@ BLOG_POSTS = [
         "tags": ["wallet checker", "crypto tools", "portfolio tracker"],
         "content": """
 <h2>Check Any Ethereum Wallet Balance Across Multiple Chains</h2>
-<p>Crypto Empire's <a href="/wallet-check">Wallet Checker</a> lets you instantly view ETH, MATIC, and ERC-20 token balances across Ethereum, Arbitrum, Base, and Polygon — all from one page. No signup, no API key, no wallet connection needed.</p>
+<p>Dominion's <a href="/wallet-check">Wallet Checker</a> lets you instantly view ETH, MATIC, and ERC-20 token balances across Ethereum, Arbitrum, Base, and Polygon — all from one page. No signup, no API key, no wallet connection needed.</p>
 
 <h3>Why Use a Multi-Chain Wallet Checker?</h3>
 <p>Modern crypto users hold assets across multiple Layer 2 solutions. Instead of checking each chain's block explorer separately, our tool aggregates balances from Ethereum, Arbitrum, Base, and Polygon into a single USD value.</p>
@@ -884,7 +884,7 @@ BLOG_POSTS = [
 <h2>Track Your Crypto Portfolio Without Connecting Your Wallet</h2>
 <p>Privacy-focused crypto tracking is possible with on-chain data tools. Here are the best free options for monitoring your portfolio in 2026.</p>
 
-<h3>1. Crypto Empire Wallet Checker</h3>
+<h3>1. Dominion Wallet Checker</h3>
 <p>Our <a href="/wallet-check">Wallet Checker</a> lets you check any Ethereum address across 4 chains instantly. No wallet connection, no data collection, just pure on-chain balance queries.</p>
 
 <h3>2. Live Market Data</h3>
@@ -934,7 +934,7 @@ def blog_index():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Empire Blog — Crypto Tools, Guides & Market Analysis</title>
+    <title>Dominion Blog — Crypto Tools, Guides & Market Analysis</title>
     <meta name="description" content="Free crypto tools, wallet checker, gas tracker, and market data. Guides and analysis for cryptocurrency traders and investors.">
     <meta name="keywords" content="crypto tools, wallet checker, gas tracker, Bitcoin, Ethereum, cryptocurrency prices">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog">
@@ -962,7 +962,7 @@ def blog_index():
 <body>
     <div class="container">
         <nav style="margin-bottom: 24px;"><a href="/">← Dashboard</a> &nbsp; <a href="/docs">API</a> &nbsp; <a href="/wallet-check">Wallet Checker</a></nav>
-        <h1>📝 Crypto Empire Blog</h1>
+        <h1>📝 Dominion Blog</h1>
         <p class="subtitle">Free crypto tools, guides, and market analysis. Check wallet balances, track gas fees, and monitor live prices.</p>
         
         {% for post in posts %}
@@ -981,7 +981,7 @@ def blog_index():
         </div>
         
         <footer style="text-align:center;padding:24px 0;color:var(--muted);font-size:12px;border-top:1px solid var(--border);">
-            <p><a href="/">Crypto Empire Dashboard</a> · <a href="/sitemap.xml">Sitemap</a></p>
+            <p><a href="/">Dominion Dashboard</a> · <a href="/sitemap.xml">Sitemap</a></p>
         </footer>
     </div>
 </body>
@@ -1002,7 +1002,7 @@ def blog_post(slug):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} — Crypto Empire</title>
+    <title>{{ title }} — Dominion</title>
     <meta name="description" content="{{ title }}. Free crypto tools, wallet checker, gas tracker, and live prices.">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog/{{ slug }}">
     <style>
@@ -1084,6 +1084,6 @@ Sitemap: https://crypto-empire-ten.vercel.app/sitemap.xml
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     debug = os.environ.get("FLASK_DEBUG", "0") == "1"
-    print(f"⚡ Crypto Empire Dashboard starting on port {port}")
+    print(f"⚡ Dominion Dashboard starting on port {port}")
     print(f"💰 Wallet: {WALLET_ADDRESS}")
     app.run(host="0.0.0.0", port=port, debug=debug)

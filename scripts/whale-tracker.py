@@ -26,7 +26,7 @@ DECIMALS = {"USDT": 6, "USDC": 6, "WBTC": 8}
 
 TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
-DATA_DIR = Path(os.environ.get("DATA_DIR", "/tmp/crypto-empire-data"))
+DATA_DIR = Path(os.environ.get("DATA_DIR", "/tmp/dominion-data"))
 CACHE_FILE = DATA_DIR / "whale_cache.json"
 
 # ── RPC Helpers ─────────────────────────────────────────────────────────

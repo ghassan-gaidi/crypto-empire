@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Crypto Empire - Autonomous Revenue Engine
+Dominion - Autonomous Revenue Engine
 Monitors chains, finds opportunities, executes trades
 """
 
@@ -173,7 +173,7 @@ class CryptoEmpire:
     def scan_all_chains(self):
         """Scan all configured chains for balances"""
         print(f"\n{'='*50}")
-        print(f"Crypto Empire - Wallet: {self.wallet}")
+        print(f"Dominion - Wallet: {self.wallet}")
         print(f"{'='*50}")
 
         for key in CHAINS:
@@ -239,7 +239,7 @@ class CryptoEmpire:
     def run(self, interval_seconds: int = 60):
         """Main monitoring loop"""
         self.running = True
-        print(f"\n[+] Crypto Empire engine started (checking every {interval_seconds}s)")
+        print(f"\n[+] Dominion engine started (checking every {interval_seconds}s)")
         print(f"[+] Press Ctrl+C to stop\n")
 
         try:
@@ -259,7 +259,7 @@ def main():
     engine = CryptoEmpire(wallet)
 
     # Quick scan
-    print("\n[⚡] Crypto Empire - Quick Scan")
+    print("\n[⚡] Dominion - Quick Scan")
     engine.scan_all_chains()
 
     # Gas prices

@@ -1,5 +1,5 @@
 """
-Vercel serverless entry point for Crypto Empire dashboard
+Vercel serverless entry point for Dominion dashboard
 """
 import sys
 import os

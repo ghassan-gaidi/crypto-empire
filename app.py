@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Crypto Empire - Web Dashboard & API
+Dominion - Web Dashboard & API
 Autonomous crypto intelligence platform with monetization
 """
 import os
@@ -23,14 +23,14 @@ import requests
 # ============================================================
 WALLET_ADDRESS = "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef"
 if os.environ.get("VERCEL"):
-    DATA_DIR = Path("/tmp") / "crypto-empire-data"
+    DATA_DIR = Path("/tmp") / "dominion-data"
 else:
-    DATA_DIR = Path.home() / "crypto-empire" / "data"
+    DATA_DIR = Path.home() / "dominion" / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = os.environ.get("FLASK_SECRET", "crypto-empire-secret-key-2026")
+app.secret_key = os.environ.get("FLASK_SECRET", "dominion-secret-key-2026")
 
 # Premium API Keys (comma-separated in env var)
 PREMIUM_API_KEYS = set()
@@ -41,7 +41,7 @@ if _api_keys_raw:
 # Sponsored coin config
 SPONSORED_COIN_ID = os.environ.get("SPONSORED_COIN_ID", "bitcoin")
 SPONSORED_COIN_MSG = os.environ.get("SPONSORED_COIN_MSG", "Bitcoin — The Original Asset")
-ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "crypto-empire-admin-2026")
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "dominion-admin-2026")
 
 # Ad placement system cache
 AD_CACHE_FILE = DATA_DIR / "ads_cache.json"
@@ -853,16 +853,16 @@ SHARED_HEAD = """<meta charset="UTF-8">
 INDEX_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
-    <title>Crypto Empire — Autonomous Crypto Intelligence</title>
+    <title>Dominion — Autonomous Crypto Intelligence</title>
     <meta name="description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data for Ethereum, Bitcoin, Arbitrum, Polygon & Base.">
     <meta name="keywords" content="crypto dashboard, wallet checker, gas tracker, Ethereum gas, Bitcoin price, crypto prices, portfolio tracker, blockchain tools">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/">
-    <meta property="og:title" content="Crypto Empire — Autonomous Crypto Intelligence">
+    <meta property="og:title" content="Dominion — Autonomous Crypto Intelligence">
     <meta property="og:description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data.">
     <meta property="og:url" content="https://crypto-empire-ten.vercel.app/">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Crypto Empire — Autonomous Crypto Intelligence">
+    <meta name="twitter:title" content="Dominion — Autonomous Crypto Intelligence">
     <meta name="twitter:description" content="Free crypto dashboard. Live prices, gas tracker, wallet checker, Telegram bot @Crypt0Emp1reBot.">
 </head>
 <body>
@@ -882,7 +882,7 @@ INDEX_HTML = """<!DOCTYPE html>
             <div class="brand">
                 <div class="prompt">><span class="cr"></span></div>
                 <div>
-                    <div class="site-title">Crypto Empire</div>
+                    <div class="site-title">Dominion</div>
                     <div class="site-sub">Live Crypto Intelligence</div>
                 </div>
             </div>
@@ -1798,7 +1798,7 @@ def api_admin_stats():
 ADMIN_DASHBOARD_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + r"""
-    <title>Admin — Crypto Empire</title>
+    <title>Admin — Dominion</title>
     <meta name="robots" content="noindex, nofollow">
 <style>
 body{background:var(--bg);}
@@ -1935,8 +1935,8 @@ def admin_dashboard():
 ADVERTISE_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + r"""
-    <title>Crypto Empire — Advertise</title>
-    <meta name="description" content="Advertise on Crypto Empire — reach 10,000+ monthly active crypto traders. Sponsored spotlight, banners, featured launches, whale sponsorship.">
+    <title>Dominion — Advertise</title>
+    <meta name="description" content="Advertise on Dominion — reach 10,000+ monthly active crypto traders. Sponsored spotlight, banners, featured launches, whale sponsorship.">
 <style>
 .container{max-width:800px;margin:0 auto;padding:24px 20px 80px;position:relative;}
 .sec-title{font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:var(--white);margin:32px 0 16px;}
@@ -1992,7 +1992,7 @@ ADVERTISE_HTML = r"""<!DOCTYPE html>
 <span>AD PLACEMENT // MEDIA KIT</span>
 </div>
 
-<div class="t-h1" style="margin-top:24px;">> Advertise on Crypto Empire</div>
+<div class="t-h1" style="margin-top:24px;">> Advertise on Dominion</div>
 <p class="p-body">Reach 10,000+ monthly active crypto traders, whales, and degens. All placements are CRT terminal style — no popups, no banners blocking content.</p>
 
 <div class="dv"></div>
@@ -2427,7 +2427,7 @@ def premium_page():
     return render_template_string("""<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
-    <title>Premium — Crypto Empire</title>
+    <title>Premium — Dominion</title>
     <meta name="description" content="Unlock premium features: advanced whale alerts, priority price alerts, and exclusive market data.">
 </head>
 <body>
@@ -2642,8 +2642,8 @@ def api_keys_page():
     return render_template_string("""<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
-    <title>API Keys — Crypto Empire Premium</title>
-    <meta name="description" content="Get premium API keys for Crypto Empire. 10K requests/day, arbitrage signals, priority support. Unlock by sending ETH.">
+    <title>API Keys — Dominion Premium</title>
+    <meta name="description" content="Get premium API keys for Dominion. 10K requests/day, arbitrage signals, priority support. Unlock by sending ETH.">
     <meta name="robots" content="noindex, follow">
 </head>
 <body>
@@ -2974,7 +2974,7 @@ def docs():
     return render_template_string("""<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
-    <title>Crypto Empire — API Docs</title>
+    <title>Dominion — API Docs</title>
     <meta name="description" content="Free public API for crypto data. No auth required. Bitcoin, Ethereum, gas prices, wallet balances.">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/docs">
 </head>
@@ -3131,7 +3131,7 @@ Send: /help</pre>
 WALLET_CHECK_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
-    <title>Wallet Checker — Crypto Empire</title>
+    <title>Wallet Checker — Dominion</title>
     <meta name="description" content="Multi-chain Ethereum wallet balance checker. Check ETH, tokens and balances across Ethereum, Arbitrum, Polygon, Base, Optimism, BSC.">
 </head>
 <body>
@@ -3401,7 +3401,7 @@ PROFILER_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Wallet Profiler — Crypto Empire</title>
+<title>Wallet Profiler — Dominion</title>
 """ + SHARED_HEAD + r"""
 <style>
 .profiler-form{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
@@ -3746,7 +3746,7 @@ def api_portfolio(pid):
 PORTFOLIO_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Portfolio Tracker — Crypto Empire</title>
+<title>Portfolio Tracker — Dominion</title>
 """ + SHARED_HEAD + r"""
 <style>
 body{padding:0!important;}
@@ -4146,7 +4146,7 @@ LAUNCHES_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Token Launch Calendar — Crypto Empire</title>
+<title>Token Launch Calendar — Dominion</title>
 """ + SHARED_HEAD + r"""
 <style>
 .filter-row{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
@@ -4211,7 +4211,7 @@ LAUNCHES_HTML = r"""<!DOCTYPE html>
 <div id="launch-list"><div class="loading">Loading calendar...</div></div>
 
 <div style="margin-top:24px;padding:12px;border:1px solid var(--border);font-size:9px;color:var(--text-dim);text-align:center;letter-spacing:1px;">
-Launch dates are estimates from public sources. Use exchange affiliate links to support Crypto Empire.
+Launch dates are estimates from public sources. Use exchange affiliate links to support Dominion.
 </div>
 
 <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
@@ -4347,7 +4347,7 @@ BLOG_POSTS = [
         "tags": ["wallet checker", "crypto tools", "portfolio tracker"],
         "content": """
 <h2>Check Any Ethereum Wallet Balance Across Multiple Chains</h2>
-<p>Crypto Empire's <a href="/wallet-check">Wallet Checker</a> lets you instantly view ETH, MATIC, and ERC-20 token balances across Ethereum, Arbitrum, Base, and Polygon - all from one page. No signup, no API key, no wallet connection needed.</p>
+<p>Dominion's <a href="/wallet-check">Wallet Checker</a> lets you instantly view ETH, MATIC, and ERC-20 token balances across Ethereum, Arbitrum, Base, and Polygon - all from one page. No signup, no API key, no wallet connection needed.</p>
 
 <h3>Why Use a Multi-Chain Wallet Checker?</h3>
 <p>Modern crypto users hold assets across multiple Layer 2 solutions. Instead of checking each chain's block explorer separately, our tool aggregates balances from Ethereum, Arbitrum, Base, and Polygon into a single USD value.</p>
@@ -4401,7 +4401,7 @@ BLOG_POSTS = [
 <h2>Track Your Crypto Portfolio Without Connecting Your Wallet</h2>
 <p>Privacy-focused crypto tracking is possible with on-chain data tools. Here are the best free options for monitoring your portfolio in 2026.</p>
 
-<h3>1. Crypto Empire Wallet Checker</h3>
+<h3>1. Dominion Wallet Checker</h3>
 <p>Our <a href="/wallet-check">Wallet Checker</a> lets you check any Ethereum address across 4 chains instantly. No wallet connection, no data collection, just pure on-chain balance queries.</p>
 
 <h3>2. Live Market Data</h3>
@@ -4418,12 +4418,12 @@ BLOG_POSTS = [
     },
     {
         "slug": "crypto-empire-telegram-bot-live-prices-alerts",
-        "title": "Crypto Empire Telegram Bot is Live — Get Crypto Prices Directly in Telegram",
+        "title": "Dominion Telegram Bot is Live — Get Crypto Prices Directly in Telegram",
         "date": "2026-06-04",
         "tags": ["telegram bot", "crypto bot", "price alerts", "crypto tools"],
         "content": """
 <h2>@Crypt0Emp1reBot — Live Crypto Data on Telegram</h2>
-<p>The Crypto Empire <a href="https://t.me/Crypt0Emp1reBot" target="_blank">Telegram bot</a> is now live. Get real-time crypto prices, gas fees, trending coins, and wallet balance checks directly in your Telegram chat. No signup, no API keys, no database — just pure on-chain and market data.</p>
+<p>The Dominion <a href="https://t.me/Crypt0Emp1reBot" target="_blank">Telegram bot</a> is now live. Get real-time crypto prices, gas fees, trending coins, and wallet balance checks directly in your Telegram chat. No signup, no API keys, no database — just pure on-chain and market data.</p>
 
 <h3>Available Commands</h3>
 <ul>
@@ -4442,7 +4442,7 @@ BLOG_POSTS = [
 <p>Open Telegram and search for <strong>@Crypt0Emp1reBot</strong> or click <a href="https://t.me/Crypt0Emp1reBot" target="_blank">this link</a>. Send <code>/start</code> to see the command list. That's it — no installation, no login, no ads.</p>
 
 <h3>Behind the Scenes</h3>
-<p>The bot runs on the same Vercel serverless infrastructure as the Crypto Empire dashboard. It uses a webhook endpoint at <code>/telegram/webhook</code> that processes commands in real-time. No persistent server, no polling — Telegram pushes messages to the endpoint and the bot responds within seconds.</p>
+<p>The bot runs on the same Vercel serverless infrastructure as the Dominion dashboard. It uses a webhook endpoint at <code>/telegram/webhook</code> that processes commands in real-time. No persistent server, no polling — Telegram pushes messages to the endpoint and the bot responds within seconds.</p>
 
 <p>All data sources are the same free public APIs powering the dashboard: CoinGecko for prices, public RPC endpoints for wallet balances, DeFiLlama for TVL and DEX data, and Alternative.me for the Fear &amp; Greed Index.</p>
 
@@ -4482,7 +4482,7 @@ def blog_index():
     return render_template_string("""<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
-    <title>Crypto Empire Blog - Crypto Tools, Guides & Market Analysis</title>
+    <title>Dominion Blog - Crypto Tools, Guides & Market Analysis</title>
     <meta name="description" content="Free crypto tools, wallet checker, gas tracker, and market data. Guides and analysis for cryptocurrency traders and investors.">
     <meta name="keywords" content="crypto tools, wallet checker, gas tracker, Bitcoin, Ethereum, cryptocurrency prices">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog">
@@ -4569,7 +4569,7 @@ def blog_post(slug):
     return render_template_string("""<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
-    <title>{{ title }} — Crypto Empire</title>
+    <title>{{ title }} — Dominion</title>
     <meta name="description" content="{{ title }}. Free crypto tools, wallet checker, gas tracker, and live prices.">
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog/{{ slug }}">
 </head>
@@ -4712,7 +4712,7 @@ WIDGET_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 """ + WIDGET_CSS + """
-<title>Crypto Empire Widget</title>
+<title>Dominion Widget</title>
 </head>
 <body class="THEME">
 <div class="w">
@@ -4877,7 +4877,7 @@ TICKER_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Market Ticker — Crypto Empire</title>
+<title>Market Ticker — Dominion</title>
 """ + SHARED_HEAD + r"""
 <style>
 /* Ticker-specific overrides — compact, no-nav */
@@ -4927,7 +4927,7 @@ function render(data){
     html+=fmtC(d.c);
     html+='</div>';
   }
-  if(data.length)html+='<div class="ticker-item" style="color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;">Crypto Empire</div>';
+  if(data.length)html+='<div class="ticker-item" style="color:var(--text-dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;">Dominion</div>';
   track.innerHTML=html;
   startScroll();
 }
@@ -5025,7 +5025,7 @@ WHALE_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Whale Tracker — Crypto Empire</title>
+<title>Whale Tracker — Dominion</title>
 """ + SHARED_HEAD + r"""
 <style>
 .whale-stats{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap}
@@ -5260,7 +5260,7 @@ YIELDS_HTML = """<!DOCTYPE html>
     <div class="brand">
       <div class="prompt">><span class="cr"></span></div>
       <div>
-        <div class="site-title">Crypto Empire</div>
+        <div class="site-title">Dominion</div>
         <div class="site-sub">Yield Aggregator</div>
       </div>
     </div>
@@ -5427,7 +5427,7 @@ TRENDING_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trending This Hour — Crypto Empire</title>
+<title>Trending This Hour — Dominion</title>
 """ + SHARED_HEAD + r"""
 <style>
 .coin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:16px 0}
@@ -5635,7 +5635,7 @@ def page_not_found(e):
     return render_template_string("""<!DOCTYPE html>
 <html lang="en">
 <head>""" + SHARED_HEAD + """
-    <title>404 — Crypto Empire</title>
+    <title>404 — Dominion</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
@@ -5674,6 +5674,6 @@ def page_not_found(e):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     debug = os.environ.get("FLASK_DEBUG", "0") == "1"
-    print(f"⚡ Crypto Empire Dashboard starting on port {port}")
+    print(f"⚡ Dominion Dashboard starting on port {port}")
     print(f"💰 Wallet: {WALLET_ADDRESS}")
     app.run(host="0.0.0.0", port=port, debug=debug)
