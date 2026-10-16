@@ -132,7 +132,7 @@ def send_typing(chat_id):
     """Show 'typing…' indicator."""
     try:
         requests.post(f"{API_BASE}/sendChatAction", json={"chat_id": chat_id, "action": "typing"}, timeout=3)
-    except:
+    except Exception:
         pass
 
 def edit_message(chat_id, message_id, text):
@@ -141,7 +141,7 @@ def edit_message(chat_id, message_id, text):
         requests.post(f"{API_BASE}/editMessageText", json={
             "chat_id": chat_id, "message_id": message_id, "text": text
         }, timeout=5)
-    except:
+    except Exception:
         pass
 
 def send_loading(chat_id, header):
@@ -160,7 +160,7 @@ def edit_or_send(chat_id, message_id, text):
             }, timeout=5)
             if r.ok:
                 return
-        except:
+        except Exception:
             pass
     send_message(chat_id, text)
 
@@ -341,7 +341,7 @@ def cmd_gas(chat_id, args=None):
                 lines.append(f"{name:<10} {gwei:.1f} gwei")
             else:
                 lines.append(f"{name:<10} error")
-        except:
+        except Exception:
             lines.append(f"{name:<10} error")
     send_message(chat_id, "\n".join(lines))
 
@@ -444,7 +444,7 @@ def cmd_wallet(chat_id, args):
                 lines.append(f"\n{name:<10} {bal_s}  ${usd:,.2f}")
             else:
                 lines.append(f"\n{name:<10} error")
-        except:
+        except Exception:
             lines.append(f"\n{name:<10} error")
     lines.append(f"\n{SEP}")
     lines.append(f"TOTAL: ${total:,.2f}")
@@ -772,7 +772,7 @@ def cmd_alerts(chat_id, args=None):
             (str(chat_id),)
         )
         rows = cur.fetchall()
-    except:
+    except Exception:
         rows = []
     finally:
         conn.close()

@@ -584,7 +584,7 @@ async def check_new_listings_job(context: ContextTypes.DEFAULT_TYPE):
         async with session.get(f"{COINGECKO_BASE}/coins/list?include_platform=false", timeout=10) as resp:
             if resp.status == 200:
                 pass  # Would check for new listings vs cache
-    except:
+    except Exception:
         pass
 
 

@@ -87,7 +87,7 @@ for coin in coins:
             change = data[coin].get("usd_24h_change", 0)
             emoji = "🟢" if change >= 0 else "🔴"
             print(f"{emoji} {coin.upper()}: ${price:,.2f} ({change:+.2f}%)")
-    except:
+    except Exception:
         print(f"  {coin}: error")
 
 print()

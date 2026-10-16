@@ -5,9 +5,9 @@ After=network.target
 [Service]
 Type=simple
 User=leo
-WorkingDirectory=/home/leo/crypto-empire
-EnvironmentFile=/home/leo/crypto-empire/.env
-ExecStart=/tmp/crypto-env/bin/python /home/leo/crypto-empire/bot.py
+WorkingDirectory=/home/leo/projects/crypto-empire-public
+EnvironmentFile=/home/leo/projects/crypto-empire-public/.env
+ExecStart=/home/leo/projects/crypto-empire-public/venv/bin/python /home/leo/projects/crypto-empire-public/bot.py
 Restart=on-failure
 RestartSec=30
 StandardOutput=journal

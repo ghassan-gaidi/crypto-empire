@@ -30,7 +30,12 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = os.environ.get("FLASK_SECRET", "dominion-secret-key-2026")
+
+# Fail closed: refusing to boot with a public default outside local/dev runs.
+_flask_secret = os.environ.get("FLASK_SECRET", "")
+if not _flask_secret and not os.environ.get("VERCEL"):
+    raise RuntimeError("FLASK_SECRET is not set. Refusing to start with an insecure default.")
+app.secret_key = _flask_secret or "local-dev-only-insecure-key"
 
 # Premium API Keys (comma-separated in env var)
 PREMIUM_API_KEYS = set()
@@ -41,7 +46,51 @@ if _api_keys_raw:
 # Sponsored coin config
 SPONSORED_COIN_ID = os.environ.get("SPONSORED_COIN_ID", "bitcoin")
 SPONSORED_COIN_MSG = os.environ.get("SPONSORED_COIN_MSG", "Bitcoin — The Original Asset")
-ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "dominion-admin-2026")
+_admin_secret = os.environ.get("ADMIN_SECRET", "")
+if not _admin_secret and not os.environ.get("VERCEL"):
+    raise RuntimeError("ADMIN_SECRET is not set. Refusing to start with an insecure default.")
+ADMIN_SECRET = _admin_secret or "local-dev-only-insecure-admin-key"
+
+
+def _is_admin_authorized(req) -> bool:
+    """Header-only admin auth. Fail closed when ADMIN_SECRET was never configured."""
+    if not _admin_secret:
+        return False
+    provided = req.headers.get("X-Admin-Key", "")
+    return bool(provided) and hmac.compare_digest(provided, ADMIN_SECRET)
+
+
+# Shared HTTP helper — every outbound call gets a timeout + retry + UA.
+HTTP_TIMEOUT = float(os.environ.get("HTTP_TIMEOUT", "15"))
+USER_AGENT = {"User-Agent": "Dominion/3.5 (+https://crypto-empire-ten.vercel.app)"}
+
+
+def http_get(url, *, params=None, headers=None, timeout=None, retries=1):
+    merged = dict(USER_AGENT)
+    if headers:
+        merged.update(headers)
+    last_exc = None
+    for _ in range(retries + 1):
+        try:
+            return requests.get(url, params=params, headers=merged,
+                                timeout=timeout or HTTP_TIMEOUT)
+        except requests.RequestException as e:
+            last_exc = e
+    raise last_exc
+
+
+def http_post(url, *, data=None, json=None, headers=None, timeout=None, retries=0):
+    merged = dict(USER_AGENT)
+    if headers:
+        merged.update(headers)
+    last_exc = None
+    for _ in range(retries + 1):
+        try:
+            return requests.post(url, data=data, json=json, headers=merged,
+                                 timeout=timeout or HTTP_TIMEOUT)
+        except requests.RequestException as e:
+            last_exc = e
+    raise last_exc
 
 # Ad placement system cache
 AD_CACHE_FILE = DATA_DIR / "ads_cache.json"
@@ -63,7 +112,7 @@ def _load_ads():
                     if datetime.now().isoformat() > data[k]["expires"]:
                         data[k] = None
             return data
-        except: pass
+        except Exception: pass
     return dict(DEFAULT_ADS)
 
 def _seed_ads():
@@ -114,7 +163,7 @@ def _load_subs():
     if SUBS_PATH.exists():
         try:
             return json.loads(SUBS_PATH.read_text())
-        except:
+        except Exception:
             pass
     return {}
 
@@ -221,7 +270,7 @@ def get_ref_stats(chat_id):
         conn.close()
         if row:
             return {"ref_code": row[0], "referred_count": row[1], "rewards_earned": row[2]}
-    except:
+    except Exception:
         pass
     return {"ref_code": "", "referred_count": 0, "rewards_earned": 0}
 
@@ -310,17 +359,18 @@ def render_sparkline(prices, width=80, height=24):
 
 def fetch_sync(url):
     try:
-        resp = requests.get(url, timeout=10, headers={"Accept": "application/json"})
+        resp = http_get(url, headers={"Accept": "application/json"},
+                        timeout=10, retries=1)
         if resp.status_code == 200:
             return resp.json()
-    except:
+    except Exception:
         pass
     return None
 
 def fetch_rss(url):
     """Fetch and parse an RSS feed"""
     try:
-        resp = requests.get(url, timeout=10)
+        resp = http_get(url, timeout=10, retries=1)
         if resp.status_code == 200:
             root = ET.fromstring(resp.content)
             items = []
@@ -338,7 +388,7 @@ def fetch_rss(url):
                     'desc': unescape(desc_clean)
                 })
             return items[:10]
-    except:
+    except Exception:
         pass
     return []
 
@@ -1561,12 +1611,12 @@ def api_gas():
     results = {}
     for name, url in chains.items():
         try:
-            r = requests.post(url, json={"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}, timeout=6)
+            r = http_post(url, json={"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}, timeout=6, retries=1)
             data = r.json()
             if "result" in data:
                 gwei = int(data["result"], 16) / 1e9
                 results[name] = {"gas_gwei": round(gwei, 4)}
-        except:
+        except Exception:
             results[name] = {"error": "unavailable"}
     return jsonify(results)
 
@@ -1694,7 +1744,7 @@ def api_ads():
 @app.route("/api/ads/admin", methods=["GET", "POST", "DELETE"])
 def api_ads_admin():
     """Admin CRUD for ad placements. Protected by ADMIN_SECRET header."""
-    if request.headers.get("X-Admin-Key") != ADMIN_SECRET:
+    if not _is_admin_authorized(request):
         return jsonify({"error": "unauthorized"}), 401
     ads = _load_ads()
     if request.method == "POST":
@@ -1723,9 +1773,8 @@ def api_ads_admin():
 
 @app.route("/api/admin/stats")
 def api_admin_stats():
-    """Admin stats endpoint — protected by ADMIN_SECRET header or ?key= param."""
-    key = request.headers.get("X-Admin-Key", "") or request.args.get("key", "")
-    if key != ADMIN_SECRET:
+    """Admin stats endpoint — header-only auth (X-Admin-Key). ?key= removed."""
+    if not _is_admin_authorized(request):
         return jsonify({"error": "unauthorized"}), 401
     subs = _load_subs()
     active_subs = {k: v for k, v in subs.items() if v.get("status") in ("active", "trialing")}
@@ -1873,7 +1922,7 @@ body{background:var(--bg);}
 <div class="adm-section">Quick Actions</div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
 <button class="btn btn-sm" onclick="refresh()">⟳ Refresh Data</button>
-<a class="btn btn-sm" href="/api/premium/subscribers?key=" onclick="this.href='/api/premium/subscribers?key='+prompt('Enter whale refresh secret:')">List All Subs (API)</a>
+<a class="btn btn-sm" href="#" onclick="event.preventDefault();fetch('/api/premium/subscribers',{headers:{'X-Admin-Key':(window.__ADMIN_KEY__||prompt('Enter admin key:'))}}).then(r=>r.json()).then(j=>alert(JSON.stringify(j).slice(0,2000))).catch(e=>alert('failed: '+e))">List All Subs (API)</a>
 <a class="btn btn-sm" href="/api/whales?limit=5" target="_blank">Latest Whales</a>
 </div>
 </div>
@@ -2230,9 +2279,9 @@ TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523
 
 
 def _whale_rpc(method, params):
-    resp = requests.post(WHALE_RPC_URL, json={
+    resp = http_post(WHALE_RPC_URL, json={
         "jsonrpc": "2.0", "method": method, "params": params, "id": 1
-    }, timeout=20)
+    }, timeout=20, retries=1)
     data = resp.json()
     if "error" in data:
         raise Exception(f"RPC error [{method}]: {data['error']}")
@@ -2264,7 +2313,7 @@ def _whale_send_alerts(new_moves):
         for cid in chat_ids:
             try:
                 url = f"https://api.telegram.org/bot{token}/sendMessage"
-                requests.post(url, json={
+                http_post(url, json={
                     "chat_id": cid, "text": msg,
                     "parse_mode": "HTML", "disable_web_page_preview": True,
                 }, timeout=10)
@@ -2330,10 +2379,10 @@ def _whale_refresh():
         all_new.sort(key=lambda m: (-m["blockNumber"], -m["logIndex"]))
         # Enrich with USD prices
         try:
-            p = requests.get(
+            p = http_get(
                 "https://api.coingecko.com/api/v3/simple/price",
                 params={"ids": "tether,usd-coin,wrapped-bitcoin", "vs_currencies": "usd"},
-                timeout=10
+                timeout=10, retries=1
             )
             prices = p.json() if p.status_code == 200 else {}
             price_map = {"USDT": "tether", "USDC": "usd-coin", "WBTC": "wrapped-bitcoin"}
@@ -2402,12 +2451,13 @@ def api_whales():
 
 @app.route("/api/whales/refresh")
 def api_whales_refresh():
-    """Force-refresh whale cache. Protected by X-Whale-Refresh-Key."""
+    """Force-refresh whale cache. Protected by X-Whale-Refresh-Key. Fail closed."""
     secret = os.environ.get("WHALE_REFRESH_SECRET", "")
-    if secret:
-        provided = request.headers.get("X-Whale-Refresh-Key", "")
-        if provided != secret:
-            return jsonify({"error": "Unauthorized"}), 401
+    if not secret:
+        return jsonify({"error": "refresh disabled: WHALE_REFRESH_SECRET not configured"}), 503
+    provided = request.headers.get("X-Whale-Refresh-Key", "")
+    if not provided or not hmac.compare_digest(provided, secret):
+        return jsonify({"error": "Unauthorized"}), 401
     try:
         data = _whale_refresh()
         return jsonify({"status": "ok", "count": len(data.get("moves", [])), "lastUpdated": data.get("lastUpdated")})
@@ -2619,7 +2669,7 @@ def api_premium_webhook():
                 try:
                     from telegram_bot import send_telegram
                     send_telegram(f"🎉 *New Premium Subscriber!*\nCustomer: `{customer_id}`\nStatus: `{status}`")
-                except:
+                except Exception:
                     pass
 
     return jsonify({"ok": True})
@@ -2627,9 +2677,8 @@ def api_premium_webhook():
 
 @app.route("/api/premium/subscribers")
 def api_premium_subscribers():
-    """List all premium subscribers (admin only)"""
-    key = request.args.get("key", "")
-    if key != os.environ.get("WHALE_REFRESH_SECRET", ""):
+    """List all premium subscribers (admin only, header auth)."""
+    if not _is_admin_authorized(request):
         return jsonify({"error": "unauthorized"}), 403
     subs = _load_subs()
     active = {k: v for k, v in subs.items() if v.get("status") in ("active", "trialing")}
@@ -2809,13 +2858,13 @@ def _coin_to_id(symbol):
         return symbol.strip()
     # Try CoinGecko search as last resort
     try:
-        r = requests.get(f"{COINGECKO_API}/search?query={s}", timeout=5)
+        r = http_get(f"{COINGECKO_API}/search?query={s}", timeout=5, retries=0)
         if r.status_code == 200:
             data = r.json()
             coins = data.get("coins", [])
             if coins:
                 return coins[0]["id"]
-    except:
+    except Exception:
         pass
     return symbol.strip().lower()
 
@@ -2907,7 +2956,7 @@ def api_check_alerts():
             row2 = c2.execute("SELECT chat_id FROM telegram_mapping WHERE username = ?", (telegram_user.lower().lstrip("@"),)).fetchone()
             if row2:
                 chat_id = row2["chat_id"]
-        except:
+        except Exception:
             pass
 
         if chat_id:
@@ -2946,15 +2995,15 @@ def api_wallet():
     results = {}
     for name, url in chains.items():
         try:
-            r = requests.post(url, json={
+            r = http_post(url, json={
                 "jsonrpc":"2.0","method":"eth_getBalance",
                 "params":[WALLET_ADDRESS, "latest"],"id":1
-            }, timeout=6)
+            }, timeout=6, retries=1)
             data = r.json()
             if "result" in data:
                 bal = int(data["result"], 16) / 1e18
                 results[name] = {"balance": bal}
-        except:
+        except Exception:
             results[name] = {"balance": None}
     return jsonify({"wallet": WALLET_ADDRESS, "balances": results})
 
@@ -3250,10 +3299,10 @@ def api_check_wallet(address):
     
     for key, cfg in chains.items():
         try:
-            r = requests.post(cfg["rpc"], json={
+            r = http_post(cfg["rpc"], json={
                 "jsonrpc": "2.0", "method": "eth_getBalance",
                 "params": [address, "latest"], "id": 1
-            }, timeout=8)
+            }, timeout=8, retries=1)
             data = r.json()
             if "result" in data:
                 bal = int(data["result"], 16) / 1e18
@@ -3269,7 +3318,7 @@ def api_check_wallet(address):
                 })
             else:
                 results.append({"chain": key, "name": cfg["name"], "balance": 0, "balance_formatted": "0", "usd_value": 0})
-        except:
+        except Exception:
             results.append({"chain": key, "name": cfg["name"], "balance": None, "balance_formatted": "error", "usd_value": 0})
     
     return jsonify({
@@ -3287,10 +3336,10 @@ def api_check_wallet(address):
 def query_rpc(method, params, rpc_url="https://ethereum-rpc.publicnode.com"):
     """Helper for JSON-RPC calls"""
     try:
-        r = requests.post(rpc_url, json={
+        r = http_post(rpc_url, json={
             "jsonrpc": "2.0", "method": method,
             "params": params, "id": 1
-        }, timeout=8)
+        }, timeout=8, retries=1)
         return r.json().get("result")
     except Exception:
         return None
@@ -3578,7 +3627,7 @@ def _load_portfolios():
     if PORTFOLIO_CACHE_FILE.exists():
         try:
             return json.loads(PORTFOLIO_CACHE_FILE.read_text())
-        except: pass
+        except Exception: pass
     return {}
 
 def _save_portfolios(data):
@@ -3587,13 +3636,13 @@ def _save_portfolios(data):
 
 def _pf_query_rpc(method, params):
     try:
-        r = requests.post(
+        r = http_post(
             "https://ethereum-rpc.publicnode.com",
             json={"jsonrpc":"2.0","method":method,"params":params,"id":1},
-            timeout=8
+            timeout=8, retries=1
         )
         return r.json().get("result")
-    except: return None
+    except Exception: return None
 
 def _pf_query_wallet(address):
     """Query a single ETH address: native balance + ERC-20 tokens + USD value.
@@ -3670,12 +3719,12 @@ def api_portfolio(pid):
     # Get ETH price for USD conversion
     eth_price = 0
     try:
-        r = requests.get(
+        r = http_get(
             "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
-            timeout=6
+            timeout=6, retries=1
         )
         eth_price = r.json().get("ethereum", {}).get("usd", 0)
-    except: pass
+    except Exception: pass
     # Get token prices
     token_ids = {"tether":"USDT","usd-coin":"USDC","wrapped-bitcoin":"WBTC",
                  "chainlink":"LINK","matic-network":"MATIC","dai":"DAI",
@@ -3683,13 +3732,13 @@ def api_portfolio(pid):
     token_prices = {}
     try:
         ids_str = ",".join(token_ids.keys())
-        r = requests.get(
+        r = http_get(
             f"https://api.coingecko.com/api/v3/simple/price?ids={ids_str}&vs_currencies=usd",
-            timeout=6
+            timeout=6, retries=1
         )
         if r.ok:
             token_prices = r.json()
-    except: pass
+    except Exception: pass
     # Compute totals
     total_usd = 0
     wallets_out = []
@@ -4825,11 +4874,11 @@ def ticker_data():
     }
     ids = list(symbols.keys())
     try:
-        r = requests.get(
+        r = http_get(
             "https://api.coingecko.com/api/v3/simple/price",
             params={"ids": ",".join(ids), "vs_currencies": "usd",
                     "include_24hr_change": "true"},
-            timeout=10,
+            timeout=10, retries=1
         )
         prices = r.json()
         ticker = []
@@ -4845,11 +4894,11 @@ def ticker_data():
                 })
         # Append top movers (up to 5)
         try:
-            m = requests.get(
+            m = http_get(
                 "https://api.coingecko.com/api/v3/coins/markets",
                 params={"vs_currency": "usd", "order": "volume_desc",
                         "per_page": 50, "page": 1, "sparkline": "false"},
-                timeout=10,
+                timeout=10, retries=1
             )
             markets = m.json()
             # Sort by 24h change descending, pick top 5 not already in ticker

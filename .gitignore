@@ -10,3 +10,4 @@ cache/
 .telegram_token
 .env*.local
 .env.production
+venv/
