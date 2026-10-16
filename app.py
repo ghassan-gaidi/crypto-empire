@@ -2801,26 +2801,83 @@ def api_keys_page():
 </html>""", wallet=WALLET_ADDRESS)
 
 
-@app.route("/api/alerts", methods=["POST"])
+@app.route("/api/alerts", methods=["POST", "GET", "DELETE"])
 def api_alerts():
-    """Save a price alert subscription"""
+    """Save/list/delete price alert subscriptions.
+
+    Schema (shared with cmd_alerts + check-alerts cron):
+      alerts(coin TEXT, target REAL, telegram TEXT, chat_id TEXT,
+             direction TEXT DEFAULT 'above', created_at TIMESTAMP, triggered INTEGER DEFAULT 0)
+    POST {coin, target, telegram?, chat_id?} — telegram handle or numeric chat_id.
+    GET ?chat_id= — list alerts for a chat.  DELETE ?rowid= & chat_id — remove one.
+    """
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS alerts (
+        coin TEXT, target REAL, telegram TEXT, chat_id TEXT DEFAULT '',
+        direction TEXT DEFAULT 'above',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, triggered INTEGER DEFAULT 0)""")
+    # Best-effort migration for DBs created before chat_id/direction existed
+    for col, ddl in (("chat_id", "TEXT DEFAULT ''"), ("direction", "TEXT DEFAULT 'above'")):
+        try:
+            c.execute(f"ALTER TABLE alerts ADD COLUMN {col} {ddl}")
+        except sqlite3.OperationalError:
+            pass
+    conn.commit()
+
+    if request.method == "GET":
+        chat_id = (request.args.get("chat_id", "") or "").strip()
+        if not chat_id:
+            conn.close()
+            return jsonify({"error": "chat_id required"}), 400
+        rows = c.execute(
+            "SELECT rowid, coin, target, direction, telegram, created_at FROM alerts "
+            "WHERE chat_id = ? AND triggered = 0 ORDER BY created_at DESC", (chat_id,)
+        ).fetchall()
+        conn.close()
+        return jsonify({"alerts": [dict(r) for r in rows]})
+
+    if request.method == "DELETE":
+        chat_id = (request.args.get("chat_id", "") or "").strip()
+        rowid = request.args.get("rowid", type=int)
+        if not chat_id or not rowid:
+            conn.close()
+            return jsonify({"error": "chat_id and rowid required"}), 400
+        c.execute("DELETE FROM alerts WHERE rowid = ? AND chat_id = ?", (rowid, chat_id))
+        conn.commit()
+        deleted = c.rowcount
+        conn.close()
+        return jsonify({"ok": True, "deleted": deleted})
+
     data = request.get_json(silent=True) or {}
     coin = data.get("coin", "").strip().upper()
-    target = data.get("target", "").strip()
+    target = str(data.get("target", "")).strip()
     telegram = data.get("telegram", "").strip()
-    if not coin or not target or not telegram:
-        return jsonify({"error": "Missing fields"}), 400
+    chat_id = str(data.get("chat_id", "") or "").strip()
+    direction = str(data.get("direction", "above") or "above").strip().lower()
+    if direction not in ("above", "below"):
+        direction = "above"
+    if not coin or not target or (not telegram and not chat_id):
+        conn.close()
+        return jsonify({"error": "coin, target and telegram handle or chat_id required"}), 400
     try:
-        float(target)
+        target_f = float(target)
     except ValueError:
+        conn.close()
         return jsonify({"error": "Invalid target price"}), 400
-    # Persist alert to DB
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.execute("CREATE TABLE IF NOT EXISTS alerts (coin TEXT, target REAL, telegram TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-    conn.execute("INSERT INTO alerts (coin, target, telegram) VALUES (?, ?, ?)", (coin, float(target), telegram))
+    if target_f <= 0:
+        conn.close()
+        return jsonify({"error": "Target price must be positive"}), 400
+    c.execute(
+        "INSERT INTO alerts (coin, target, telegram, chat_id, direction) VALUES (?, ?, ?, ?, ?)",
+        (coin, target_f, telegram, chat_id, direction),
+    )
     conn.commit()
+    rowid = c.lastrowid
     conn.close()
-    return jsonify({"status": "ok", "message": f"Alert set for {coin} at ${target}"})
+    return jsonify({"status": "ok", "id": rowid,
+                    "message": f"Alert set for {coin} {direction} ${target_f:,.2f}"})
 
 
 # ---------------------------------------------------------------------------
@@ -2879,22 +2936,27 @@ def api_check_alerts():
     Protected by X-Alert-Check-Key header matching ALERT_CHECK_SECRET env var.
     Called by GH Actions cron every 15 minutes.
     """
-    # Verify auth
+    # Verify auth (constant-time)
     provided = request.headers.get("X-Alert-Check-Key", "")
-    if not ALERT_CHECK_SECRET or provided != ALERT_CHECK_SECRET:
+    if not ALERT_CHECK_SECRET or not provided or not hmac.compare_digest(provided, ALERT_CHECK_SECRET):
         return jsonify({"error": "Unauthorized"}), 401
 
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # Ensure table + triggered column exist
-    c.execute("CREATE TABLE IF NOT EXISTS alerts (coin TEXT, target REAL, telegram TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-    try:
-        c.execute("ALTER TABLE alerts ADD COLUMN triggered INTEGER DEFAULT 0")
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass  # column already exists
+    # Ensure table + newer columns exist (shared schema with /api/alerts)
+    c.execute("""CREATE TABLE IF NOT EXISTS alerts (
+        coin TEXT, target REAL, telegram TEXT, chat_id TEXT DEFAULT '',
+        direction TEXT DEFAULT 'above',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, triggered INTEGER DEFAULT 0)""")
+    for col, ddl in (("chat_id", "TEXT DEFAULT ''"), ("direction", "TEXT DEFAULT 'above'"),
+                     ("triggered", "INTEGER DEFAULT 0")):
+        try:
+            c.execute(f"ALTER TABLE alerts ADD COLUMN {col} {ddl}")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    conn.commit()
 
     rows = c.execute("SELECT rowid, * FROM alerts WHERE triggered = 0").fetchall()
     if not rows:
@@ -2925,39 +2987,44 @@ def api_check_alerts():
             continue
 
         target = r["target"]
-        telegram_user = r["telegram"].strip()
+        try:
+            direction = (r["direction"] or "above").lower()
+        except (KeyError, IndexError):
+            direction = "above"
+        if direction not in ("above", "below"):
+            direction = "above"
+        hit = (current_price >= target) if direction == "above" else (current_price <= target)
+        if not hit:
+            continue
+        telegram_user = (r["telegram"] or "").strip()
+        arrow = "\u23eb" if direction == "above" else "\u23ec"
         telegram_msg = (
             f"\u23f0 PRICE ALERT TRIGGERED\n"
             f"\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-            f"{r['coin']} has reached your target!\n\n"
+            f"{r['coin']} moved {direction} your target! {arrow}\n\n"
             f"Target: ${target:,.2f}\n"
             f"Current: ${current_price:,.2f}\n\n"
             f"crypto-empire-ten.vercel.app"
         )
 
-        # Send Telegram DM
-        if telegram_user.startswith("@"):
-            # We need a chat_id. For Telegram, we need the user's chat ID.
-            # The alert form collects @username. We can send a message to the
-            # bot and it'll arrive as a DM if the user has started the bot.
-            # Alternatively, send via the bot API using the @username.
-            # Telegram doesn't let you send by @username directly in Bot API.
-            # We need the chat_id, which we'd have if they've messaged the bot before.
-            # For now, we send via the bot to the user only if they've started the bot.
-            # We store the chat_id when they interact with /start.
-            pass
-
-        # Send via Telegram bot API — try to resolve chat_id from telegram_mapping table
+        # Send via Telegram bot API — prefer stored chat_id, else resolve from mapping
         chat_id = None
         try:
-            # Check if we have a stored chat_id for this telegram user
-            c2 = conn.cursor()
-            c2.execute("CREATE TABLE IF NOT EXISTS telegram_mapping (username TEXT PRIMARY KEY, chat_id INTEGER)")
-            row2 = c2.execute("SELECT chat_id FROM telegram_mapping WHERE username = ?", (telegram_user.lower().lstrip("@"),)).fetchone()
-            if row2:
-                chat_id = row2["chat_id"]
-        except Exception:
-            pass
+            stored = (r["chat_id"] or "").strip()
+        except (KeyError, IndexError):
+            stored = ""
+        if stored:
+            chat_id = stored
+        elif telegram_user:
+            try:
+                c2 = conn.cursor()
+                c2.execute("CREATE TABLE IF NOT EXISTS telegram_mapping (username TEXT PRIMARY KEY, chat_id INTEGER)")
+                row2 = c2.execute("SELECT chat_id FROM telegram_mapping WHERE username = ?",
+                                  (telegram_user.lower().lstrip("@"),)).fetchone()
+                if row2:
+                    chat_id = row2["chat_id"]
+            except Exception:
+                pass
 
         if chat_id:
             # Send notification

@@ -257,7 +257,10 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         "  🔄 /convert <amt> <f> <t> — Crypto converter\n"
         "  🌐 /global          — Global market overview\n"
         "  📂 /categories      — Top crypto categories\n"
-        "  🔔 /alerts           — Your active price alerts\n"
+        "  🔔 /alerts           — List / create / delete alerts\n"
+        "       e.g. /alerts BTC above 100000\n"
+        "  ⭐ /watchlist        — Your coin watchlist (/add, /rm)\n"
+        "  💼 /portfolio <id>   — Shareable portfolio value\n"
         "  ⭐ /premium          — Unlock premium features\n"
         "  ⚙️  /manage           — Manage subscription\n"
         "  🔗 /referral         — Referral link & rewards\n"
@@ -763,31 +766,227 @@ def cmd_convert(chat_id, args):
         msg = f"{fmt_header('CONVERT')}\n\n{amount} {from_coin.upper()} = {result:,.6f} {to_currency.upper()}"
     send_message(chat_id, msg)
 
-def cmd_alerts(chat_id, args=None):
+# ---------------------------------------------------------------------------
+# Watchlist — server-side per-chat storage via shared SQLite alerts DB
+# ---------------------------------------------------------------------------
+
+def _watchlist_conn():
     app = _get_app()
     conn = sqlite3.connect(str(app.DB_PATH))
+    conn.execute("CREATE TABLE IF NOT EXISTS watchlists (chat_id TEXT PRIMARY KEY, coins TEXT DEFAULT '[]', updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    return conn
+
+
+def _watchlist_get(chat_id):
+    conn = _watchlist_conn()
     try:
-        cur = conn.execute(
-            "SELECT coin, target_price, chat_id FROM alerts WHERE chat_id = ? ORDER BY created_at DESC",
-            (str(chat_id),)
-        )
-        rows = cur.fetchall()
+        row = conn.execute("SELECT coins FROM watchlists WHERE chat_id = ?",
+                           (str(chat_id),)).fetchone()
+        return json.loads(row[0]) if row and row[0] else []
     except Exception:
-        rows = []
+        return []
     finally:
         conn.close()
+
+
+def _watchlist_set(chat_id, coins):
+    conn = _watchlist_conn()
+    try:
+        conn.execute("INSERT OR REPLACE INTO watchlists (chat_id, coins) VALUES (?, ?)",
+                     (str(chat_id), json.dumps(coins[:25])))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def cmd_watchlist(chat_id, args=None):
+    """Show your watchlist with live prices. Managed with /add and /rm."""
+    coins = _watchlist_get(chat_id)
+    if not coins:
+        send_message(chat_id, (
+            f"{fmt_header('WATCHLIST')}\n\n"
+            "Empty. Add coins:\n"
+            "`/add btc`  `/add eth,sol`\n\n"
+            "Tip: /btc /eth /sol work too."
+        ))
+        return
+    send_typing(chat_id)
+    msg_id = send_loading(chat_id, "WATCHLIST")
+    app = _get_app()
+    ids = ",".join(coins)
+    data = app.fetch_sync(
+        f"{app.COINGECKO_API}/simple/price?ids={ids}&vs_currencies=usd&include_24hr_change=true"
+    ) or {}
+    lines = [fmt_header(f"WATCHLIST ({len(coins)})")]
+    for cid in coins:
+        d = data.get(cid, {})
+        p, chg = d.get("usd"), d.get("usd_24h_change")
+        if p is None:
+            lines.append(f"\n{cid.upper():<12} unavailable")
+            continue
+        arrow = "▲" if (chg or 0) >= 0 else "▼"
+        lines.append(f"\n{cid.upper():<12} {fmt_price(p)}  {arrow}{abs(chg or 0):.2f}%")
+    lines.append("\n`/add <coin>` add · `/rm <coin>` remove")
+    edit_or_send(chat_id, msg_id, "\n".join(lines))
+
+
+def cmd_add(chat_id, args):
+    """Add coin(s) to your watchlist: /add btc  or  /add eth,sol,link"""
+    if not args:
+        send_message(chat_id, "Usage: `/add <coin>`  or  `/add eth,sol,link`")
+        return
+    app = _get_app()
+    requested = [c.strip().lower() for a in args for c in a.split(",") if c.strip()]
+    resolved = []
+    for sym in requested:
+        cg_id = SYMBOL_TO_ID.get(sym, sym)
+        # Verify it exists on CoinGecko before storing
+        data = app.fetch_sync(f"{app.COINGECKO_API}/simple/price?ids={cg_id}&vs_currencies=usd")
+        if data and cg_id in data:
+            resolved.append(cg_id)
+    coins = _watchlist_get(chat_id)
+    added = [c for c in resolved if c not in coins]
+    coins.extend(added)
+    _watchlist_set(chat_id, coins)
+    unknown = [s for s in requested if SYMBOL_TO_ID.get(s, s) not in resolved]
+    parts = [fmt_header("WATCHLIST")]
+    if added:
+        parts.append(f"\n✅ Added: {', '.join(c.upper() for c in added)}")
+    else:
+        parts.append("\nNothing new (already tracked or unknown).")
+    if unknown:
+        parts.append(f"\n⚠️ Unknown: {', '.join(unknown)}")
+    parts.append(f"\nTotal: {len(coins)} coins. See /watchlist")
+    send_message(chat_id, "\n".join(parts))
+
+
+def cmd_rm(chat_id, args):
+    """Remove coin(s) from your watchlist: /rm btc  or  /rm all"""
+    if not args:
+        send_message(chat_id, "Usage: `/rm <coin>`  or  `/rm all`")
+        return
+    coins = _watchlist_get(chat_id)
+    if args[0].lower() in ("all", "clear"):
+        _watchlist_set(chat_id, [])
+        send_message(chat_id, f"{fmt_header('WATCHLIST')}\n\n🗑️ Cleared. Add with /add")
+        return
+    wanted = {SYMBOL_TO_ID.get(c.strip().lower(), c.strip().lower())
+              for a in args for c in a.split(",")}
+    kept = [c for c in coins if c not in wanted]
+    _watchlist_set(chat_id, kept)
+    send_message(chat_id, f"{fmt_header('WATCHLIST')}\n\nRemoved {len(coins) - len(kept)}. {len(kept)} left. See /watchlist")
+
+
+def cmd_portfolio(chat_id, args):
+    """Link to your shareable portfolio page + top-line value.
+
+    Usage: /portfolio <id>  — e.g. /portfolio a1b2c3d4
+    Create one on the dashboard: /portfolio page → "create".
+    """
+    if not args:
+        send_message(chat_id, (
+            f"{fmt_header('PORTFOLIO')}\n\n"
+            "Usage: `/portfolio <id>`\n"
+            "Create a shareable portfolio on the dashboard:\n"
+            "https://crypto-empire-ten.vercel.app/portfolio\n\n"
+            "Up to 5 wallets free, unlimited with Premium."
+        ))
+        return
+    pid = args[0].strip().lower()
+    base = os.environ.get("BASE_URL", "https://crypto-empire-ten.vercel.app")
+    try:
+        r = requests.get(f"{base}/api/portfolio/{pid}", timeout=12)
+        data = r.json() if r.ok else {}
+    except Exception:
+        data = {}
+    if not data or data.get("error"):
+        send_message(chat_id, f"{fmt_header('PORTFOLIO')}\n\n⚠️ Portfolio `{pid}` not found.")
+        return
+    total = data.get("total_usd", 0) or 0
+    wallets = data.get("wallets", [])
+    lines = [fmt_header(f"PORTFOLIO — {data.get('name', pid)}"),
+             f"\n💰 Total: ${total:,.2f} across {len(wallets)} wallet(s)"]
+    for w in wallets[:5]:
+        lines.append(f"\n`{w.get('address','')[:10]}…`  ${w.get('total_usd', 0):,.2f}")
+    lines.append(f"\nFull view: {base}/portfolio/{pid}")
+    send_message(chat_id, "\n".join(lines))
+
+
+def cmd_alerts(chat_id, args=None):
+    """List active alerts, create new ones, or delete by ID.
+
+    Usage: /alerts                     — list active
+           /alerts BTC above 100000    — create
+           /alerts BTC below 50000     — create
+           /alerts del <id>            — delete
+    """
+    app = _get_app()
+    base = os.environ.get("BASE_URL", "https://crypto-empire-ten.vercel.app")
+
+    # Delete path
+    if args and args[0].lower() in ("del", "delete", "rm", "remove") and len(args) >= 2:
+        try:
+            rid = int(args[1])
+        except ValueError:
+            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nUsage: /alerts del <id>\nSee IDs with /alerts")
+            return
+        try:
+            r = requests.delete(f"{base}/api/alerts",
+                                params={"chat_id": str(chat_id), "rowid": rid}, timeout=10)
+            ok = r.ok and r.json().get("deleted")
+            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n{'✅ Alert deleted.' if ok else '⚠️ No alert with that ID.'}")
+        except Exception as e:
+            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nError deleting alert: {e}")
+        return
+
+    # Create path: /alerts BTC above 100000
+    if args and len(args) >= 3 and args[1].lower() in ("above", "below", ">", "<", "over", "under"):
+        coin = args[0].upper()
+        direction = "above" if args[1].lower() in ("above", ">", "over") else "below"
+        try:
+            target = float(args[2].replace(",", "").replace("$", ""))
+            if target <= 0:
+                raise ValueError
+        except ValueError:
+            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nUsage: /alerts BTC above 100000")
+            return
+        try:
+            r = requests.post(f"{base}/api/alerts",
+                              json={"coin": coin, "target": target,
+                                    "chat_id": str(chat_id), "direction": direction},
+                              timeout=10)
+            data = r.json() if r.ok else {}
+            if r.ok and data.get("status") == "ok":
+                send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n✅ {data.get('message')}\nI'll DM you when it triggers.")
+            else:
+                send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n⚠️ {data.get('error', 'Could not save alert.')}")
+        except Exception as e:
+            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nError saving alert: {e}")
+        return
+
+    # List path
+    try:
+        r = requests.get(f"{base}/api/alerts", params={"chat_id": str(chat_id)}, timeout=10)
+        rows = r.json().get("alerts", []) if r.ok else []
+    except Exception:
+        rows = []
     if not rows:
         msg = (
             f"{fmt_header('PRICE ALERTS')}\n\n"
             "No active alerts.\n\n"
-            "Set alerts on the dashboard:\n"
+            "Create one:\n"
+            "`/alerts BTC above 100000`\n"
+            "`/alerts ETH below 2000`\n\n"
+            "Or set alerts on the dashboard:\n"
             "https://crypto-empire-ten.vercel.app/#alerts\n\n"
             "Premium users get priority alert delivery."
         )
     else:
         lines = [fmt_header(f"YOUR ALERTS ({len(rows)})")]
-        for coin, price, _ in rows[:10]:
-            lines.append(f"\n{coin.upper()} → ${price}")
+        for row in rows[:10]:
+            arrow = "▲" if (row.get("direction") or "above") == "above" else "▼"
+            lines.append(f"\n#{row.get('rowid')}  {row.get('coin')} {arrow} ${row.get('target'):,.2f}")
+        lines.append("\nDelete: `/alerts del <id>`")
         msg = "\n".join(lines)
     send_message(chat_id, msg)
 
@@ -959,6 +1158,14 @@ COMMANDS = {
     "alerts":    cmd_alerts,
     "alert":     cmd_alerts,
     "myalerts":  cmd_alerts,
+    "watchlist": cmd_watchlist,
+    "watch":     cmd_watchlist,
+    "wl":        cmd_watchlist,
+    "add":       cmd_add,
+    "rm":        cmd_rm,
+    "remove":    cmd_rm,
+    "portfolio": cmd_portfolio,
+    "pf":        cmd_portfolio,
     # v3.7 expansion
     "global":    cmd_global,
     "market":    cmd_global,
