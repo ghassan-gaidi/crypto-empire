@@ -428,6 +428,14 @@ SHARED_HEAD = """<meta charset="UTF-8">
     -webkit-font-smoothing:antialiased;
   }
   ::selection{background:var(--green);color:var(--bg);}
+  /* Accessibility: skip link + reduced motion */
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--green);color:var(--bg);
+    padding:8px 14px;font-size:10px;font-weight:700;z-index:10000;}
+  .skip-link:focus{left:8px;top:8px;}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important;}
+    .noise-bg{display:none;}
+  }
   a{color:var(--text);text-decoration:none;transition:color .12s;}
   a:hover{color:var(--white);}
 
@@ -878,6 +886,10 @@ SHARED_HEAD = """<meta charset="UTF-8">
   input:focus,textarea:focus,select:focus{border-color:var(--white);box-shadow:var(--glow);}
   .input{border:1px solid var(--border);padding:8px 10px;background:var(--surface);color:var(--white);font-size:10px;outline:none;transition:.15s;}
   .input:focus{border-color:var(--white);box-shadow:var(--glow);}
+  select.input{appearance:none;-webkit-appearance:none;padding-right:22px;cursor:pointer;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23888'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 8px center;}
+  select.input option{background:var(--surface);color:var(--white);}
 
   /* ===== RESPONSIVE ===== */
   @media(max-width:640px){
@@ -916,10 +928,11 @@ INDEX_HTML = """<!DOCTYPE html>
     <meta name="twitter:description" content="Free crypto dashboard. Live prices, gas tracker, wallet checker, Telegram bot @Crypt0Emp1reBot.">
 </head>
 <body>
-    <div class="noise-bg"></div>
-    <div class="sweep"></div>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="noise-bg" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
 
-    <div class="container">
+    <div class="container" id="main">
 
         <!-- ASCII Banner -->
         <div class="ascii-banner"><span class="dim">╔══════════════════════════════════════╗
@@ -1151,12 +1164,16 @@ INDEX_HTML = """<!DOCTYPE html>
             <p>Get notified when a coin hits your target price.<br>Enter coin symbol + target. We'll message you on Telegram.</p>
             <div style="max-width:480px;margin:0 auto;text-align:left;">
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-                    <input type="text" id="alert-coin" placeholder="Coin (e.g. BTC)" class="input" style="flex:1;min-width:80px;text-transform:uppercase;letter-spacing:1px;">
-                    <input type="text" id="alert-price" placeholder="Target price (e.g. 100000)" class="input" style="flex:1;min-width:100px;">
-                    <input type="text" id="alert-tg" placeholder="Your Telegram @username" class="input" style="flex:1;min-width:120px;">
+                    <input type="text" id="alert-coin" placeholder="Coin (e.g. BTC)" aria-label="Coin symbol" class="input" style="flex:1;min-width:80px;text-transform:uppercase;letter-spacing:1px;">
+                    <input type="text" id="alert-price" inputmode="decimal" placeholder="Target price (e.g. 100000)" aria-label="Target price in USD" class="input" style="flex:1;min-width:100px;">
+                    <select id="alert-dir" aria-label="Alert direction" class="input" style="flex:0 0 110px;">
+                        <option value="above">▲ Above</option>
+                        <option value="below">▼ Below</option>
+                    </select>
+                    <input type="text" id="alert-tg" placeholder="Your Telegram @username" aria-label="Telegram username" class="input" style="flex:1;min-width:120px;">
                 </div>
                 <button onclick="submitAlert()" class="btn" style="width:100%;">Set Alert</button>
-                <div id="alert-msg" style="text-align:center;font-size:9px;color:var(--text-dim);margin-top:6px;"></div>
+                <div id="alert-msg" role="status" aria-live="polite" style="text-align:center;font-size:9px;color:var(--text-dim);margin-top:6px;"></div>
             </div>
         </div>
 
@@ -1436,6 +1453,7 @@ INDEX_HTML = """<!DOCTYPE html>
         function submitAlert(){
             var coin=document.getElementById('alert-coin');
             var price=document.getElementById('alert-price');
+            var dir=document.getElementById('alert-dir');
             var tg=document.getElementById('alert-tg');
             var msg=document.getElementById('alert-msg');
             if(!coin||!price||!tg)return;
@@ -1443,17 +1461,18 @@ INDEX_HTML = """<!DOCTYPE html>
                 msg.textContent='Fill all fields';
                 return;
             }
-            try{
-                var r=new XMLHttpRequest();
-                r.open('POST','/api/alerts',true);
-                r.setRequestHeader('Content-Type','application/json');
-                r.onload=function(){
-                    msg.textContent='Alert set! We\\'ll notify you at '+tg.value.trim();
-                    coin.value='';price.value='';tg.value='';
-                };
-                r.onerror=function(){msg.textContent='Error setting alert';};
-                r.send(JSON.stringify({coin:coin.value.trim(),target:price.value.trim(),telegram:tg.value.trim()}));
-            }catch(e){msg.textContent='Error setting alert';}
+            var target=parseFloat(price.value.replace(/[$,]/g,''));
+            if(!isFinite(target)||target<=0){msg.textContent='Enter a valid target price';return;}
+            msg.textContent='Setting alert…';
+            fetch('/api/alerts',{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({coin:coin.value.trim(),target:target,
+                    telegram:tg.value.trim(),direction:(dir&&dir.value)||'above'})})
+            .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+            .then(function(res){
+                if(res.ok){msg.textContent='Alert set! Notifying '+(tg.value.trim());coin.value='';price.value='';tg.value='';}
+                else{msg.textContent=(res.d&&res.d.error)||'Error setting alert';}
+            })
+            .catch(function(){msg.textContent='Error setting alert';});
         }
     </script>
 </body>
@@ -1898,10 +1917,11 @@ body{background:var(--bg);}
 </style>
 </head>
 <body>
-<div class="noise-bg"></div>
-<div class="sweep"></div>
+<div class="noise-bg" aria-hidden="true"></div>
+<div class="sweep" aria-hidden="true"></div>
+<a class="skip-link" href="#main">Skip to content</a>
 
-<div class="container">
+<div class="container" id="main">
 
 <div class="top-bar">
 <div class="brand">
@@ -2044,10 +2064,11 @@ ADVERTISE_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="noise-bg"></div>
-<div class="sweep"></div>
+<div class="noise-bg" aria-hidden="true"></div>
+<div class="sweep" aria-hidden="true"></div>
+<a class="skip-link" href="#main">Skip to content</a>
 
-<div class="container">
+<div class="container" id="main">
 
 <div class="top-bar">
 <div class="brand">
@@ -2509,9 +2530,10 @@ def premium_page():
     <meta name="description" content="Unlock premium features: advanced whale alerts, priority price alerts, and exclusive market data.">
 </head>
 <body>
-    <div class="noise-bg"></div>
-    <div class="sweep"></div>
-    <div class="container">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="noise-bg" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
+    <div class="container" id="main">
         <div class="top-bar">
             <div class="brand">
                 <div class="prompt">><span class="cr"></span></div>
@@ -2724,9 +2746,10 @@ def api_keys_page():
     <meta name="robots" content="noindex, follow">
 </head>
 <body>
-    <div class="noise-bg"></div>
-    <div class="sweep"></div>
-    <div class="container">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="noise-bg" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
+    <div class="container" id="main">
         <div class="top-bar">
             <div class="brand">
                 <div class="prompt">><span class="cr"></span></div>
@@ -3123,9 +3146,10 @@ def docs():
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/docs">
 </head>
 <body>
-    <div class="noise-bg"></div>
-    <div class="sweep"></div>
-    <div class="container">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="noise-bg" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
+    <div class="container" id="main">
         <div class="top-bar">
             <div class="brand">
                 <div class="prompt">><span class="cr"></span></div>
@@ -3279,9 +3303,10 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
     <meta name="description" content="Multi-chain Ethereum wallet balance checker. Check ETH, tokens and balances across Ethereum, Arbitrum, Polygon, Base, Optimism, BSC.">
 </head>
 <body>
-    <div class="noise-bg"></div>
-    <div class="sweep"></div>
-    <div class="container">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="noise-bg" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
+    <div class="container" id="main">
         <div class="top-bar">
             <div class="brand">
                 <div class="prompt">><span class="cr"></span></div>
@@ -3573,9 +3598,10 @@ PROFILER_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="noise-bg"></div>
-<div class="sweep"></div>
-<div class="container">
+<div class="noise-bg" aria-hidden="true"></div>
+<div class="sweep" aria-hidden="true"></div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="container" id="main">
 <div class="top-bar">
 <div class="brand">
 <div class="prompt">><span class="cr"></span></div>
@@ -4349,9 +4375,10 @@ LAUNCHES_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="noise-bg"></div>
-<div class="sweep"></div>
-<div class="container">
+<div class="noise-bg" aria-hidden="true"></div>
+<div class="sweep" aria-hidden="true"></div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="container" id="main">
 <div class="top-bar">
 <div class="brand">
 <div class="prompt">><span class="cr"></span></div>
@@ -4660,9 +4687,10 @@ def blog_index():
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog">
 </head>
 <body>
-    <div class="noise-bg"></div>
-    <div class="sweep"></div>
-    <div class="container">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="noise-bg" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
+    <div class="container" id="main">
         <div class="top-bar">
             <div class="brand">
                 <div class="prompt">><span class="cr"></span></div>
@@ -4746,9 +4774,10 @@ def blog_post(slug):
     <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog/{{ slug }}">
 </head>
 <body>
-    <div class="noise-bg"></div>
-    <div class="sweep"></div>
-    <div class="container">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="noise-bg" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
+    <div class="container" id="main">
         <div class="top-bar">
             <div class="brand">
                 <div class="prompt">><span class="cr"></span></div>
@@ -5230,9 +5259,10 @@ WHALE_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="noise-bg"></div>
-<div class="sweep"></div>
-<div class="container">
+<div class="noise-bg" aria-hidden="true"></div>
+<div class="sweep" aria-hidden="true"></div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="container" id="main">
 <div class="top-bar">
 <div class="brand">
 <div class="prompt">><span class="cr"></span></div>
@@ -5425,9 +5455,10 @@ YIELDS_HTML = """<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="sweep"></div>
-<div class="noise-bg"></div>
-<div class="container">
+<div class="sweep" aria-hidden="true"></div>
+<div class="noise-bg" aria-hidden="true"></div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="container" id="main">
   <div class="top-bar">
     <div class="brand">
       <div class="prompt">><span class="cr"></span></div>
@@ -5626,9 +5657,10 @@ TRENDING_HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="noise-bg"></div>
-<div class="sweep"></div>
-<div class="container">
+<div class="noise-bg" aria-hidden="true"></div>
+<div class="sweep" aria-hidden="true"></div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="container" id="main">
 <div class="top-bar">
 <div class="brand">
 <div class="prompt">><span class="cr"></span></div>
@@ -5811,9 +5843,10 @@ def page_not_found(e):
     <meta name="robots" content="noindex">
 </head>
 <body>
-    <div class="noise-bg"></div>
-    <div class="sweep"></div>
-    <div class="container">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="noise-bg" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
+    <div class="container" id="main">
         <div class="top-bar">
             <div class="brand">
                 <div class="prompt">><span class="cr"></span></div>
