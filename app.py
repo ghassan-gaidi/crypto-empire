@@ -1460,14 +1460,42 @@ INDEX_HTML = """<!DOCTYPE html>
 </html>"""
 
 # ============================================================
-# Premium API Key Middleware
+# Premium API Key Middleware + lightweight abuse rate limiting
 # ============================================================
+# In-memory token bucket per IP (best-effort; resets on cold start).
+# Free tier: 100 req/day advertised — enforced here as 120/hour burst-safe.
+_RATE_BUCKETS = {}
+_RATE_LIMIT_FREE = int(os.environ.get("RATE_LIMIT_FREE_PER_HOUR", "120"))
+_RATE_LIMIT_PREMIUM = int(os.environ.get("RATE_LIMIT_PREMIUM_PER_HOUR", "2000"))
+_RATE_WINDOW = 3600
+
+
+def _rate_check(key, limit):
+    now = time.time()
+    bucket = _RATE_BUCKETS.get(key)
+    if not bucket or bucket[0] + _RATE_WINDOW < now:
+        bucket = [now, 0]
+        _RATE_BUCKETS[key] = bucket
+    bucket[1] += 1
+    # Opportunistic cleanup to bound memory
+    if len(_RATE_BUCKETS) > 5000:
+        cutoff = now - _RATE_WINDOW
+        for k in [k for k, v in _RATE_BUCKETS.items() if v[0] < cutoff]:
+            del _RATE_BUCKETS[k]
+    return bucket[1] <= limit
+
 
 @app.before_request
 def check_premium_key():
     if request.path.startswith('/api/'):
         key = request.headers.get("X-API-Key") or request.args.get("api_key", "")
-        request.is_premium = key in PREMIUM_API_KEYS
+        premium = bool(key) and key in PREMIUM_API_KEYS
+        request.is_premium = premium
+        limit = _RATE_LIMIT_PREMIUM if premium else _RATE_LIMIT_FREE
+        ident = ("premium:" + key) if premium else ("ip:" + (request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or "unknown"))
+        if not _rate_check(ident, limit):
+            return jsonify({"error": "rate limit exceeded",
+                            "retry_after_seconds": _RATE_WINDOW}), 429
 
 @app.after_request
 def add_premium_headers(resp):
@@ -3763,12 +3791,14 @@ def api_portfolio_create():
     import secrets
     pid = secrets.token_hex(8)  # 16-char hex ID
     portfolios = _load_portfolios()
+    now = int(time.time())
     portfolios[pid] = {
         "id": pid,
-        "name": name,
-        "wallets": valid,
-        "created_at": int(time.time()),
-        "updated_at": int(time.time()),
+        "name": name[:80],
+        "wallets": valid[:25],
+        "created_at": now,
+        "updated_at": now,
+        "history": [],  # [{t, total}] — appended by api_portfolio reads (cap 500)
     }
     _save_portfolios(portfolios)
     return jsonify({"ok": True, "id": pid, "url": f"/portfolio/{pid}"})
@@ -3841,10 +3871,19 @@ def api_portfolio(pid):
             "eth_usd": round(eth_usd, 2),
             "total_usd": round(wallet_total, 2),
         })
-    # P&L — compare current vs creation snapshot
+    # P&L — compare current vs first recorded history point
+    hist = p.get("history") or []
     pnl = None
-    if p.get("snapshot_total"):
-        pnl = round(total_usd - p["snapshot_total"], 2)
+    if hist:
+        pnl = round(total_usd - hist[0]["total"], 2)
+    # Append a history point at most once per hour (cap 500)
+    now_ts = int(time.time())
+    if not hist or now_ts - hist[-1]["t"] >= 3600:
+        hist.append({"t": now_ts, "total": round(total_usd, 2)})
+        p["history"] = hist[-500:]
+        p["updated_at"] = now_ts
+        portfolios[pid] = p
+        _save_portfolios(portfolios)
     return jsonify({
         "id": pid,
         "name": p["name"],
@@ -3854,8 +3893,10 @@ def api_portfolio(pid):
         "wallet_count": len(p["wallets"]),
         "created_at": p["created_at"],
         "pnl": pnl,
+        "pnl_pct": round(pnl / hist[0]["total"] * 100, 2) if (pnl is not None and hist and hist[0]["total"]) else None,
+        "history": hist[-168:],  # last ~7 days of hourly points
         "eth_price": eth_price,
-        "updated_at": int(time.time()),
+        "updated_at": now_ts,
     })
 
 
@@ -3951,6 +3992,16 @@ const __path = window.location.pathname;
 const __m = __path.match(/^\/portfolio\/([a-f0-9]+)$/);
 const el=document.getElementById('pf-content');
 
+// Portfolio value-history sparkline (SVG, matches dashboard sparklines)
+function pfSpark(hist){
+  var vals=hist.map(function(h){return h.total;});
+  var w=560,h=90,min=Math.min.apply(null,vals),max=Math.max.apply(null,vals),rng=(max-min)||1;
+  var pts=vals.map(function(v,i){var x=(i/(vals.length-1||1)*(w-8)+4).toFixed(1);var y=(h-6-((v-min)/rng*(h-12))).toFixed(1);return x+','+y;});
+  var up=vals[vals.length-1]>=vals[0];
+  return '<svg width="100%" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none"><polyline points="'+pts.join(' ')+'" fill="none" stroke="'+(up?'var(--green)':'var(--red)')+'" stroke-width="1.5"/></svg>'
+    +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-dim);margin-top:4px;"><span>$'+Number(min).toLocaleString()+'</span><span>'+hist.length+' hourly points</span><span>$'+Number(max).toLocaleString()+'</span></div>';
+}
+
 if(!__m){
   // Create mode
   el.innerHTML=`\
@@ -4015,9 +4066,14 @@ if(__m){
       html+='<div class="summary-row">';
       html+='<div class="summary-box"><div class="lbl">Total Value</div><div class="val">'+d.total_usd_fmt+'</div></div>';
       html+='<div class="summary-box"><div class="lbl">Wallets</div><div class="val">'+d.wallet_count+'</div></div>';
-      if(d.pnl!==null) html+='<div class="summary-box"><div class="lbl">P&L (Since Creation)</div><div class="val '+(d.pnl>=0?'pnl-up':'pnl-down')+'">'+(d.pnl>=0?'+':'')+'$'+Number(d.pnl).toLocaleString()+'</div></div>';
+      if(d.pnl!==null&&d.pnl!==undefined) html+='<div class="summary-box"><div class="lbl">P&L (Since Tracking)</div><div class="val '+(d.pnl>=0?'pnl-up':'pnl-down')+'">'+(d.pnl>=0?'+':'')+'$'+Number(d.pnl).toLocaleString()+(d.pnl_pct!=null?' <span style="font-size:10px;">('+(d.pnl_pct>=0?'+':'')+d.pnl_pct+'%)</span>':'')+'</div></div>';
       html+='<div class="summary-box"><div class="lbl">ETH Price</div><div class="val">$'+Number(d.eth_price).toLocaleString()+'</div><div class="sub">CoinGecko</div></div>';
       html+='</div>';
+      // Value history sparkline (hourly points, ~7d)
+      if(d.history&&d.history.length>1){
+        html+='<div class="t-h2" style="margin:20px 0 8px;">> Value History</div>';
+        html+='<div style="border:1px solid var(--border);padding:12px;background:var(--surface);">'+pfSpark(d.history)+'</div>';
+      }
       // Premium upsell for 6+ wallet portfolios
       if(d.wallet_count>5){
         html+='<div style="border:1px solid var(--green);padding:10px 14px;margin:12px 0;font-size:10px;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
