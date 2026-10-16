@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TOKEN="polar_oat_00S6NNHKDy9X6EBunIzyJKMAz9JhuBiHFAXfX2fMa1y"
+: "${POLAR_TOKEN:?Set POLAR_TOKEN in the environment (never commit tokens)}"
+TOKEN="$POLAR_TOKEN"
 BASE="https://api.polar.sh"
 ORG_ID=""  # will be set after first org lookup
 
