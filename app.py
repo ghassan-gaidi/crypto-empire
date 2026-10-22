@@ -398,32 +398,33 @@ def fetch_rss(url):
 SHARED_HEAD = """<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;}
   :root{
-    --bg:#080b12;
-    --surface:#0d121c;
-    --surface2:#121927;
-    --border:rgba(148,163,184,.16);
-    --text:#d9e2f0;
-    --text-dim:#8b98aa;
-    --text-muted:#566274;
-    --green:#38d39f;
-    --green-dim:rgba(56,211,159,.14);
-    --red:#ff6b7d;
-    --red-dim:rgba(255,107,125,.14);
-    --accent:#7c8cff;
-    --accent-glow:#7c8cff;
-    --white:#f7f9fc;
-    --glow:0 12px 40px rgba(0,0,0,.18);
-    --glow-green:0 0 24px rgba(56,211,159,.14);
-    --glow-red:0 0 24px rgba(255,107,125,.14);
+    --bg:#07090d;
+    --surface:#0d1118;
+    --surface2:#151c26;
+    --border:rgba(148,163,184,.14);
+    --text:#d7e0e8;
+    --text-dim:#8996a5;
+    --text-muted:#4c5968;
+    --green:#32e6b0;
+    --green-dim:rgba(50,230,176,.12);
+    --red:#ff6f83;
+    --red-dim:rgba(255,111,131,.12);
+    --accent:#5ee7ff;
+    --accent-glow:#5ee7ff;
+    --amber:#f4b860;
+    --white:#f4f7f8;
+    --glow:0 18px 60px rgba(0,0,0,.28);
+    --glow-green:0 0 28px rgba(50,230,176,.16);
+    --glow-red:0 0 28px rgba(255,111,131,.14);
   }
   body{
-    font-family:'DM Sans',system-ui,sans-serif;
+    font-family:'Space Grotesk',system-ui,sans-serif;
     background:var(--bg);color:var(--text);font-size:13px;line-height:1.65;
     min-height:100vh;position:relative;overflow-x:hidden;
-    background-image:radial-gradient(circle at 15% 0%,rgba(124,140,255,.09),transparent 34%),linear-gradient(to right,rgba(148,163,184,.025) 1px,transparent 1px),linear-gradient(to bottom,rgba(148,163,184,.025) 1px,transparent 1px);
+    background-image:radial-gradient(ellipse at 8% -10%,rgba(94,231,255,.13),transparent 32%),radial-gradient(ellipse at 92% 20%,rgba(244,184,96,.06),transparent 28%),linear-gradient(to right,rgba(148,163,184,.022) 1px,transparent 1px),linear-gradient(to bottom,rgba(148,163,184,.022) 1px,transparent 1px);
     background-size:auto,48px 48px,48px 48px;
     -webkit-font-smoothing:antialiased;
   }
@@ -463,18 +464,18 @@ SHARED_HEAD = """<meta charset="UTF-8">
   .container{max-width:1600px;margin:0 auto;padding:24px 20px 80px;position:relative;}
 
   /* ===== TYPOGRAPHY SCALE ===== */
-  .t-display{font-size:28px;font-weight:800;letter-spacing:6px;text-transform:uppercase;color:var(--white);line-height:1.2;}
+  .t-display{font-size:30px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--white);line-height:1.15;text-shadow:0 0 28px rgba(94,231,255,.12);}
   .t-h1{font-size:16px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--white);line-height:1.3;}
   .t-h2{font-size:13px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--white);line-height:1.4;}
   .t-h3{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--white);line-height:1.4;}
   .t-body{font-size:12px;line-height:1.8;color:var(--text);}
   .t-small{font-size:10px;line-height:1.6;color:var(--text);}
   .t-label{font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
-  .t-mono{font-family:monospace;}
+  .t-mono,code,pre,.waddr{font-family:'IBM Plex Mono',monospace;}
 
   /* ===== GLASS PANEL ===== */
   .glass-panel{
-    background:linear-gradient(145deg,rgba(18,25,39,.86),rgba(10,14,23,.86));
+    background:linear-gradient(135deg,rgba(20,29,39,.9),rgba(8,11,16,.92));
     backdrop-filter:blur(18px);
     -webkit-backdrop-filter:blur(18px);
     border:1px solid var(--border);
