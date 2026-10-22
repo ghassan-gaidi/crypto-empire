@@ -79,6 +79,7 @@ NIGHT_CSS = """<meta charset="UTF-8">
     .cols .col{border-right:none;border-bottom:1px dotted var(--rule-strong)}
     .masthead .name{font-size:26px}
   }
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:60;display:none;background:var(--ink-bright);color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:7px 14px;opacity:0;pointer-events:none;transition:opacity .3s}
   /* --- story devices --- */
   .headline{font-size:21px;font-weight:560;letter-spacing:-.005em;line-height:1.18;margin:6px 0 0;color:var(--ink-bright)}
   .deck{font-style:italic;font-weight:380;font-size:13.5px;line-height:1.42;color:#c3b897;margin-top:7px}
@@ -232,6 +233,37 @@ MONET_CSS = """
 .divider-accent{display:flex;align-items:center;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim);margin:22px 0 6px}
 .divider-accent::before,.divider-accent::after{content:'';height:1px;background:var(--rule-strong);flex:1}
 .dv{border-bottom:1px solid var(--rule);margin:26px 0}
+"""
+
+# ============================================================
+# Long-form devices (Task 6: docs endpoint tape, blog feuilleton)
+# ============================================================
+LONGFORM_CSS = """
+.ep{border-top:1px solid var(--rule);padding:9px 0 12px}
+.ep .kind{display:flex;gap:9px;align-items:baseline}
+.ep .meth{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--print-green)}
+.ep .path{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-bright)}
+.ep .desc{font-size:10.5px;color:#cfc4a6;line-height:1.5;margin:3px 0 0}
+.rate-line{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:8px 0;margin-top:14px}
+.rate-line b{color:var(--print-green);font-weight:400}
+.rate-line i{color:var(--ink-bright);font-style:normal}
+.dcopy{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--print-green);cursor:pointer;flex-shrink:0}
+.dcopy.copied{color:var(--oxblood)}
+.post-row{border-top:1px solid var(--rule);padding:12px 0}
+.post-row:last-child{border-bottom:1px solid var(--rule)}
+.post-meta{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim)}
+.post-title{font-family:'Fraunces',serif;font-size:16.5px;font-weight:560;color:var(--ink-bright);text-decoration:none;line-height:1.3;display:inline-block}
+.post-title:hover{text-decoration:underline}
+.article-body h2{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:var(--ink-bright);margin:20px 0 6px;letter-spacing:-.005em;line-height:1.25}
+.article-body h3{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--oxblood);margin:16px 0 5px;font-weight:400}
+.article-body p{font-size:11.5px;line-height:1.7;color:#cfc4a6;margin:0 0 9px}
+.article-body a{color:var(--print-green);text-decoration:none;border-bottom:1px dotted var(--print-green)}
+.article-body ul,.article-body ol{margin:0 0 10px;padding-left:16px}
+.article-body li{font-size:11.5px;line-height:1.65;color:#cfc4a6;margin-bottom:4px}
+.article-body code{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-bright);border:1px solid var(--rule);padding:1px 4px}
+.article-body pre{border:1px solid var(--rule);padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#cfc4a6;overflow-x:auto;margin:6px 0 10px;line-height:1.7}
+.article-body pre code{border:none;padding:0;color:var(--ink-bright)}
+.article-body blockquote{border-left:2px solid var(--oxblood);margin:10px 0;padding:2px 0 2px 12px;font-style:italic;color:var(--ink-dim)}
 """
 
 # ============================================================

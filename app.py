@@ -18,7 +18,7 @@ from flask import Flask, render_template_string, jsonify, request, redirect
 from flask_cors import CORS
 import requests
 
-from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS, MONET_CSS
+from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS, MONET_CSS, LONGFORM_CSS
 
 # ============================================================
 # Configuration
@@ -3122,127 +3122,71 @@ def api_health():
 
 @app.route("/docs")
 def docs():
-    return render_template_string("""<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + """
-    <title>Dominion — API Docs</title>
-    <meta name="description" content="Free public API for crypto data. No auth required. Bitcoin, Ethereum, gas prices, wallet balances.">
-    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/docs">
-</head>
-<body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="noise-bg" aria-hidden="true"></div>
-    <div class="sweep" aria-hidden="true"></div>
-    <div class="container" id="main">
-        <div class="top-bar">
-            <div class="brand">
-                <div class="prompt">><span class="cr"></span></div>
-                <div>
-                    <div class="site-title">API Docs</div>
-                    <div class="site-sub">Public REST endpoints</div>
-                </div>
-            </div>
-            <div class="top-nav">
-                <a href="/">Dashboard</a>
-                <a href="/blog">Blog</a>
-                <a href="/wallet-check">Wallet</a>
-            </div>
-        </div>
-        <div class="status-line">
-            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-            <span id="live-clock">--</span>
-            <span>API DOCS // PUBLIC ENDPOINTS</span>
-        </div>
-        <div class="t-h1" style="margin-top:24px;">> API Reference</div>
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">Free public API. No authentication required. 100 req/day free, 10K req/day premium.</p>
+    """Public API endpoint tape"""
+    return render_template_string(DOCS_HTML, wallet=WALLET_ADDRESS)
 
-        <div class="prem-box" style="text-align:left;padding:12px 16px;margin-bottom:20px;">
-            <p style="font-size:10px;color:var(--text-dim);"><span style="color:var(--green);">FREE:</span> 100 req/day &nbsp;|&nbsp; <span style="color:var(--white);">PREMIUM:</span> 10K req/day &nbsp;|&nbsp; Get premium at <a href="/premium" style="color:var(--white);">/premium</a> &mdash; $9.99/mo</p>
-        </div>
 
-        <div class="post">
-            <p style="font-size:10px;font-weight:700;color:var(--white);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Telegram Bot</p>
-            <p style="font-size:10px;color:var(--text-dim);margin-bottom:8px;">Same data, directly in Telegram. No API key needed.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">Open: https://t.me/Crypt0Emp1reBot
-Send: /help</pre>
-        </div>
+DOCS_HTML = page_shell(
+    "API Docs",
+    nav_links(FRONT_NAV, here="API") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Index · Public Endpoint Tape</span><span class="mono" id="live-clock">--</span></div>
+    <p class="deck">Free public wire access — the same desk tape as the web, delivered as JSON. No authentication required.</p>
+    <div class="rate-line">FREE <b>100 req/day</b> ··· PREMIUM <i>10K req/day</i> ··· <a href="/premium" style="color:var(--ink-bright);text-decoration:none;border-bottom:1px dotted var(--ink-dim)">/premium</a> — $9.99/mo</div>
 
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/price/&lt;coin_id&gt;</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Current price for any CoinGecko coin ID.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/price/bitcoin</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/trending</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Trending coins on CoinGecko.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/trending</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/gas</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Gas prices across Ethereum, Polygon, Arbitrum, Base.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/gas</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/wallet</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Wallet balances across chains.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/wallet</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/fear-greed</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Fear &amp; Greed index.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/fear-greed</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/news</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Latest crypto news from CoinTelegraph.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/news</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/health</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Service health check.</p>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/tvl</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Ethereum TVL from DeFiLlama.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/tvl</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/profiler/&lt;address&gt;</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Profile any Ethereum address: native balance, top ERC-20s, tx count, USD value.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/profiler/0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/launches</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Upcoming token launches, IDOs, ICOs, and TGEs with countdown timers, exchange affiliate links. Sorted by featured upcoming first.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/launches</pre>
-        </div>
-        <div class="post">
-            <p><span style="color:var(--green);font-weight:700;">GET</span> <code style="font-size:11px;color:var(--white);">/api/dexs</code></p>
-            <p style="font-size:10px;color:var(--text-dim);margin:4px 0 6px;">Top 10 DEXes by 24h volume.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;">curl https://crypto-empire-ten.vercel.app/api/dexs</pre>
-        </div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/price/&lt;coin_id&gt;</span></div><p class="desc">Current price for any CoinGecko coin ID.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/price/bitcoin</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/trending</span></div><p class="desc">Trending coins on CoinGecko.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/trending</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/gas</span></div><p class="desc">Gas prices across Ethereum, Polygon, Arbitrum, Base.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/gas</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/wallet</span></div><p class="desc">Wallet balances across chains.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/wallet</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/fear-greed</span></div><p class="desc">Fear &amp; Greed index.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/fear-greed</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/news</span></div><p class="desc">Latest crypto news from CoinTelegraph.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/news</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/health</span></div><p class="desc">Service health check.</p></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/tvl</span></div><p class="desc">Ethereum TVL from DeFiLlama.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/tvl</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/profiler/&lt;address&gt;</span></div><p class="desc">Profile any Ethereum address: native balance, top ERC-20s, tx count, USD value.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/profiler/0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/launches</span></div><p class="desc">Upcoming token launches, IDOs, ICOs, and TGEs with countdown timers, exchange affiliate links. Sorted by featured upcoming first.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/launches</code></div></div>
+    <div class="ep"><div class="kind"><span class="meth">GET</span><span class="path">/api/dexs</span></div><p class="desc">Top 10 DEXes by 24h volume.</p><div class="code-block"><code>curl https://crypto-empire-ten.vercel.app/api/dexs</code></div></div>
+  </div>
 
-        <!-- Donation -->
-        <div class="donate-box">
-            <h4>Support Development</h4>
-            <div class="donate-row">
-                <span class="daddr" id="docs-eth">0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</span>
-                <span class="dcopy" onclick="copyAddr('docs-eth',this)">COPY</span>
-            </div>
-        </div>
+  <div class="col">
+    <div class="sec-title">Telegram Bot</div>
+    <p class="para">Same data, directly in Telegram. No API key needed.</p>
+    <div class="code-block"><code>Open: https://t.me/Crypt0Emp1reBot
+Send: /help</code></div>
 
-        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
+    <div class="ledger" style="margin-top:20px">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Free tier</span><span class="dots">····</span><span class="val">no key · 100 req/day</span></div>
+      <div class="ledger-row"><span class="lbl">Premium</span><span class="dots">····</span><span class="val">X-API-Key header</span></div>
+      <div class="ledger-row"><span class="lbl">Docs page</span><span class="dots">····</span><span class="val">this tape</span></div>
     </div>
-    <div class="b-bar">
-        <span><span class="dot" style="background:var(--green);"></span> API DOCS</span>
-        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-        <span><span class="sp">|</span> <a href="/blog" style="color:var(--text-dim);">Blog</a></span>
-        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+
+    <div class="ledger" style="margin-top:16px">
+      <div class="t-head"><span class="kicker">Support Development</span><span class="kicker">ETH</span></div>
+      <div class="ledger-row"><span class="lbl">Address</span><span class="dots">····</span><span class="daddr" id="docs-eth">0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</span></div>
+      <div class="ledger-row"><span class="lbl">&nbsp;</span><span class="dcopy" onclick="copyAddr('docs-eth',this)">COPY</span></div>
     </div>
-    <div class="toast" id="copy-toast">ADDRESS COPIED</div>
-    <script>
+
+    <div class="ad-box"><div>
+      <div class="kicker">Release</div>
+      <div class="ad-head">The Telegram Terminal</div>
+      <p class="para">No HTTP budget? The bot desk quotes prices hand-to-hand, free of charge.</p>
+      <a class="buy" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="margin-top:10px">Open @Crypt0Emp1reBot</a>
+    </div></div>
+  </div>
+</div>
+
+<div class="bot-strip mono">
+  <span>API DOCS</span><span class="sp">|</span>
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/blog">BLOG</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
+</div>
+
+<div class="toast" id="copy-toast">ADDRESS COPIED</div>
+<script>
         function copyAddr(id,btn){
             var txt=document.getElementById(id).textContent;
             navigator.clipboard.writeText(txt).then(function(){
@@ -3271,9 +3215,17 @@ Send: /help</pre>
             }
             u();setInterval(u,1000);
         })();
-    </script>
-</body>
-</html>""", wallet=WALLET_ADDRESS)
+    </script>""",
+    kicker="The Index",
+    page="E4",
+    strip_items=[("Docs", "free public API · no auth required", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS + MONET_CSS + LONGFORM_CSS,
+    head_extra='<meta name="description" content="Free public API for crypto data. No auth required. Bitcoin, Ethereum, gas prices, wallet balances.">'
+               '<link rel="canonical" href="https://crypto-empire-ten.vercel.app/docs">',
+)
+
+
+
 
 
 # ============================================================
@@ -4535,66 +4487,51 @@ BLOG_POSTS = [
     },
 ]
 
-@app.route("/blog")
-def blog_index():
-    return render_template_string("""<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + """
-    <title>Dominion Blog - Crypto Tools, Guides & Market Analysis</title>
-    <meta name="description" content="Free crypto tools, wallet checker, gas tracker, and market data. Guides and analysis for cryptocurrency traders and investors.">
-    <meta name="keywords" content="crypto tools, wallet checker, gas tracker, Bitcoin, Ethereum, cryptocurrency prices">
-    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog">
-</head>
-<body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="noise-bg" aria-hidden="true"></div>
-    <div class="sweep" aria-hidden="true"></div>
-    <div class="container" id="main">
-        <div class="top-bar">
-            <div class="brand">
-                <div class="prompt">><span class="cr"></span></div>
-                <div>
-                    <div class="site-title">Blog</div>
-                    <div class="site-sub">Tools, guides & market analysis</div>
-                </div>
-            </div>
-            <div class="top-nav">
-                <a href="/">Dashboard</a>
-                <a href="/docs">API</a>
-                <a href="/wallet-check">Wallet</a>
-            </div>
-        </div>
-        <div class="status-line">
-            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-            <span id="live-clock">--</span>
-            <span>BLOG // TOOLS & GUIDES</span>
-        </div>
-        <div class="t-h1" style="margin-top:24px;">> Blog</div>
-        <p class="t-body">Free crypto tools, guides, and market analysis.</p>
-        
-        {% for post in posts %}
-        <div style="border:1px solid var(--border);padding:14px;margin-bottom:10px;">
-            <h2 style="font-size:13px;margin:0 0 4px;"><a href="/blog/{{ post.slug }}" style="color:var(--white);text-decoration:none;">{{ post.title }}</a></h2>
-            <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">{{ post.date }} — {{ post.tags|join(', ') }}</div>
-        </div>
-        {% endfor %}
-        
-        <div class="prem-box" style="margin-top:20px;">
-            <h3 style="font-size:11px;">SUPPORT</h3>
-            <p style="font-size:9px;color:var(--text-dim);">Send ETH to <code style="font-size:9px;">{{ wallet }}</code></p>
-        </div>
-        
-        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
+# ============================================================
+# Blog feuilleton (Night Edition) — composed shells
+# ============================================================
+
+BLOG_INDEX_BODY = nav_links(FRONT_NAV, here="Blog") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Feuilleton · Tools, Guides &amp; Market Analysis</span><span class="mono" id="live-clock">--</span></div>
+    <p class="deck">Desk notes from the press floor — free crypto tools, guides, and market analysis.</p>
+    <div class="byle"><span>Feuilleton Desk · Dominion</span><span>EST MARKET EDITION</span></div>
+
+    {% for post in posts %}
+    <div class="post-row">
+      <div class="post-meta">{{ post.date }} — {{ post.tags|join(', ') }}</div>
+      <h2 style="margin:5px 0 0"><a class="post-title" href="/blog/{{ post.slug }}">{{ post.title }}</a></h2>
     </div>
-    <div class="b-bar">
-        <span><span class="dot"></span> BLOG</span>
-        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+    {% endfor %}
+  </div>
+
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Support the Press</span><span class="kicker">ETH</span></div>
+      <p class="para">Every tool on this desk is free of charge. Send ETH to the treasury to keep it that way.</p>
+      <div class="ledger-row"><span class="lbl">Address</span><span class="dots">····</span><span class="daddr" style="max-width:150px">{{ wallet }}</span></div>
     </div>
-    <script>
+
+    <div class="ad-box"><div>
+      <div class="kicker">Release</div>
+      <div class="ad-head">The Telegram Terminal</div>
+      <p class="para">New feuilleton instalments wire to the bot desk the moment they set.</p>
+      <a class="buy" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="margin-top:10px">Open @Crypt0Emp1reBot</a>
+    </div></div>
+  </div>
+</div>
+
+<div class="bot-strip mono">
+  <span>BLOG</span><span class="sp">|</span>
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
+</div>
+
+<script>
         (function(){
             function u(){
                 var n=new Date();
@@ -4611,9 +4548,101 @@ def blog_index():
             }
             u();setInterval(u,1000);
         })();
-    </script>
-</body>
-</html>""", posts=BLOG_POSTS, wallet=WALLET_ADDRESS)
+    </script>"""
+
+BLOG_POST_BODY = nav_links(FRONT_NAV, here="Blog") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Feuilleton · Instalment</span><span class="kicker">DOMINION</span></div>
+    <h1 class="headline lead-head" style="font-size:23px">{{ title }}</h1>
+    <div class="byle"><span>{{ date }} — {{ tags|join(", ") }}</span><span class="mono" id="live-clock">--</span></div>
+
+    <div class="article-body">
+{{ content|safe }}
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Notes on this Instalment</span></div>
+      <div class="ledger-row"><span class="lbl">Set to press</span><span class="dots">····</span><span class="val">{{ date }}</span></div>
+      <div class="ledger-row"><span class="lbl">Filed under</span><span class="dots">····</span><span class="val">{{ tags|join(", ") }}</span></div>
+      <div class="ledger-row"><span class="lbl">More</span><span class="dots">····</span><span class="val"><a href="/blog" style="color:var(--ink-bright);text-decoration:none;border-bottom:1px dotted var(--ink-dim)">the full feuilleton</a></span></div>
+    </div>
+
+    <div class="ledger" style="margin-top:16px">
+      <div class="t-head"><span class="kicker">Support the Press</span><span class="kicker">ETH</span></div>
+      <p class="para">Every tool on this desk is free of charge. Send ETH to the treasury to keep it that way.</p>
+      <div class="ledger-row"><span class="lbl">Address</span><span class="dots">····</span><span class="daddr" style="max-width:150px">{{ wallet }}</span></div>
+    </div>
+
+    <div class="ad-box"><div>
+      <div class="kicker">Release</div>
+      <div class="ad-head">The Telegram Terminal</div>
+      <p class="para">Desk chatter, whale dispatches, and fresh instalments — hand-to-hand, free of charge.</p>
+      <a class="buy" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="margin-top:10px">Open @Crypt0Emp1reBot</a>
+    </div></div>
+  </div>
+</div>
+
+<div class="bot-strip mono">
+  <span>ARTICLE</span><span class="sp">|</span>
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
+</div>
+
+<script>
+        (function(){
+            function u(){
+                var n=new Date();
+                var y=n.getUTCFullYear();
+                var m=String(n.getUTCMonth()+1).padStart(2,'0');
+                var d=String(n.getUTCDate()).padStart(2,'0');
+                var h=String(n.getUTCHours()).padStart(2,'0');
+                var i=String(n.getUTCMinutes()).padStart(2,'0');
+                var s=String(n.getUTCSeconds()).padStart(2,'0');
+                var e=document.getElementById('live-clock');
+                if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
+                var e2=document.getElementById('live-clock2');
+                if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;
+            }
+            u();setInterval(u,1000);
+        })();
+    </script>"""
+
+BLOG_INDEX_SHELL = page_shell(
+    "Blog",
+    BLOG_INDEX_BODY,
+    kicker="The Feuilleton",
+    page="W4",
+    strip_items=[("Feuilleton", "tools, guides & market analysis", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS + LONGFORM_CSS,
+    head_extra='<meta name="description" content="Free crypto tools, wallet checker, gas tracker, and market data. Guides and analysis for cryptocurrency traders and investors.">'
+               '<meta name="keywords" content="crypto tools, wallet checker, gas tracker, Bitcoin, Ethereum, cryptocurrency prices">'
+               '<link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog">',
+)
+
+BLOG_POST_SHELL = page_shell(
+    "Blog .placeholder",
+    BLOG_POST_BODY,
+    kicker="The Feuilleton",
+    page="W5",
+    strip_items=[("Article", "desk notes from the press floor", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS + LONGFORM_CSS,
+    head_extra='<meta name="description" content="{{ title }}. Free crypto tools, wallet checker, gas tracker, and live prices.">\n    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog/{{ slug }}">',
+).replace(
+    "<title>Blog .placeholder · Dominion</title>",
+    "<title>{{ title }} — Dominion</title>",
+)
+
+
+@app.route("/blog")
+def blog_index():
+    """The feuilleton desk"""
+    return render_template_string(BLOG_INDEX_SHELL, posts=BLOG_POSTS, wallet=WALLET_ADDRESS)
 
 
 @app.route("/blog/<slug>")
@@ -4625,76 +4654,7 @@ def blog_post(slug):
             break
     if not post:
         return "Not found", 404
-    return render_template_string("""<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + """
-    <title>{{ title }} — Dominion</title>
-    <meta name="description" content="{{ title }}. Free crypto tools, wallet checker, gas tracker, and live prices.">
-    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/blog/{{ slug }}">
-</head>
-<body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="noise-bg" aria-hidden="true"></div>
-    <div class="sweep" aria-hidden="true"></div>
-    <div class="container" id="main">
-        <div class="top-bar">
-            <div class="brand">
-                <div class="prompt">><span class="cr"></span></div>
-                <div>
-                    <div class="site-title">Blog</div>
-                    <div class="site-sub">{{ title[:60] }}{% if title|length > 60 %}...{% endif %}</div>
-                </div>
-            </div>
-            <div class="top-nav">
-                <a href="/">Dashboard</a>
-                <a href="/blog">Blog</a>
-                <a href="/docs">API</a>
-            </div>
-        </div>
-        <div class="status-line">
-            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-            <span id="live-clock">--</span>
-            <span>BLOG // ARTICLE</span>
-        </div>
-        <div class="t-h1" style="margin-top:24px;">> {{ title }}</div>
-        <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">{{ date }} — Tags: {{ tags|join(", ") }}</div>
-        <div style="font-size:12px;line-height:1.8;color:var(--text);">{{ content|safe }}</div>
-        
-        <div class="prem-box" style="margin-top:24px;">
-            <h3 style="font-size:11px;">SUPPORT</h3>
-            <p style="font-size:9px;color:var(--text-dim);">Send ETH to <code style="font-size:9px;">{{ wallet }}</code></p>
-        </div>
-        
-        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
-    </div>
-    <div class="b-bar">
-        <span><span class="dot"></span> ARTICLE</span>
-        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
-    </div>
-    <script>
-        (function(){
-            function u(){
-                var n=new Date();
-                var y=n.getUTCFullYear();
-                var m=String(n.getUTCMonth()+1).padStart(2,'0');
-                var d=String(n.getUTCDate()).padStart(2,'0');
-                var h=String(n.getUTCHours()).padStart(2,'0');
-                var i=String(n.getUTCMinutes()).padStart(2,'0');
-                var s=String(n.getUTCSeconds()).padStart(2,'0');
-                var e=document.getElementById('live-clock');
-                if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';
-                var e2=document.getElementById('live-clock2');
-                if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;
-            }
-            u();setInterval(u,1000);
-        })();
-    </script>
-</body>
-</html>""", title=post["title"], slug=post["slug"], date=post["date"], tags=post["tags"], content=post["content"], wallet=WALLET_ADDRESS)
+    return render_template_string(BLOG_POST_SHELL, title=post["title"], slug=post["slug"], date=post["date"], tags=post["tags"], content=post["content"], wallet=WALLET_ADDRESS)
 
 
 @app.route("/sitemap.xml")
