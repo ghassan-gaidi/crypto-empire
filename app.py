@@ -18,7 +18,7 @@ from flask import Flask, render_template_string, jsonify, request, redirect
 from flask_cors import CORS
 import requests
 
-from design import page_shell, nav_links, SECTION_CSS
+from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS
 
 # ============================================================
 # Configuration
@@ -3345,55 +3345,49 @@ Send: /help</pre>
 # Wallet Check Page
 # ============================================================
 
-WALLET_CHECK_HTML = """<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + """
-    <title>Wallet Checker — Dominion</title>
-    <meta name="description" content="Multi-chain Ethereum wallet balance checker. Check ETH, tokens and balances across Ethereum, Arbitrum, Polygon, Base, Optimism, BSC.">
-</head>
-<body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="noise-bg" aria-hidden="true"></div>
-    <div class="sweep" aria-hidden="true"></div>
-    <div class="container" id="main">
-        <div class="top-bar">
-            <div class="brand">
-                <div class="prompt">><span class="cr"></span></div>
-                <div>
-                    <div class="site-title">Wallet Checker</div>
-                    <div class="site-sub">Multi-chain balance tool</div>
-                </div>
-            </div>
-            <div class="top-nav">
-                <a href="/">Dashboard</a>
-                <a href="/blog">Blog</a>
-                <a href="/docs">API</a>
-                <a href="/wallet-check" style="color:var(--white);">Wallet</a>
-            </div>
-        </div>
-        <div class="status-line">
-            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-            <span id="live-clock">--</span>
-            <span>WALLET CHECK // MULTI-CHAIN</span>
-        </div>
-        <div class="t-h1" style="margin-top:24px;">> Wallet Checker</div>
-        <p class="t-body" style="margin-bottom:16px;">Check ETH balances across Ethereum, Arbitrum, Base, and Polygon.</p>
-        <input type="text" style="width:100%;max-width:440px;background:var(--surface);color:var(--white);border:1px solid var(--border);padding:10px 12px;font-size:11px;font-family:inherit;outline:none;" id="address" placeholder="0x... or ENS name" value="0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef">
-        <br>
-        <button style="margin-top:10px;background:var(--surface);color:var(--white);border:1px solid var(--white);padding:8px 20px;font-size:11px;text-transform:uppercase;letter-spacing:3px;cursor:pointer;font-family:inherit;" onclick="checkWallet()">Check Wallet</button>
-        <div id="results" class="result"></div>
-        
-        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
+WALLET_CHECK_HTML = page_shell(
+    "Wallet Checker",
+    nav_links(FRONT_NAV, here="Wallet") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Checker · Multi-Chain Balance Desk</span><span class="updated" id="live-clock">--</span></div>
+    <p class="deck">One address, four ledgers, one total in dollars — reconciled at the desk.</p>
+    <div class="form-lbl">Address · 0x… or ENS</div>
+    <form class="tool-form" onsubmit="event.preventDefault();checkWallet()">
+      <input type="text" class="tool-input" id="address" placeholder="0x… or ENS name" value="0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef" spellcheck="false" autocomplete="off">
+      <button type="submit" class="buy" style="margin-top:11px">Check Wallet</button>
+    </form>
+    <div id="results" class="result" style="margin-top:6px"></div>
+    <p class="src-note">Native balances read from each chain's public RPC · USD marking via CoinGecko · On-demand.</p>
+  </div>
+
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Chains covered</span><span class="dots">····</span><span class="val">ETH · ARB · BASE · POLY</span></div>
+      <div class="ledger-row"><span class="lbl">Desk clock</span><span class="dots">····</span><span class="val mono" id="live-clock2">--</span></div>
+      <div class="ledger-row"><span class="lbl">Reading</span><span class="dots">····</span><span class="val">on demand</span></div>
+      <p class="para">Native coin balances only — the tape above the token layer. Token and position-level reads belong to the <a href="/profiler" style="color:var(--ink-bright);text-decoration:none">Profiler</a> desk.</p>
     </div>
-    <div class="b-bar">
-        <span><span class="dot"></span> WALLET CHECK</span>
-        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
-    </div>
-    <script>
+    <div class="ad-box"><div>
+      <div class="kicker">Premium Access</div>
+      <div class="ad-head">The Folio, Unbound</div>
+      <p class="para">Track six or more wallets under one ledger with P&amp;L and hourly history.</p>
+      <a class="buy" href="/portfolio" style="margin-top:10px">Open the Folio</a>
+      <a class="buy" href="/premium" style="margin-top:6px;margin-left:6px;background:transparent;color:var(--ink-bright);border:1px solid var(--rule-strong)">Subscribe $9.99/mo</a>
+    </div></div>
+  </div>
+</div>
+
+<div class="bot-strip mono">
+  <span>WALLET CHECK</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
+</div>
+
+<script>
     (function(){
         function u(){
             var n=new Date();
@@ -3414,12 +3408,12 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
         var addr = document.getElementById('address').value.trim();
         var el = document.getElementById('results');
         if (!addr || !addr.startsWith('0x')) { el.innerHTML = '<div class="error">Invalid address</div>'; return; }
-        el.innerHTML = '<div class="loading">CHECKING...</div>';
+        el.innerHTML = '<div class="loading">CHECKING…</div>';
         try {
             var r = await fetch('/api/check-wallet/' + encodeURIComponent(addr));
             var data = await r.json();
             if (data.error) { el.innerHTML = '<div class="error">' + data.error + '</div>'; return; }
-            var html = '<div class="total-val">TOTAL: ' + data.total_usd_formatted + '</div>';
+            var html = '<div class="total-val">TOTAL ' + data.total_usd_formatted + '</div>';
             for (var i = 0; i < data.chains.length; i++) {
                 var c = data.chains[i];
                 html += '<div class="chain-row">' +
@@ -3427,16 +3421,20 @@ WALLET_CHECK_HTML = """<!DOCTYPE html>
                     '<span><span class="chain-bal">' + c.balance_formatted + '</span> <span class="chain-usd">$' + c.usd_value.toFixed(2) + '</span></span>' +
                     '</div>';
             }
-            html += '<div style="text-align:center;margin-top:16px;"><a href="https://debank.com/profile/' + addr + '" target="_blank" style="font-size:11px;text-transform:uppercase;letter-spacing:1px;">View on DeBank -></a></div>';
+            html += '<div class="hint-line"><a href="https://debank.com/profile/' + addr + '" target="_blank" rel="noopener" style="color:var(--ink-dim);text-decoration:none;border-bottom:1px dotted var(--rule-strong)">View on DeBank →</a></div>';
             el.innerHTML = html;
         } catch(e) {
             el.innerHTML = '<div class="error">Request failed</div>';
         }
     }
     checkWallet();
-    </script>
-</body>
-</html>"""
+    </script>""",
+    kicker="The Checker",
+    page="D1",
+    strip_items=[("Desk", "four chains · native balances · on demand", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS,
+    head_extra='<meta name="description" content="Multi-chain Ethereum wallet balance checker. Check ETH, tokens and balances across Ethereum, Arbitrum, Polygon, Base, Optimism, BSC.">',
+)
 
 @app.route("/wallet-check")
 def wallet_check():
@@ -3614,82 +3612,38 @@ def api_profiler(address):
     })
 
 
-PROFILER_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Wallet Profiler — Dominion</title>
-""" + SHARED_HEAD + r"""
-<style>
-.profiler-form{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
-.profiler-form input{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:inherit;font-size:12px;outline:none;letter-spacing:.5px}
-.profiler-form input:focus{border-color:var(--white)}
-.profiler-form button{border:1px solid var(--white);color:var(--white);background:transparent;padding:10px 24px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:3px;cursor:pointer;transition:.15s}
-.profiler-form button:hover{background:var(--white);color:var(--bg)}
-.profiler-form button:disabled{opacity:.3;cursor:not-allowed}
-.profiler-form button:disabled:hover{background:transparent;color:var(--white)}
-.summary-row{display:flex;gap:16px;margin:16px 0;flex-wrap:wrap}
-.summary-box{border:1px solid var(--border);padding:14px 18px;flex:1;min-width:140px}
-.summary-box .label{font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-bottom:4px}
-.summary-box .value{font-size:16px;color:var(--white);font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.summary-box .sub{font-size:9px;color:var(--text-dim);margin-top:2px;letter-spacing:1px}
-.token-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:12px 0}
-.token-card{background:var(--surface);border:1px solid var(--border);padding:12px}
-.token-card .sym{font-size:11px;color:var(--white);font-weight:700;letter-spacing:1px}
-.token-card .bal{font-size:13px;color:var(--white);margin:4px 0 2px;letter-spacing:-.5px}
-.token-card .usd{font-size:9px;color:var(--text-dim);letter-spacing:1px}
-.address-display{font-size:10px;color:var(--text-dim);word-break:break-all;padding:8px 0;letter-spacing:.5px}
-.address-display .addr{color:var(--white)}
-.share-note{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin:12px 0}
-.loading{text-align:center;padding:60px 0;color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase}
-.error{text-align:center;padding:40px 0;color:var(--red);font-size:10px;letter-spacing:2px;text-transform:uppercase}
-</style>
-</head>
-<body>
-<div class="noise-bg" aria-hidden="true"></div>
-<div class="sweep" aria-hidden="true"></div>
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="container" id="main">
-<div class="top-bar">
-<div class="brand">
-<div class="prompt">><span class="cr"></span></div>
-<div>
-<div class="site-title">Wallet Profiler</div>
-<div class="site-sub">inspect any ethereum address</div>
-</div>
-</div>
-<div class="top-nav">
-<a href="/">Dashboard</a>
-<a href="/wallet-check">Checker</a>
-<a href="/profiler" style="color:var(--white);">Profiler</a>
-</div>
-</div>
+PROFILER_HTML = page_shell(
+    "Wallet Profiler",
+    nav_links(FRONT_NAV, here="Profiler") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Profiler · Address Interrogation</span><span class="updated" id="live-clock">--</span></div>
+    <p class="deck">Paste a counterparty; the desk reads their books and prints the ledger.</p>
+    <form class="profiler-form tool-form" id="profiler-form" onsubmit="return loadProfile()">
+      <input type="text" id="addr-input" placeholder="0x… or ENS name (e.g. vitalik.eth)" value="" autocomplete="off" spellcheck="false">
+      <button type="submit" id="profiler-btn" class="buy" style="margin-top:11px">Inspect</button>
+    </form>
 
-<div class="status-line">
-<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-<span id="live-clock">--</span>
-<span>WALLET PROFILER // ON-CHAIN</span>
-</div>
+    <div class="share-note">Shareable URL — bookmark or send any address as <code>/profiler?address=0x…</code></div>
 
-<form class="profiler-form" id="profiler-form" onsubmit="return loadProfile()">
-<input type="text" id="addr-input" placeholder="0x... or ENS name (e.g. vitalik.eth)" value="" autocomplete="off" spellcheck="false">
-<button type="submit" id="profiler-btn">Inspect</button>
-</form>
+    <div id="results"></div>
+  </div>
 
-<div class="share-note">Shareable URL — bookmark or send any address as <code style="color:var(--white);font-size:10px;">/profiler?address=0x...</code></div>
-
-<div id="results"></div>
-
-<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
-</div>
-<div class="b-bar">
-<span><span class="dot"></span> WALLET PROFILER</span>
-<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Reads</span><span class="dots">····</span><span class="val">native + top ERC-20</span></div>
+      <div class="ledger-row"><span class="lbl">Nonce</span><span class="dots">····</span><span class="val">total sends</span></div>
+      <div class="ledger-row"><span class="lbl">Desk clock</span><span class="dots">····</span><span class="val mono" id="live-clock2">--</span></div>
+      <p class="para">The profiler pulls an Ethereum address's native balance, transaction count, and the token layer at last touch. USD marking via CoinGecko.</p>
+    </div>
+    <div class="ad-box"><div>
+      <div class="kicker">Premium Access</div>
+      <div class="ad-head">Reporter-grade Profiles</div>
+      <p class="para">Watchlists, repeated counterparties, and alerts when a profiled address moves.</p>
+      <a class="buy" href="/premium" style="margin-top:10px">Subscribe $9.99/mo</a>
+    </div></div>
+  </div>
 </div>
 
 <script>
@@ -3717,8 +3671,8 @@ async function loadProfile(){
   // Basic ENS detection — pass through as-is, API handles
   var apiAddr=addr;
   btn.disabled=true;
-  btn.textContent='Loading...';
-  results.innerHTML='<div class="loading">Scanning address...</div>';
+  btn.textContent='Loading…';
+  results.innerHTML='<div class="loading">SCANNING ADDRESS…</div>';
   try{
     var r=await fetch('/api/profiler/'+encodeURIComponent(apiAddr));
     var d=await r.json();
@@ -3750,13 +3704,13 @@ function renderProfile(d){
   html+='</div>';
 
   // Address
-  html+='<div class="address-display">Address: <span class="addr">'+d.address+'</span>';
-  html+=' &middot; ETH price: <span class="addr">$'+(d.eth_price||0).toLocaleString('en-US',{minimumFractionDigits:2,maxFractionDigits:2})+'</span>';
+  html+='<div class="address-display">Address <span class="addr">'+d.address+'</span>';
+  html+=' &middot; ETH price <span class="addr">$'+(d.eth_price||0).toLocaleString('en-US',{minimumFractionDigits:2,maxFractionDigits:2})+'</span>';
   html+='</div>';
 
   // Token grid
   if(d.tokens&&d.tokens.length){
-    html+='<div class="s-title" style="margin-top:20px;">TOKEN HOLDINGS</div>';
+    html+='<div class="t-h2" style="margin-top:20px;">Token Holdings</div>';
     html+='<div class="token-grid">';
     for(var i=0;i<d.tokens.length;i++){
       var t=d.tokens[i];
@@ -3771,7 +3725,7 @@ function renderProfile(d){
 
   // Empty state
   if(!d.tokens||!d.tokens.length){
-    html+='<div style="text-align:center;padding:20px 0;color:var(--text-dim);font-size:9px;letter-spacing:2px;text-transform:uppercase;">No ERC-20 tokens detected for this address</div>';
+    html+='<div class="hint-line">No ERC-20 tokens detected for this address</div>';
   }
 
   results.innerHTML=html;
@@ -3779,9 +3733,12 @@ function renderProfile(d){
 </script>
 <script>
 (function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);})();
-</script>
-</body>
-</html>"""
+</script>""",
+    kicker="The Profiler",
+    page="D2",
+    strip_items=[("Desk", "address interrogation · token layer · on demand", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS,
+)
 
 
 @app.route("/profiler")
@@ -3975,88 +3932,40 @@ def api_portfolio(pid):
     })
 
 
-PORTFOLIO_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Portfolio Tracker — Dominion</title>
-""" + SHARED_HEAD + r"""
-<style>
-body{padding:0!important;}
-.container{max-width:900px;margin:0 auto;padding:24px 20px 80px;position:relative;}
-.back{margin-bottom:14px;}
-.back a{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);}
-.back a:hover{color:var(--white);}
-.back a:before{content:'<< ';color:var(--text-muted);}
-.pf-form{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}
-.pf-form input,.pf-form textarea{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:inherit;font-size:11px;outline:none;}
-.pf-form input:focus,.pf-form textarea:focus{border-color:var(--white);}
-.pf-form textarea{min-height:60px;resize:vertical;}
-.pf-form button{border:1px solid var(--white);color:var(--white);background:transparent;padding:10px 24px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:3px;cursor:pointer;transition:.15s;}
-.pf-form button:hover{background:var(--white);color:var(--bg);}
-.pf-form button:disabled{opacity:.3;cursor:not-allowed;}
-.summary-row{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap;}
-.summary-box{border:1px solid var(--border);padding:12px 16px;flex:1;min-width:120px;}
-.summary-box .lbl{font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-bottom:4px;}
-.summary-box .val{font-size:18px;color:var(--white);font-weight:700;font-variant-numeric:tabular-nums;}
-.summary-box .sub{font-size:9px;color:var(--text-dim);margin-top:2px;}
-.pnl-up{color:var(--green);} .pnl-down{color:var(--red);}
-.wallet-card{border:1px solid var(--border);padding:14px;margin-bottom:10px;}
-.wallet-card .addr{font-size:10px;color:var(--text-dim);letter-spacing:.5px;margin-bottom:8px;word-break:break-all;}
-.wallet-card .bal-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;}
-.wallet-card .bal-row .sym{color:var(--white);}
-.wallet-card .bal-row .usd{color:var(--text-dim);font-family:monospace;}
-.loading{text-align:center;color:var(--text-dim);padding:40px 0;font-size:10px;animation:ld .8s ease-in-out infinite;}
-@keyframes ld{0%,100%{opacity:.3}50%{opacity:1}}
-.error{text-align:center;color:var(--red);padding:20px;font-size:11px;}
-.copy-box{border:1px solid var(--border);padding:8px 12px;margin:10px 0;font-size:10px;color:var(--text-dim);word-break:break-all;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
-.copy-box:hover{border-color:var(--white);}
-.copy-box .hint{font-size:8px;text-transform:uppercase;letter-spacing:1px;color:var(--green);}
-.empty{text-align:center;color:var(--text-dim);padding:40px 0;font-size:10px;text-transform:uppercase;letter-spacing:2px;}
-.tok-row{display:flex;justify-content:space-between;font-size:10px;padding:2px 0;color:var(--text-dim);border-bottom:1px solid var(--border);}
-.tok-row:last-child{border:none;}
-.tok-row .sym{color:var(--white);}
-</style>
-</head>
-<body>
-<div class="noise-bg"></div>
-<div class="sweep"></div>
-<div class="container">
+PORTFOLIO_HTML = page_shell(
+    "Portfolio Tracker",
+    nav_links(FRONT_NAV) + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Folio · Tracked Wallets, One Ledger</span><span class="updated" id="live-clock">--</span></div>
+    <div id="pf-view">
+      <div id="pf-content" class="loading">OPENING THE FOLIO…</div>
+    </div>
+  </div>
 
-<div class="top-bar">
-<div class="brand">
-<div class="prompt">><span class="cr"></span></div>
-<div>
-<div class="site-title">Portfolio Tracker</div>
-<div class="site-sub">track your wallets in one place</div>
-</div>
-</div>
-<div class="top-nav">
-<a href="/">Dashboard</a>
-<a href="/profiler">Profiler</a>
-<a href="/portfolio" style="color:var(--white);">Portfolio</a>
-</div>
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Desks</span><span class="dots">····</span><span class="val">P&amp;L · history · per-wallet</span></div>
+      <div class="ledger-row"><span class="lbl">History</span><span class="dots">····</span><span class="val">hourly points</span></div>
+      <div class="ledger-row"><span class="lbl">Desk clock</span><span class="dots">····</span><span class="val mono" id="live-clock2">--</span></div>
+      <p class="para">Every folio card is shareable — the URL carries the ledger, and whoever holds the link reads your books. Self-custodial: no keys, no signups.</p>
+    </div>
+    <div class="ad-box"><div>
+      <div class="kicker">Premium Access</div>
+      <div class="ad-head">Unlimited Wallets</div>
+      <p class="para">Six or more wallets under one ledger requires the premium stamp.</p>
+      <a class="buy" href="/premium" style="margin-top:10px">Subscribe $9.99/mo</a>
+    </div></div>
+  </div>
 </div>
 
-<div class="status-line">
-<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-<span id="live-clock">--</span>
-<span>PORTFOLIO TRACKER // WALLET AGGREGATION</span>
-</div>
-
-<div id="pf-view">
-  <div class="t-h1" style="margin-top:24px;">> Portfolio Tracker</div>
-  <div id="pf-content" class="loading">Loading...</div>
-</div>
-
-<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
-</div>
-<div class="b-bar">
-<span><span class="dot"></span> PORTFOLIO TRACKER</span>
-<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+<div class="bot-strip mono">
+  <span>FOLIO</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
 </div>
 
 <script>
@@ -4073,30 +3982,32 @@ function pfSpark(hist){
   var w=560,h=90,min=Math.min.apply(null,vals),max=Math.max.apply(null,vals),rng=(max-min)||1;
   var pts=vals.map(function(v,i){var x=(i/(vals.length-1||1)*(w-8)+4).toFixed(1);var y=(h-6-((v-min)/rng*(h-12))).toFixed(1);return x+','+y;});
   var up=vals[vals.length-1]>=vals[0];
-  return '<svg width="100%" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none"><polyline points="'+pts.join(' ')+'" fill="none" stroke="'+(up?'var(--green)':'var(--red)')+'" stroke-width="1.5"/></svg>'
-    +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-dim);margin-top:4px;"><span>$'+Number(min).toLocaleString()+'</span><span>'+hist.length+' hourly points</span><span>$'+Number(max).toLocaleString()+'</span></div>';
+  return '<svg width="100%" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none"><polyline points="'+pts.join(' ')+'" fill="none" stroke="'+(up?'var(--print-green)':'var(--oxblood)')+'" stroke-width="1.5"/></svg>'
+    +'<div style="display:flex;justify-content:space-between;font-size:8.5px;color:var(--ink-dim);margin-top:4px;font-family:\'IBM Plex Mono\',monospace;"><span>$'+Number(min).toLocaleString()+'</span><span>'+hist.length+' hourly points</span><span>$'+Number(max).toLocaleString()+'</span></div>';
 }
 
 if(!__m){
   // Create mode
-  el.innerHTML=`\
-<div style="margin:16px 0;padding:0;">
-<table class="slot-table" style="width:100%;border-collapse:collapse;margin:16px 0;">
-<thead><tr><th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;font-size:9px;">Addresses</th><th style="text-align:right;border-bottom:1px solid var(--border);color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-size:9px;">ETH + ERC-20</th></tr></thead>
-|<tbody>
-|<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">1 wallet</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--white);">Free</td></tr>
-|<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">2-5 wallets</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--white);">Free</td></tr>
-|<tr><td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);">6+ wallets</td><td style="text-align:right;border-bottom:1px solid var(--border);font-size:11px;color:var(--green);">Premium</td></tr>
-|</tbody>
-|</table>
-|<div style="font-size:9px;color:var(--text-dim);margin-bottom:12px;letter-spacing:.5px;">Already a Premium subscriber? <a href="/premium" style="color:var(--green);">Check your status</a> to find your customer ID.</div>
-|</div>
-|<div class="pf-form">
-|<input id="pf-name" placeholder="Portfolio name (e.g. My Portfolio)" style="width:100%;margin-bottom:8px;">
-|<textarea id="pf-addrs" placeholder="ETH addresses (one per line or comma-separated)&#10;0x..." style="width:100%;"></textarea>
-|<input id="pf-customer-id" placeholder="Premium customer ID (for 6+ wallets) — leave blank for free tier" style="width:100%;margin-bottom:8px;font-size:10px;">
-|<button id="pf-create-btn" onclick="createPortfolio()">Create Portfolio</button>
-|</div>
+  el.innerHTML=`<div class="back"><a href="/">&larr; the front page</a></div>
+<div class="kicker" style="margin-top:10px">Explainer · Slots</div>
+<table class="slot-table">
+<thead><tr><th>Addresses</th><th class="r">ETH + ERC-20</th></tr></thead>
+<tbody>
+<tr><td>1 wallet</td><td class="r">Free</td></tr>
+<tr><td>2–5 wallets</td><td class="r">Free</td></tr>
+<tr><td>6+ wallets</td><td class="r prem">Premium</td></tr>
+</tbody>
+</table>
+<div class="share-note">Already a Premium subscriber? <a href="/premium" style="color:var(--print-green);text-decoration:none">Check your status</a> to find your customer ID.</div>
+<div class="pf-form">
+<div class="form-lbl" style="margin-top:6px">Portfolio name</div>
+<input id="pf-name" class="tool-input" placeholder="e.g. My Portfolio">
+<div class="form-lbl">ETH addresses (one per line or comma-separated)</div>
+<textarea id="pf-addrs" class="tool-input" placeholder="0x…&#10;0x…"></textarea>
+<div class="form-lbl">Premium customer ID (for 6+ wallets)</div>
+<input id="pf-customer-id" class="tool-input" placeholder="leave blank for the free tier">
+<button id="pf-create-btn" onclick="createPortfolio()" class="buy" style="margin-top:10px">Create Portfolio</button>
+</div>
 <div id="pf-result"></div>`;
   el.className='';
 }
@@ -4110,7 +4021,7 @@ async function createPortfolio(){
   if(addrs.length<1){alert('Enter at least one ETH address');return;}
   if(addrs.length>5&&!customerId){alert('6+ wallets requires a Premium customer ID. Subscribe at /premium first.');return;}
   const btn=document.getElementById('pf-create-btn');
-  btn.disabled=true;btn.textContent='Creating...';
+  btn.disabled=true;btn.textContent='Creating…';
   try{
     const body={name,wallets:addrs};
     if(customerId) body.customer_id=customerId;
@@ -4118,7 +4029,7 @@ async function createPortfolio(){
     const d=await r.json();
     if(d.error){
       let msg=d.error;
-      if(d.error.includes('Premium')) msg+=' <a href="/premium" style="color:var(--green);">Subscribe now</a>';
+      if(d.error.includes('Premium')) msg+=' <a href="/premium" style="color:var(--print-green);">Subscribe now</a>';
       document.getElementById('pf-result').innerHTML='<div class="error">'+msg+'</div>';return;
     }
     window.location.href='/portfolio/'+d.id;
@@ -4138,35 +4049,36 @@ if(__m){
       const d=await r.json();
       if(d.error){el.innerHTML='<div class="error">'+d.error+'</div>';return;}
       let html='';
+      html+='<div class="back"><a href="/portfolio">&larr; new folio</a></div>';
       html+='<div class="summary-row">';
       html+='<div class="summary-box"><div class="lbl">Total Value</div><div class="val">'+d.total_usd_fmt+'</div></div>';
       html+='<div class="summary-box"><div class="lbl">Wallets</div><div class="val">'+d.wallet_count+'</div></div>';
-      if(d.pnl!==null&&d.pnl!==undefined) html+='<div class="summary-box"><div class="lbl">P&L (Since Tracking)</div><div class="val '+(d.pnl>=0?'pnl-up':'pnl-down')+'">'+(d.pnl>=0?'+':'')+'$'+Number(d.pnl).toLocaleString()+(d.pnl_pct!=null?' <span style="font-size:10px;">('+(d.pnl_pct>=0?'+':'')+d.pnl_pct+'%)</span>':'')+'</div></div>';
+      if(d.pnl!==null&&d.pnl!==undefined) html+='<div class="summary-box"><div class="lbl">P&amp;L (Since Tracking)</div><div class="val '+(d.pnl>=0?'pnl-up':'pnl-down')+'">'+(d.pnl>=0?'+':'')+'$'+Number(d.pnl).toLocaleString()+(d.pnl_pct!=null?' <span style="font-size:10px;">('+(d.pnl_pct>=0?'+':'')+d.pnl_pct+'%)</span>':'')+'</div></div>';
       html+='<div class="summary-box"><div class="lbl">ETH Price</div><div class="val">$'+Number(d.eth_price).toLocaleString()+'</div><div class="sub">CoinGecko</div></div>';
       html+='</div>';
       // Value history sparkline (hourly points, ~7d)
       if(d.history&&d.history.length>1){
-        html+='<div class="t-h2" style="margin:20px 0 8px;">> Value History</div>';
-        html+='<div style="border:1px solid var(--border);padding:12px;background:var(--surface);">'+pfSpark(d.history)+'</div>';
+        html+='<div class="t-h2" style="margin:20px 0 8px;">Value History</div>';
+        html+='<div class="ledger" style="padding:12px 0;">'+pfSpark(d.history)+'</div>';
       }
       // Premium upsell for 6+ wallet portfolios
       if(d.wallet_count>5){
-        html+='<div style="border:1px solid var(--green);padding:10px 14px;margin:12px 0;font-size:10px;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
-        html+='<span style="color:var(--green);text-transform:uppercase;letter-spacing:1px;">PREMIUM FEATURE</span>';
-        html+='<span>Unlimited wallets with Premium. <a href="/premium" style="color:var(--green);">Subscribe $9.99/mo</a></span>';
+        html+='<div class="prem-strip">';
+        html+='<b>Premium feature</b>';
+        html+='<span>Unlimited wallets with Premium. <a href="/premium">Subscribe $9.99/mo</a></span>';
         html+='</div>';
       }
       const shareUrl=window.location.href;
-      html+='<div class="copy-box" id="share-box"><span>'+shareUrl+'</span><span class="hint">COPY</span></div>';
-      html+='<div class="t-h2" style="margin:24px 0 10px;">> Wallets</div>';
+      html+='<div class="copy-box" id="share-box"><span>'+shareUrl+'</span><span class="hint">Copy</span></div>';
+      html+='<div class="t-h2" style="margin:24px 0 4px;">Wallets</div>';
       for(const w of d.wallets){
         html+='<div class="wallet-card">';
-        html+='<div class="addr">'+w.address+' <span style="color:var(--text-dim);font-size:9px;">('+w.tx_count+' tx)</span></div>';
+        html+='<div class="addr">'+w.address+' ('+w.tx_count+' tx)</div>';
         html+='<div class="bal-row"><span class="sym">ETH</span><span>'+(Number(w.eth_balance)||0).toLocaleString()+' <span class="usd">($'+Number(w.eth_usd).toLocaleString()+')</span></span></div>';
         for(const t of w.tokens){
           html+='<div class="bal-row"><span class="sym">'+t.symbol+'</span><span>'+t.balance+' <span class="usd">($'+Number(t.usd_value).toLocaleString()+')</span></span></div>';
         }
-        html+='<div style="font-size:10px;color:var(--text-dim);text-align:right;margin-top:6px;border-top:1px solid var(--border);padding-top:4px;">Total: $'+Number(w.total_usd).toLocaleString()+'</div>';
+        html+='<div class="w-total">Total $'+Number(w.total_usd).toLocaleString()+'</div>';
         html+='</div>';
       }
       el.innerHTML=html;
@@ -4178,9 +4090,12 @@ if(__m){
     }
   })();
 }
-</script>
-</body>
-</html>"""
+</script>""",
+    kicker="The Folio",
+    page="D3",
+    strip_items=[("Ledger", "multi-wallet · P&L · hourly history", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS,
+)
 
 
 @app.route("/portfolio")
