@@ -18,7 +18,7 @@ from flask import Flask, render_template_string, jsonify, request, redirect
 from flask_cors import CORS
 import requests
 
-from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS
+from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS, MONET_CSS
 
 # ============================================================
 # Configuration
@@ -139,6 +139,7 @@ POLAR_ORG_ID = "e908013d-98b9-4b9b-b231-11aace455bdc"
 POLAR_PRODUCT_ID = "8476bf4c-eac0-477f-8d58-e1f5d3ff1a79"
 POLAR_PRICE_ID = "06bc870e-bc6d-48ed-82de-c30420a8bd8a"
 POLAR_CHECKOUT_URL = "https://buy.polar.sh/polar_cl_6tzQXPw5VwincKlZdlyR2aM9XGePVbhfzWCb13P42ox"
+
 POLAR_API = "https://api.polar.sh/v1"
 POLAR_WEBHOOK_SECRET = os.environ.get("POLAR_WEBHOOK_SECRET", "")
 BASE_URL = os.environ.get("BASE_URL", "https://crypto-empire-ten.vercel.app")
@@ -1520,6 +1521,92 @@ def _front_strip(top_coins, fear_greed):
     return items or None
 
 # ============================================================
+# Monetization pages (Night Edition) — composed shells
+# ============================================================
+
+PREMIUM_BODY = nav_links(FRONT_NAV, here="Premium") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Premium Ledger · Subscriptions Desk</span><span class="kicker">Polar.sh</span></div>
+    <h2 class="headline lead-head" style="font-size:26px">The Full Ledger</h2>
+    <p class="deck">Whale dispatches to your Telegram before the web feed wakes; unlimited folio wallets; priority alerting; no advertisements on any page.</p>
+    <div class="byle"><span>Subscriptions Desk · Dominion</span><span class="mono" id="live-clock">--</span></div>
+
+    <div class="sec-title">Free Tier · What It Includes</div>
+    <div>
+      <div class="ben on"><span class="mark">✓</span><span>Live crypto prices &amp; charts</span></div>
+      <div class="ben on"><span class="mark">✓</span><span>Gas tracker (ETH / BSC / Polygon)</span></div>
+      <div class="ben on"><span class="mark">✓</span><span>Whale tracker (this web page)</span></div>
+      <div class="ben on"><span class="mark">✓</span><span>Trending coins</span></div>
+      <div class="ben on"><span class="mark">✓</span><span>Portfolio tracker — 1 to 5 wallets</span></div>
+      <div class="ben off"><span class="mark">✗</span><span>Telegram whale dispatches</span></div>
+      <div class="ben off"><span class="mark">✗</span><span>Multi-wallet folio — 6 or more wallets</span></div>
+      <div class="ben off"><span class="mark">✗</span><span>Priority price alerts</span></div>
+      <div class="ben off"><span class="mark">✗</span><span>Premium sentiment indicators</span></div>
+    </div>
+
+    <div class="divider-accent">Unlock More</div>
+
+    <div class="ad-box"><div>
+      <div class="kicker">Premium Tier · $9.99 a Month</div>
+      <div class="price-big" style="margin-top:6px">$9.99<span class="per">/MO</span></div>
+      <div style="margin-top:8px">
+        <div class="ben on"><span class="mark">✓</span><span><b>Telegram whale dispatches</b> <span class="why">— real-time push on every $100K+ move</span></span></div>
+        <div class="ben on"><span class="mark">✓</span><span><b>Multi-wallet folio, unlimited</b> <span class="why">— track 6+ ETH addresses under one ledger</span></span></div>
+        <div class="ben on"><span class="mark">✓</span><span><b>Priority price alerts</b> <span class="why">— instant notifications at key thresholds</span></span></div>
+        <div class="ben on"><span class="mark">✓</span><span><b>Premium sentiment indicators</b> <span class="why">— buy / sell signals</span></span></div>
+        <div class="ben on"><span class="mark">✓</span><span><b>Ad-free</b> <span class="why">— across all pages</span></span></div>
+        <div class="ben on"><span class="mark">✓</span><span>Support development <span class="why">— keeps the press running</span></span></div>
+      </div>
+""" + ("{% if customer_status == \"active\" %}"
+r"""
+      <div class="prem-strip"><b>✓ Premium active</b><a href="/api/premium/manage?customer_id={{ customer_id }}">Manage Subscription</a></div>
+""" + "{% else %}"
+r"""
+      <a class="buy" style="margin-top:12px" href='""" + POLAR_CHECKOUT_URL + r"""' target="_blank">Subscribe $9.99/mo</a>
+      <p class="foot-note">Powered by Polar.sh · cancel anytime.</p>
+""" + "{% endif %}") + r"""
+    </div></div>
+  </div>
+
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Billing</span><span class="dots">····</span><span class="val">monthly · Polar.sh</span></div>
+      <div class="ledger-row"><span class="lbl">Cancel</span><span class="dots">····</span><span class="val">anytime</span></div>
+      <div class="ledger-row"><span class="lbl">Provision</span><span class="dots">····</span><span class="val">automatic</span></div>
+      <p class="para">Premium keys provision the moment payment clears — no manual processing. Your customer ID arrives by Telegram and travels with the manage link at the foot of the ledger.</p>
+    </div>
+    <div class="ad-box"><div>
+      <div class="kicker">Release</div>
+      <div class="ad-head">The Telegram Terminal</div>
+      <p class="para">Premium dispatches and the free wire both run through the same bot desk.</p>
+      <a class="buy" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="margin-top:10px">Open @Crypt0Emp1reBot</a>
+    </div></div>
+  </div>
+</div>
+
+<div class="bot-strip mono">
+  <span>PREMIUM TIER</span><span class="sp">|</span>
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
+</div>
+
+<script>
+    function updateClock(){
+        var d=new Date();
+        var t=d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC'})+' UTC';
+        document.getElementById('live-clock').textContent=t;
+        var el=document.getElementById('live-clock2');
+        if(el)el.textContent=t;
+    }
+    updateClock();setInterval(updateClock,1000);
+    </script>"""
+
+# ============================================================
 # Premium API Key Middleware + lightweight abuse rate limiting
 # ============================================================
 # In-memory token bucket per IP (best-effort; resets on cold start).
@@ -2078,161 +2165,115 @@ def admin_dashboard():
     return render_template_string(ADMIN_DASHBOARD_HTML)
 
 
-ADVERTISE_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + r"""
-    <title>Dominion — Advertise</title>
-    <meta name="description" content="Advertise on Dominion — reach 10,000+ monthly active crypto traders. Sponsored spotlight, banners, featured launches, whale sponsorship.">
-<style>
-.container{max-width:800px;margin:0 auto;padding:24px 20px 80px;position:relative;}
-.sec-title{font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:var(--white);margin:32px 0 16px;}
-.sec-title:before{content:'# ';color:var(--text-muted);}
-.p-body{font-size:11px;color:var(--text-dim);line-height:1.8;margin-bottom:20px;}
-.slot-table{width:100%;border-collapse:collapse;margin:16px 0;}
-.slot-table th,.slot-table td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;}
-.slot-table th{color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;font-size:9px;}
-.slot-table td{color:var(--text);}
-.slot-table tr:hover td{background:var(--surface);}
-.tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:20px 0;}
-.tier{border:1px solid var(--border);padding:20px;background:var(--surface);transition:.15s;}
-.tier:hover{border-color:var(--white);}
-.tier.featured{border-color:var(--green);}
-.tier-name{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
-.tier-price{font-size:24px;color:var(--white);margin:8px 0 4px;letter-spacing:-1px;}
-.tier-desc{font-size:9px;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px;}
-.tier ul{list-style:none;font-size:10px;color:var(--text);}
-.tier ul li{padding:5px 0;border-bottom:1px solid var(--border);}
-.tier ul li:last-child{border-bottom:none;}
-.tier .cta{display:inline-block;margin-top:12px;padding:6px 16px;border:1px solid var(--border);font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--white);font-family:inherit;cursor:pointer;}
-.tier .cta:hover{border-color:var(--green);color:var(--green);}
-.dv{height:1px;background:var(--border);margin:32px 0;}
-.req-list{font-size:10px;color:var(--text);line-height:2.2;}
-.req-list span{color:var(--text-dim);}
-.cta-big{display:inline-block;padding:10px 24px;border:1px solid var(--green);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--green);font-family:inherit;cursor:pointer;transition:.15s;}
-.cta-big:hover{background:var(--green);color:var(--bg);}
-</style>
-</head>
-<body>
-<div class="noise-bg" aria-hidden="true"></div>
-<div class="sweep" aria-hidden="true"></div>
-<a class="skip-link" href="#main">Skip to content</a>
+ADVERTISE_HTML = page_shell(
+    "Advertise",
+    nav_links(FRONT_NAV, here="Premium") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Media Kit · Advertise on Dominion</span><span class="kicker">MediaKit</span></div>
+    <p class="deck">Reach 10,000+ monthly active crypto traders, whales, and degens. All placements are press style — no popups, nothing blocking the copy.</p>
+    <div class="byle"><span>Advertising Desk · Dominion</span><span class="mono" id="live-clock">--</span></div>
 
-<div class="container" id="main">
+    <div class="sec-title">Available Slots</div>
+    <table class="slot-table">
+      <thead><tr><th>Slot</th><th>Location</th><th class="r">Price / mo</th><th class="r">Min. Term</th></tr></thead>
+      <tbody>
+        <tr><td>Sponsored Spotlight</td><td>Homepage — featured coin, live price &amp; change</td><td class="r">$200</td><td class="r">7 days</td></tr>
+        <tr><td>Top Banner</td><td>Homepage — above the market table, prime position</td><td class="r">$300</td><td class="r">14 days</td></tr>
+        <tr><td>Mid Banner</td><td>Homepage — between sections</td><td class="r">$200</td><td class="r">14 days</td></tr>
+        <tr><td>Featured Launch</td><td>Launches page — pinned highlight</td><td class="r">$100</td><td class="r">14 days</td></tr>
+        <tr><td>Whale Sponsor</td><td>Whale alert messages — “brought to you by”</td><td class="r">$150</td><td class="r">30 days</td></tr>
+      </tbody>
+    </table>
 
-<div class="top-bar">
-<div class="brand">
-<div class="prompt">><span class="cr"></span></div>
-<div>
-<div class="site-title">Advertise</div>
-<div class="site-sub">reach crypto traders &amp; whales</div>
-</div>
-</div>
-<div class="top-nav">
-<a href="/">Dashboard</a>
-<a href="/advertise" style="color:var(--white);">Advertise</a>
-</div>
-</div>
+    <div class="sec-title">Pricing Tiers</div>
+    <div class="tier-grid">
+      <div class="tier">
+        <div class="tier-name">Spotlight</div>
+        <div class="tier-price">$200<span class="per">/MO</span></div>
+        <div class="tier-desc">Featured coin on the homepage</div>
+        <ul>
+          <li>live price + 24h change display</li>
+          <li>your project name &amp; link</li>
+          <li>7-day minimum commitment</li>
+          <li>CoinGecko ID required</li>
+        </ul>
+        <a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">Contact →</a>
+      </div>
+      <div class="tier featured">
+        <div class="tier-name">★ Premium Bundle</div>
+        <div class="tier-price">$500<span class="per">/MO</span></div>
+        <div class="tier-desc">Maximum visibility</div>
+        <ul>
+          <li>sponsored spotlight</li>
+          <li>top banner placement</li>
+          <li>featured launch pin</li>
+          <li>whale alert sponsorship</li>
+          <li>priority support</li>
+        </ul>
+        <a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">Contact →</a>
+      </div>
+      <div class="tier">
+        <div class="tier-name">Banner</div>
+        <div class="tier-price">$300<span class="per">/MO</span></div>
+        <div class="tier-desc">Premium banner placement</div>
+        <ul>
+          <li>top banner homepage slot</li>
+          <li>30-day minimum commitment</li>
+          <li>text or logo accepted</li>
+          <li>direct link to your site</li>
+        </ul>
+        <a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">Contact →</a>
+      </div>
+    </div>
 
-<div class="status-line">
-<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-<span id="live-clock">--</span>
-<span>AD PLACEMENT // MEDIA KIT</span>
-</div>
+    <div class="dv"></div>
 
-<div class="t-h1" style="margin-top:24px;">> Advertise on Dominion</div>
-<p class="p-body">Reach 10,000+ monthly active crypto traders, whales, and degens. All placements are CRT terminal style — no popups, no banners blocking content.</p>
+    <div class="sec-title">Requirements</div>
+    <div class="req-list">
+      Crypto projects only (exchanges, DeFi, NFT, L1/L2, tools, wallets)<br>
+      No scams, rugs, or pumps &amp; dumps — the desk reserves the right to reject any ad<br>
+      Payment via ETH / USDC to the treasury wallet, or monthly subscription<br>
+      All placements managed via the admin panel — live within 1 hour of payment<br>
+      Expiration enforced automatically — no manual removal needed
+    </div>
 
-<div class="dv"></div>
+    <div class="dv"></div>
 
-<div class="sec-title">Available Slots</div>
-<table class="slot-table">
-<thead><tr><th>Slot</th><th>Location</th><th>Price/mo</th><th>Min. Term</th></tr></thead>
-<tbody>
-<tr><td>Sponsored Spotlight</td><td>Homepage — featured coin with live price/change</td><td>$200</td><td>7 days</td></tr>
-<tr><td>Top Banner</td><td>Homepage — above market table (prime real estate)</td><td>$300</td><td>14 days</td></tr>
-<tr><td>Mid Banner</td><td>Homepage — between sections</td><td>$200</td><td>14 days</td></tr>
-<tr><td>Featured Launch</td><td>Launches page — pinned highlight</td><td>$100</td><td>14 days</td></tr>
-<tr><td>Whale Sponsor</td><td>Whale alert messages — "brought to you by"</td><td>$150</td><td>30 days</td></tr>
-</tbody>
-</table>
+    <div class="sec-title">Get Started</div>
+    <p class="para">Contact the desk on Telegram to reserve a slot. Payment in ETH or stablecoin accepted.</p>
+    <p style="margin-top:14px"><a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" class="cta-big">Contact via Telegram →</a></p>
+  </div>
 
-<div class="sec-title">Pricing Tiers</div>
-<div class="tier-grid">
-<div class="tier">
-<div class="tier-name">Spotlight</div>
-<div class="tier-price">$200<span style="font-size:10px;color:var(--text-dim);">/mo</span></div>
-<div class="tier-desc">Featured coin on homepage</div>
-<ul>
-<li>Live price + 24h change display</li>
-<li>Your project name &amp; link</li>
-<li>7-day minimum commitment</li>
-<li>CoinGecko ID required</li>
-</ul>
-<a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank">Contact →</a>
-</div>
-<div class="tier featured">
-<div class="tier-name" style="color:var(--green);">★ Premium Bundle</div>
-<div class="tier-price">$500<span style="font-size:10px;color:var(--text-dim);">/mo</span></div>
-<div class="tier-desc">Maximum visibility</div>
-<ul>
-<li>Sponsored Spotlight</li>
-<li>Top Banner placement</li>
-<li>Featured Launch pin</li>
-<li>Whale alert sponsorship</li>
-<li>Priority support</li>
-</ul>
-<a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank">Contact →</a>
-</div>
-<div class="tier">
-<div class="tier-name">Banner</div>
-<div class="tier-price">$300<span style="font-size:10px;color:var(--text-dim);">/mo</span></div>
-<div class="tier-desc">Premium banner placement</div>
-<ul>
-<li>Top banner homepage slot</li>
-<li>30-day minimum commitment</li>
-<li>Text or logo accepted</li>
-<li>Direct link to your site</li>
-</ul>
-<a class="cta" href="https://t.me/Crypt0Emp1reBot" target="_blank">Contact →</a>
-</div>
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Response time</span><span class="dots">····</span><span class="val">&lt; 24 hours</span></div>
+      <div class="ledger-row"><span class="lbl">Min. term</span><span class="dots">····</span><span class="val">7 days</span></div>
+      <div class="ledger-row"><span class="lbl">Provision</span><span class="dots">····</span><span class="val">&lt; 1 hour of payment</span></div>
+      <p class="para">The spotlight slot includes a live price readout fed from CoinGecko — the ad itself is part of the tape, not a blocker of it.</p>
+    </div>
+  </div>
 </div>
 
-<div class="dv"></div>
-
-<div class="sec-title">Requirements</div>
-<div class="req-list">
-• Crypto projects only (exchanges, DeFi, NFT, L1/L2, tools, wallets)<br>
-• No scams, rugs, or pump &amp; dumps — we reserve the right to reject any ad<br>
-• Payment via ETH/USDC to our treasury wallet or monthly subscription<br>
-• All placements managed via admin panel — live updates within 1 hour of payment<br>
-• Ad expiration enforced automatically — no manual removal needed
-</div>
-
-<div class="dv"></div>
-
-<div class="sec-title">Get Started</div>
-<p class="p-body">Contact us on Telegram to reserve your slot. Payment in ETH or stablecoin accepted.</p>
-<p style="margin-top:16px;">
-<a href="https://t.me/Crypt0Emp1reBot" target="_blank" class="cta-big">Contact via Telegram →</a>
-</p>
-
-<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
-</div>
-
-<div class="b-bar">
-<span><span class="dot"></span> ADVERTISE</span>
-<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+<div class="bot-strip mono">
+  <span>ADVERTISE</span><span class="sp">|</span>
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
 </div>
 
 <script>
 (function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);})();
-</script>
-</body>
-</html>"""
+</script>""",
+    kicker="The Media Kit",
+    page="E1",
+    strip_items=[("Media", "10K+ monthly reads · press-style slots", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS + MONET_CSS,
+    head_extra='<meta name="description" content="Advertise on Dominion — reach 10,000+ monthly active crypto traders. Sponsored spotlight, banners, featured launches, whale sponsorship.">',
+)
 
 @app.route("/advertise")
 def advertise():
@@ -2572,118 +2613,19 @@ def premium_page():
     status = ""
     if customer:
         status = "active" if _is_premium(customer) else "inactive"
-    return render_template_string("""<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + """
-    <title>Premium — Dominion</title>
-    <meta name="description" content="Unlock premium features: advanced whale alerts, priority price alerts, and exclusive market data.">
-</head>
-<body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="noise-bg" aria-hidden="true"></div>
-    <div class="sweep" aria-hidden="true"></div>
-    <div class="container" id="main">
-        <div class="top-bar">
-            <div class="brand">
-                <div class="prompt">><span class="cr"></span></div>
-                <div>
-                    <div class="site-title">Premium</div>
-                    <div class="site-sub">Unlock the full empire</div>
-                </div>
-            </div>
-            <div class="top-nav">
-                <a href="/">Dashboard</a>
-                <a href="/yields">Yields</a>
-                <a href="/docs">API</a>
-                <a href="/api-keys">Keys</a>
-            </div>
-        </div>
-        <div class="status-line">
-            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-            <span id="live-clock">--</span>
-            <span>PREMIUM TIER // SUBSCRIPTION</span>
-        </div>
-
-        <!-- Free Tier Box -->
-        <div class="term-box">
-            <div class="term-box-hd">FREE TIER</div>
-            <div class="term-box-bd">
-            <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
-                <span style="color:var(--green);">&#10003;</span> Live crypto prices & charts<br>
-                <span style="color:var(--green);">&#10003;</span> Gas tracker (ETH/BSC/Polygon)<br>
-                <span style="color:var(--green);">&#10003;</span> Whale tracker (web page)<br>
-                <span style="color:var(--green);">&#10003;</span> Trending coins<br>
-                <span style="color:var(--green);">&#10003;</span> Portfolio tracker (1-5 wallets)<br>
-                <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Telegram whale alerts</span><br>
-                <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Multi-wallet portfolio (6+ wallets)</span><br>
-                <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Priority price alerts</span><br>
-                <span style="color:var(--text-dim);">&#10007;</span> <span style="color:var(--text-dim);">Premium indicators</span>
-            </p>
-            </div>
-        </div>
-
-        <div class="divider-accent">UNLOCK MORE</div>
-
-        <div class="term-box" style="border-color:var(--accent);">
-            <div class="term-box-hd" style="background:var(--accent);color:var(--bg);">PREMIUM TIER</div>
-            <div class="term-box-bd">
-            <p style="font-size:12px;margin-bottom:12px;color:var(--accent);font-weight:700;">$9.99 / month</p>
-            <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
-                <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Telegram whale alerts</strong> -- real-time push on every $100K+ move<br>
-                <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Multi-wallet portfolio (unlimited wallets)</strong> -- track 6+ ETH addresses<br>
-                <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Priority price alerts</strong> -- instant notifications on key thresholds<br>
-                <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Premium sentiment indicators</strong> -- buy/sell signals<br>
-                <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">Ad-free</strong> across all pages<br>
-                <span style="color:var(--green);">&#10003;</span> Support development -- help keep the empire running
-            </p>
-            </div>
-""" + ("{% if customer_status == \"active\" %}"
-"""
-        <div class="term-box" style="border-color:var(--green);margin-top:16px;">
-            <div class="term-box-hd" style="background:var(--green);color:var(--bg);">&#10003; PREMIUM ACTIVE</div>
-            <div class="term-box-bd" style="text-align:center;">
-                <a href="/api/premium/manage?customer_id={{ customer_id }}" class="btn" style="display:inline-block;">
-                    Manage Subscription
-                </a>
-            </div>
-        </div>
-""" + "{% else %}"
-"""
-        <div class="term-box" style="border-color:var(--accent);margin-top:16px;">
-            <div class="term-box-hd" style="background:var(--accent);color:var(--bg);">SUBSCRIBE</div>
-            <div class="term-box-bd" style="text-align:center;">
-                <a href=\"""" + POLAR_CHECKOUT_URL + """\" target="_blank" class="btn c-accent-bg" style="display:inline-block;border-color:var(--accent);">
-                    Subscribe $9.99/mo
-                </a>
-                <p style="font-size:9px;color:var(--text-dim);margin-top:8px;">
-                    Powered by Polar.sh &bull; Cancel anytime
-                </p>
-            </div>
-        </div>
-""" + "{% endif %}")
-+ """
-    </div>
-    <div class="b-bar">
-        <span><span class="dot"></span> PREMIUM TIER</span>
-        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
-    </div>
-    <script>
-    function updateClock(){
-        var d=new Date();
-        var t=d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC'})+' UTC';
-        document.getElementById('live-clock').textContent=t;
-        var el=document.getElementById('live-clock2');
-        if(el)el.textContent=t;
-    }
-    updateClock();setInterval(updateClock,1000);
-    </script>
-    <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
-</body>
-</html>""", customer_status=status, customer_id=customer)
+    return render_template_string(
+        page_shell(
+            "Premium",
+            PREMIUM_BODY,
+            kicker="The Premium Ledger",
+            page="E3",
+            strip_items=[("Ledger", "$9.99/mo · whale wire · unlimited folio", "dim")],
+            extra_css=SECTION_CSS + FOLIO_CSS + MONET_CSS,
+            head_extra='<meta name="description" content="Unlock premium features: advanced whale alerts, priority price alerts, and exclusive market data.">',
+        ),
+        customer_status=status,
+        customer_id=customer,
+    )
 
 
 @app.route("/api/premium/checkout")
@@ -2784,90 +2726,72 @@ def api_premium_subscribers():
     return jsonify({"total": len(subs), "active": len(active), "subscribers": dict(list(subs.items())[:50])})
 
 
-@app.route("/api-keys")
-def api_keys_page():
-    """API key management and premium info page"""
-    return render_template_string("""<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + """
-    <title>API Keys — Dominion Premium</title>
-    <meta name="description" content="Get premium API keys for Dominion. 10K requests/day, arbitrage signals, priority support. Unlock by sending ETH.">
-    <meta name="robots" content="noindex, follow">
-</head>
-<body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="noise-bg" aria-hidden="true"></div>
-    <div class="sweep" aria-hidden="true"></div>
-    <div class="container" id="main">
-        <div class="top-bar">
-            <div class="brand">
-                <div class="prompt">><span class="cr"></span></div>
-                <div>
-                    <div class="site-title">API Keys</div>
-                    <div class="site-sub">Premium access management</div>
-                </div>
-            </div>
-            <div class="top-nav">
-                <a href="/">Dashboard</a>
-                <a href="/docs">API Docs</a>
-                <a href="/blog">Blog</a>
-            </div>
-        </div>
-        <div class="status-line">
-            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-            <span id="live-clock">--</span>
-            <span>API KEYS // PREMIUM MANAGEMENT</span>
-        </div>
-        <div class="t-h1" style="margin-top:24px;">> Premium API Keys</div>
+API_KEYS_HTML = page_shell(
+    "API Keys",
+    nav_links(FRONT_NAV, here="API") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Keys Desk · Premium API Access</span><span class="kicker">X-Premium: true</span></div>
+    <p class="deck">Programmatic wire access — the same desk tape as the web, delivered as JSON.</p>
 
-        <div class="post">
-            <h3 style="font-size:12px;color:var(--white);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">Free Tier</h3>
-            <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
-                <span style="color:var(--green);">&#10003;</span> No API key required<br>
-                <span style="color:var(--green);">&#10003;</span> All endpoints accessible<br>
-                <span style="color:var(--text-dim);">&#10007;</span> 100 req/day rate limit<br>
-                <span style="color:var(--text-dim);">&#10007;</span> Standard response headers
-            </p>
-        </div>
-
-        <div class="prem-box" style="text-align:left;border-color:var(--white);">
-            <h3 style="font-size:12px;margin-bottom:12px;">PREMIUM TIER — $9.99 / month</h3>
-            <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">
-                <span style="color:var(--green);">&#10003;</span> <strong style="color:var(--white);">10,000 requests/day</strong><br>
-                <span style="color:var(--green);">&#10003;</span> Priority rate limit on all endpoints<br>
-                <span style="color:var(--green);">&#10003;</span> Dedicated API key with <code style="color:var(--white);">X-Premium: true</code> header<br>
-                <span style="color:var(--green);">&#10003;</span> Arbitrage signal access (coming soon)<br>
-                <span style="color:var(--green);">&#10003;</span> Priority support via Telegram
-            </p>
-        </div>
-
-        <div class="prem-box">
-            <h3 class="glitch-text" data-text="&gt;_ CRYPTO_EMPIRE_PRO">&gt;_ CRYPTO_EMPIRE_PRO</h3>
-            <p style="font-size:10px;color:var(--text-dim);line-height:1.6;">Subscribe via Polar.sh. Your API key is automatically provisioned after payment.</p>
-            <div style="margin-top:12px;">
-                <a href="/premium" style="display:inline-block;padding:10px 24px;background:var(--white);color:var(--bg);font-size:10px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;">Subscribe $9.99/mo</a>
-            </div>
-            <p style="font-size:8px;color:var(--text-dim);margin-top:8px;">Cancel anytime &bull; No manual processing</p>
-        </div>
-
-        <div class="post">
-            <p style="font-size:10px;color:var(--text-dim);">Use your premium API key via <code style="color:var(--white);">X-API-Key</code> header or <code style="color:var(--white);">?api_key=</code> query param.</p>
-            <pre style="background:var(--surface);padding:10px;font-size:10px;border:1px solid var(--border);overflow-x:auto;margin-top:8px;">curl -H "X-API-Key: your_key_here" \\
-  https://crypto-empire-ten.vercel.app/api/price/bitcoin</pre>
-        </div>
-
-        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
+    <div class="sec-title">Free Tier</div>
+    <div>
+      <div class="ben on"><span class="mark">✓</span><span>No API key required</span></div>
+      <div class="ben on"><span class="mark">✓</span><span>All endpoints accessible</span></div>
+      <div class="ben off"><span class="mark">✗</span><span>100 requests/day rate limit</span></div>
+      <div class="ben off"><span class="mark">✗</span><span>Standard response headers</span></div>
     </div>
-    <div class="b-bar">
-        <span><span class="dot"></span> API KEYS</span>
-        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+
+    <div class="ad-box" style="margin-top:22px"><div>
+      <div class="kicker">Premium Tier · $9.99/Month</div>
+      <div style="margin-top:8px">
+        <div class="ben on"><span class="mark">✓</span><span><b>10,000 requests / day</b></span></div>
+        <div class="ben on"><span class="mark">✓</span><span>Priority rate limit on all endpoints</span></div>
+        <div class="ben on"><span class="mark">✓</span><span>Dedicated key with <code style="color:var(--ink-bright)">X-Premium: true</code> header</span></div>
+        <div class="ben on"><span class="mark">✓</span><span>Arbitrage signal access <span class="why">(coming soon)</span></span></div>
+        <div class="ben on"><span class="mark">✓</span><span>Priority support via Telegram</span></div>
+      </div>
+    </div></div>
+
+    <div class="sec-title">Using Your Key</div>
+    <p class="para">Use the premium API key via the <code style="font-family:'IBM Plex Mono',monospace;color:var(--ink-bright)">X-API-Key</code> header, or the <code style="font-family:'IBM Plex Mono',monospace;color:var(--ink-bright)">?api_key=</code> query parameter.</p>
+    <div class="code-block"><code>curl -H "X-API-Key: your_key_here" \
+  https://crypto-empire-ten.vercel.app/api/price/bitcoin</code></div>
+
+    <div class="sec-title">Signing Up</div>
+    <p class="para" style="margin-top:2px">Subscribe via Polar.sh — your API key provisions automatically after payment.</p>
+    <a href="/premium" class="buy" style="margin-top:10px">Subscribe $9.99/mo</a>
+    <p class="foot-note">Cancel anytime · no manual processing.</p>
+  </div>
+
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Free limit</span><span class="dots">····</span><span class="val">100 req/day</span></div>
+      <div class="ledger-row"><span class="lbl">Premium</span><span class="dots">····</span><span class="val">10,000 req/day</span></div>
+      <div class="ledger-row"><span class="lbl">Desk clock</span><span class="dots">····</span><span class="val mono" id="live-clock">--</span></div>
+      <p class="para">Keys ride the same endpoints documented at <a href="/docs" style="color:var(--ink-bright);text-decoration:none">/docs</a> — nothing changes but the ceiling.</p>
     </div>
-    <div class="toast" id="copy-toast">ADDRESS COPIED</div>
-    <script>
+    <div class="ad-box"><div>
+      <div class="kicker">Release</div>
+      <div class="ad-head">The Telegram Terminal</div>
+      <p class="para">No HTTP budget? The bot desk quotes prices hand-to-hand, free of charge.</p>
+      <a class="buy" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="margin-top:10px">Open @Crypt0Emp1reBot</a>
+    </div></div>
+  </div>
+</div>
+
+<div class="bot-strip mono">
+  <span>API KEYS</span><span class="sp">|</span>
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
+</div>
+
+<div class="toast" id="copy-toast">Address copied</div>
+<script>
         function copyToast(){
             var t=document.getElementById('copy-toast');
             t.style.display='block';t.style.opacity='1';
@@ -2896,9 +2820,20 @@ def api_keys_page():
                 setTimeout(function(){t.classList.remove('show');},2000);
             });
         }
-    </script>
-</body>
-</html>""", wallet=WALLET_ADDRESS)
+    </script>""",
+    kicker="The Keys Desk",
+    page="E2",
+    strip_items=[("Keys", "premium API · 10K requests/day", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS + MONET_CSS,
+    head_extra='<meta name="description" content="Get premium API keys for Dominion. 10K requests/day, arbitrage signals, priority support. Unlock by sending ETH.">'
+               '<meta name="robots" content="noindex, follow">',
+)
+
+
+@app.route("/api-keys")
+def api_keys_page():
+    """API key management and premium info page"""
+    return render_template_string(API_KEYS_HTML, wallet=WALLET_ADDRESS)
 
 
 @app.route("/api/alerts", methods=["POST", "GET", "DELETE"])

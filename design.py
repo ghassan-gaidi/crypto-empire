@@ -199,6 +199,42 @@ FOLIO_CSS = """
 """
 
 # ============================================================
+# Monetization devices (Task 5: premium, advertise, api-keys)
+# ============================================================
+MONET_CSS = """
+.sec-title{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-bright);border-bottom:2.5px solid var(--ink-bright);padding-bottom:5px;margin:26px 0 10px}
+.ben{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--rule);font-size:11px;color:#cfc4a6;line-height:1.5}
+.ben .mark{font-family:'IBM Plex Mono',monospace;font-size:10px;width:14px;flex-shrink:0}
+.ben.on .mark{color:var(--print-green)}
+.ben.off{color:var(--ink-dim)}
+.ben.off .mark{color:var(--ink-dim)}
+.ben b{font-weight:560;color:var(--ink-bright)}
+.ben .why{color:var(--ink-dim);font-size:10px}
+.tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin-top:4px;border-top:1px solid var(--rule);border-left:1px solid var(--rule)}
+.tier{padding:15px 16px 17px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.tier.featured{background:rgba(212,99,90,.05)}
+.tier-name{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
+.tier.featured .tier-name{color:var(--oxblood)}
+.tier-price{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:var(--ink-bright);margin:6px 0 2px}
+.tier-price .per{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.12em;color:var(--ink-dim);font-weight:400}
+.tier-desc{font-size:9.5px;font-style:italic;color:var(--ink-dim);margin-bottom:8px;font-family:'Fraunces',serif}
+.tier ul{list-style:none}
+.tier ul li{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#cfc4a6;padding:4px 0;border-bottom:1px solid var(--rule)}
+.tier ul li:last-child{border-bottom:none}
+.tier .cta{display:inline-block;margin-top:11px;padding:6px 14px;border:1px solid var(--rule-strong);font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);text-decoration:none;cursor:pointer;transition:.15s}
+.tier .cta:hover{border-color:var(--ink-bright);color:var(--ink-bright)}
+.req-list{font-size:10.5px;line-height:1.9;color:#cfc4a6;font-family:'IBM Plex Mono',monospace;margin-top:4px}
+.req-list span{color:var(--ink-dim)}
+.cta-big{display:inline-block;border:1px solid var(--oxblood);color:var(--oxblood);background:transparent;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;padding:11px 20px;text-decoration:none;cursor:pointer;transition:.15s}
+.cta-big:hover{background:var(--oxblood);color:var(--paper)}
+.code-block{border:1px solid var(--rule);padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#cfc4a6;overflow-x:auto;margin-top:8px;line-height:1.7}
+.code-block code{background:transparent;color:var(--ink-bright);padding:0}
+.divider-accent{display:flex;align-items:center;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim);margin:22px 0 6px}
+.divider-accent::before,.divider-accent::after{content:'';height:1px;background:var(--rule-strong);flex:1}
+.dv{border-bottom:1px solid var(--rule);margin:26px 0}
+"""
+
+# ============================================================
 # Section-page devices (Tasks 3+: whales, trending, yields, launches…)
 # ============================================================
 SECTION_CSS = """
