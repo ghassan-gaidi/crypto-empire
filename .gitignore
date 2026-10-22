@@ -11,3 +11,4 @@ cache/
 .env*.local
 .env.production
 venv/
+.superpowers/
