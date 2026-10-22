@@ -908,6 +908,39 @@ SHARED_HEAD = """<meta charset="UTF-8">
     .status-line{gap:4px;flex-wrap:wrap;justify-content:center;text-align:center;font-size:8px;}
     .t-display{font-size:22px;letter-spacing:4px;}
   }
+
+  /* ===== PREMIUM MOTION LAYER ===== */
+  :root{--accent-soft:rgba(124,140,255,.16);--green-soft:rgba(56,211,159,.1);}
+  body{background-image:radial-gradient(ellipse at 50% -12%,rgba(124,140,255,.18),transparent 42%),radial-gradient(circle at 92% 62%,rgba(56,211,159,.05),transparent 26%),linear-gradient(to right,rgba(148,163,184,.025) 1px,transparent 1px),linear-gradient(to bottom,rgba(148,163,184,.025) 1px,transparent 1px);background-size:auto,auto,48px 48px,48px 48px;}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;background:radial-gradient(circle at 50% 0%,transparent 0,rgba(8,11,18,.18) 65%,rgba(8,11,18,.72) 100%);}
+  .container{animation:page-enter .65s cubic-bezier(.22,1,.36,1) both;}
+  @keyframes page-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .top-bar{border-color:rgba(124,140,255,.25);background:linear-gradient(110deg,rgba(18,25,39,.92),rgba(10,14,23,.78));box-shadow:0 18px 50px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.04);}
+  .top-bar::after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:12px;background:linear-gradient(90deg,transparent,rgba(124,140,255,.08),transparent);transform:translateX(-100%);animation:bar-sheen 8s ease-in-out infinite;}
+  .top-bar{position:relative;overflow:hidden;}
+  @keyframes bar-sheen{0%,55%{transform:translateX(-100%)}75%,100%{transform:translateX(100%)}}
+  .brand,.top-nav{position:relative;z-index:1;}
+  .prompt{filter:drop-shadow(0 0 8px rgba(56,211,159,.45));}
+  .site-title{background:linear-gradient(100deg,var(--white),#b9c2ff 55%,var(--green));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .top-nav a{border-radius:6px;position:relative;overflow:hidden;}
+  .top-nav a::after{content:'';position:absolute;left:14px;right:14px;bottom:3px;height:1px;background:var(--green);transform:scaleX(0);transform-origin:left;transition:transform .2s ease;}
+  .top-nav a:hover::after{transform:scaleX(1);}
+  .stat-item,.gas-card,.tbl,.term-box,.post,.donate-box,.sponsor-box,.aff-strip,.prem-box{box-shadow:0 10px 30px rgba(0,0,0,.12),inset 0 1px rgba(255,255,255,.025);transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease,background .25s ease;}
+  .stat-item:hover,.post:hover,.term-box:hover,.donate-box:hover{transform:translateY(-3px);border-color:rgba(124,140,255,.42);box-shadow:0 16px 38px rgba(0,0,0,.22),0 0 24px rgba(124,140,255,.06);}
+  .gas-card:hover,.tbl:hover,.prem-box:hover{border-color:rgba(56,211,159,.32);box-shadow:0 16px 42px rgba(0,0,0,.2),0 0 28px rgba(56,211,159,.05);}
+  .stat-item:nth-child(2n) .stat-value{color:#b9c2ff;}
+  .stat-value,.tval{font-variant-numeric:tabular-nums;}
+  tr{transition:background .18s ease;}
+  tr:hover td{background:linear-gradient(90deg,rgba(56,211,159,.08),rgba(124,140,255,.04));}
+  .btn,.wbtn,.dcopy,.aff-link,.sponsor-slot{border-radius:6px;position:relative;overflow:hidden;}
+  .btn::before,.wbtn::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.16),transparent);transform:translateX(-120%);transition:transform .45s ease;}
+  .btn:hover::before,.wbtn:hover::before{transform:translateX(120%);}
+  .btn-primary{box-shadow:0 0 0 0 rgba(56,211,159,.35);}
+  .btn-primary:hover{box-shadow:0 0 24px rgba(56,211,159,.18);}
+  input:focus,textarea:focus,select:focus,.input:focus,.winput:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,140,255,.12),0 0 22px rgba(124,140,255,.1);}
+  .section-label .gl,.s-title::before{filter:drop-shadow(0 0 5px rgba(56,211,159,.7));}
+  .divider,.divider-accent{opacity:.8;}
+  @media(max-width:640px){.container{animation:none}.top-bar::after{animation:none}.stat-item:hover,.post:hover,.term-box:hover,.donate-box:hover{transform:none}.b-bar{padding-left:10px;padding-right:10px;font-size:7px}}
 </style>"""
 
 # ============================================================
