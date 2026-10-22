@@ -123,22 +123,27 @@ INDEX_HTML: freeze list discovered in Step 1 via `grep -o 'id="[^"]+"' app.py`.
 - [x] **Step 4: Frozen-ID diff** — re-grep IDs, diff with `/tmp/frozen_ids.txt` → identical.
 - [x] **Step 5: Commit**
 
-### Tasks 3–6: Page sweeps (same per-task shape)
+### Task 3: Sections
 
-Each task: rewrite the listed HTML constants with `page_shell` composition per §4 rollout,
-then verify (curl 200 + screenshots + frozen-ID diff) + commit. One sentence per page; all
-reuse Task 1 interfaces; no new CSS in `app.py` beyond page-specific `extra_css`.
+- [`/whales` `WHALE_HTML` → "The Wire" full page,
+  `/trending` `TRENDING_HTML`, `/yields` `YIELDS_HTML`, `/launches` `LAUNCHES_HTML` →
+  calendar as "Diary of Issuances", countdown keeps its JS IDs]. 4 pages, 1 commit.
 
-- **Task 3: Sections** — `WHALE_HTML` (`/whales` → "The Wire" full page),
-  `TRENDING_HTML` (`/trending`), `YIELDS_HTML` (`/yields`), `LAUNCHES_HTML` (`/launches` →
-  calendar as "Diary of Issuances", countdown keeps its JS IDs). 4 pages, 1 commit.
-- **Task 4: Folio** — `PORTFOLIO_HTML` (create flow + `/portfolio/<pid>` share view),
-  `PROFILER_HTML`, `WALLET_CHECK_HTML`; forms keep seriffed inputs styled as ledger rows;
-  addresses render mono.
-- **Task 5: Monetization** — `/premium` (inline HTML in `app.py` premium route), 
-  `ADVERTISE_HTML`, `/api-keys`; premium composition centered ad_box + benefits ledger.
-- **Task 6: Long-form** — `/docs` ("The Index": endpoint list as tape table), `/blog` +
-  post pages as feuilleton (Fraunces 17px/1.65 prose column, `.ser` figures).
+### Task 4: Folio
+
+[`PORTFOLIO_HTML` (create flow + `/portfolio/<pid>` share view),
+`PROFILER_HTML`, `WALLET_CHECK_HTML`]; forms keep seriffed inputs styled as ledger rows;
+addresses render mono.
+
+### Task 5: Monetization
+
+[`/premium` (inline HTML in `app.py` premium route), 
+`ADVERTISE_HTML`, `/api-keys`]; premium composition centered ad_box + benefits ledger.
+
+### Task 6: Long-form
+
+[`/docs` ("The Index": endpoint list as tape table), `/blog` +
+post pages as feuilleton (Fraunces 17px/1.65 prose column, `.ser` figures)].
 
 ### Task 7: Admin dashboard
 

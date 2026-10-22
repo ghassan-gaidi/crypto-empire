@@ -18,7 +18,7 @@ from flask import Flask, render_template_string, jsonify, request, redirect
 from flask_cors import CORS
 import requests
 
-from design import page_shell, nav_links
+from design import page_shell, nav_links, SECTION_CSS
 
 # ============================================================
 # Configuration
@@ -4388,89 +4388,46 @@ def api_launches():
     return jsonify({"launches": enriched, "updated": int(time.time())})
 
 
-LAUNCHES_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Token Launch Calendar — Dominion</title>
-""" + SHARED_HEAD + r"""
-<style>
-.filter-row{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
-.filter-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);padding:6px 16px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;transition:.15s}
-.filter-btn.active{border-color:var(--white);color:var(--white)}
-.filter-btn:hover{border-color:var(--white)}
-.launch-card{border:1px solid var(--border);padding:16px;margin-bottom:12px;transition:.15s}
-.launch-card:hover{border-color:var(--white)}
-.launch-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px}
-.launch-name{font-size:14px;color:var(--white);font-weight:700;letter-spacing:-.5px;margin-bottom:2px}
-.launch-symbol{font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase}
-.launch-type{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);border:1px solid var(--border);padding:2px 8px;display:inline-block;margin-left:6px}
-.countdown{font-size:18px;color:var(--white);font-variant-numeric:tabular-nums;letter-spacing:-1px;font-weight:700;min-width:120px;text-align:right}
-.countdown-unit{font-size:7px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-left:2px}
-.countdown-label{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-align:right;margin-top:1px}
-.launch-desc{font-size:10px;color:var(--text);margin:8px 0;line-height:1.5}
-.launch-meta{font-size:9px;color:var(--text-dim);letter-spacing:1px;display:flex;gap:12px;flex-wrap:wrap}
-.launch-meta span{display:inline-flex;align-items:center;gap:4px}
-.launch-links{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.exchange-link{border:1px solid var(--border);padding:4px 12px;font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--text);text-decoration:none;transition:.15s;font-family:inherit}
-.exchange-link:hover{border-color:var(--white);color:var(--white)}
-.status-badge{font-size:8px;text-transform:uppercase;letter-spacing:2px;padding:2px 8px;display:inline-block}
-.status-upcoming{color:var(--green);border:1px solid var(--green)}
-.status-ongoing{color:var(--white);border:1px solid var(--white)}
-.status-ended{color:var(--text-dim);border:1px solid var(--border)}
-.featured-star{color:var(--white);font-size:16px;margin-right:4px}
-.empty-state{text-align:center;padding:60px 0;color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase}
-</style>
-</head>
-<body>
-<div class="noise-bg" aria-hidden="true"></div>
-<div class="sweep" aria-hidden="true"></div>
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="container" id="main">
-<div class="top-bar">
-<div class="brand">
-<div class="prompt">><span class="cr"></span></div>
-<div>
-<div class="site-title">Launch Calendar</div>
-<div class="site-sub">upcoming token launches &amp; TGEs</div>
-</div>
-</div>
-<div class="top-nav">
-<a href="/">Dashboard</a>
-<a href="/profiler">Profiler</a>
-<a href="/launches" style="color:var(--white);">Launches</a>
-</div>
-</div>
-<div class="status-line">
-<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-<span id="live-clock">--</span>
-<span>LAUNCH CALENDAR // TOKEN TGE</span>
+LAUNCHES_HTML = page_shell(
+    "Token Launch Calendar",
+    nav_links(FRONT_NAV, here="Launches") + r"""
+<div class="cols" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">Diary of Issuances · Token Launches &amp; TGEs</span></div>
+    <div class="filter-row" id="filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="upcoming">Upcoming</button>
+      <button class="filter-btn" data-filter="ongoing">Live Now</button>
+      <button class="filter-btn" data-filter="featured">Featured</button>
+      <button class="filter-btn" data-filter="ended">Past</button>
+    </div>
+    <div id="launch-list"><div class="loading">Loading the diary…</div></div>
+    <p class="src-note">Launch dates are estimates from public sources. Exchange bureau links support Dominion.</p>
+  </div>
+
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Coverage</span><span class="dots">····</span><span class="val">public TGE calendar</span></div>
+      <div class="ledger-row"><span class="lbl">Featured</span><span class="dots">····</span><span class="val">marked with a star</span></div>
+      <div class="ledger-row"><span class="lbl">Desk clock</span><span class="dots">····</span><span class="val" id="live-clock">--</span></div>
+      <p class="para">Dates move; token sales move them. Treat every countdown as an appointment the issuer can still cancel, and confirm on the venue before you wire anything.</p>
+    </div>
+    <div class="ad-box"><div>
+      <div class="kicker">Release</div>
+      <div class="ad-head">The Telegram Terminal</div>
+      <p class="para">Launch-day reminders and print alerts land the same hour the diary updates.</p>
+      <a class="buy" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="margin-top:10px">Open @Crypt0Emp1reBot</a>
+    </div></div>
+  </div>
 </div>
 
-<div class="filter-row" id="filters">
-<button class="filter-btn active" data-filter="all">All</button>
-<button class="filter-btn" data-filter="upcoming">Upcoming</button>
-<button class="filter-btn" data-filter="ongoing">Live Now</button>
-<button class="filter-btn" data-filter="featured">Featured</button>
-<button class="filter-btn" data-filter="ended">Past</button>
-</div>
-
-<div id="launch-list"><div class="loading">Loading calendar...</div></div>
-
-<div style="margin-top:24px;padding:12px;border:1px solid var(--border);font-size:9px;color:var(--text-dim);text-align:center;letter-spacing:1px;">
-Launch dates are estimates from public sources. Use exchange affiliate links to support Dominion.
-</div>
-
-<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
-</div>
-<div class="b-bar">
-<span><span class="dot"></span> LAUNCH CALENDAR</span>
-<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+<div class="bot-strip mono">
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC&nbsp;$<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH&nbsp;$<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
 </div>
 
 <script>
@@ -4484,7 +4441,7 @@ async function loadLaunches(){
     launches=d.launches||[];
     render();
   }catch(e){
-    document.getElementById('launch-list').innerHTML='<div class="error">Failed to load calendar</div>';
+    document.getElementById('launch-list').innerHTML='<div class="error">Failed to load the diary</div>';
   }
 }
 
@@ -4544,7 +4501,7 @@ function startCountdowns(items){
       var el=document.getElementById('cd-'+l.id);
       if(!el)continue;
       if(diff<=0){
-        el.innerHTML='<div style="font-size:14px;color:var(--green);">LAUNCHED</div>';
+        el.innerHTML='<div style="font-size:13px;color:var(--print-green);letter-spacing:.08em;">LAUNCHED</div>';
         if(l.status==='ended'||l.status==='ongoing')continue;
       }else{
         var d=Math.floor(diff/86400000);
@@ -4573,9 +4530,12 @@ loadLaunches();
 </script>
 <script>
 (function(){function u(){var n=new Date();var y=n.getUTCFullYear();var m=String(n.getUTCMonth()+1).padStart(2,'0');var d=String(n.getUTCDate()).padStart(2,'0');var h=String(n.getUTCHours()).padStart(2,'0');var i=String(n.getUTCMinutes()).padStart(2,'0');var s=String(n.getUTCSeconds()).padStart(2,'0');var e=document.getElementById('live-clock');if(e)e.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s+' UTC';var e2=document.getElementById('live-clock2');if(e2)e2.textContent=y+'-'+m+'-'+d+' '+h+':'+i+':'+s;}u();setInterval(u,1000);})();
-</script>
-</body>
-</html>"""
+</script>""",
+    kicker="Diary of Issuances",
+    page="C1",
+    strip_items=[("Diary", "TGE calendar · estimates by public sources", "dim")],
+    extra_css=SECTION_CSS,
+)
 
 
 @app.route("/launches")
@@ -5270,91 +5230,49 @@ def ticker_embed_js():
 # ============================================================
 # Whale Tracker Page
 # ============================================================
-WHALE_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Whale Tracker — Dominion</title>
-""" + SHARED_HEAD + r"""
-<style>
-.whale-stats{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap}
-.whale-stats .s{font-size:9px;text-transform:uppercase;letter-spacing:1px}
-.whale-stats .s .num{color:var(--white);font-weight:600}
-.filter-bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
-.filter-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:6px 14px;font-size:9px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;font-family:inherit;transition:all .1s}
-.filter-btn:hover,.filter-btn.active{border-color:var(--white);color:var(--white)}
-.whale-feed{display:flex;flex-direction:column;gap:6px;margin:12px 0}
-.whale-item{background:var(--surface);border:1px solid var(--border);padding:12px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;transition:background .15s;position:relative}
-.whale-item:hover{background:var(--border)}
-.whale-amt{font-size:13px;color:var(--white);font-weight:700;letter-spacing:-.5px;white-space:nowrap}
-.whale-usd{font-size:10px;color:var(--text-dim);letter-spacing:.5px}
-.whale-tag{font-size:8px;text-transform:uppercase;letter-spacing:1px;padding:2px 6px;border:1px solid currentColor;border-radius:0;display:inline-block;margin-bottom:4px}
-.whale-tag.usdt{color:var(--green)}
-.whale-tag.usdc{color:var(--white)}
-.whale-tag.wbtc{color:#f7931a}
-.whale-addrs{font-size:9px;color:var(--text-dim);letter-spacing:.5px;line-height:1.6}
-.whale-addrs .label{color:var(--text-dim);text-transform:uppercase;font-size:8px;letter-spacing:1px}
-.whale-addrs .addr{color:var(--white);font-family:monospace}
-.whale-tx{font-size:9px;letter-spacing:.5px;text-align:right;white-space:nowrap}
-.whale-tx a{color:var(--text-dim);text-decoration:none;border-bottom:1px dotted var(--border)}
-.whale-tx a:hover{color:var(--white)}
-.whale-time{font-size:8px;color:var(--text-dim);letter-spacing:1px;margin-top:2px}
-.updated{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
-.updated span{color:var(--white)}
-.empty-state{text-align:center;padding:60px 20px;color:var(--text-dim);font-size:11px;letter-spacing:1px}
-.empty-state .icon{font-size:30px;margin-bottom:12px;display:block}
-@media(max-width:480px){.whale-item{grid-template-columns:1fr;gap:6px}.whale-tx{text-align:left}}
-</style>
-</head>
-<body>
-<div class="noise-bg" aria-hidden="true"></div>
-<div class="sweep" aria-hidden="true"></div>
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="container" id="main">
-<div class="top-bar">
-<div class="brand">
-<div class="prompt">><span class="cr"></span></div>
-<div>
-<div class="site-title">Whale Tracker</div>
-<div class="site-sub">on-chain large transfers >$100K</div>
-</div>
-</div>
-<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;">
-<a href="/" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Dashboard</a>
-<a href="/profiler" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Profiler</a>
-</div>
-</div>
+# ============================================================
+# Section pages (Night Edition) — composed shells, routes unchanged
+# ============================================================
 
-<div class="status-line">
-<span><span class="dot"></span> Live — monitoring USDT, USDC, WBTC</span>
-<span class="updated">Updated <span id="update-time">--</span></span>
-</div>
+WHALE_HTML = page_shell(
+    "Whale Tracker",
+    nav_links(FRONT_NAV, here="Whales") + r"""
+<div class="cols" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Wire · On-Chain Whale Dispatches</span><span class="updated">Updated <span id="update-time">--</span></span></div>
+    <div class="filter-row">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="USDT">USDT</button>
+      <button class="filter-btn" data-filter="USDC">USDC</button>
+      <button class="filter-btn" data-filter="WBTC">WBTC</button>
+    </div>
+    <div class="stat-row">
+      <div class="stat-item">moves tracked <span class="num" id="stat-total">--</span></div>
+      <div class="stat-item">biggest <span class="num" id="stat-biggest">--</span></div>
+      <div class="stat-item">24h volume <span class="num" id="stat-volume">--</span></div>
+    </div>
+    <div class="whale-feed" id="whale-feed">
+      <div class="empty-state" id="loading-state">loading the wire…</div>
+    </div>
+    <p class="src-note">Data from Ethereum mainnet via public RPC · Updates every 30 seconds.</p>
+  </div>
 
-<div class="whale-stats" id="stats-row">
-<div class="s">moves tracked <span class="num" id="stat-total">--</span></div>
-<div class="s">biggest <span class="num" id="stat-biggest" style="color:var(--white)">--</span></div>
-<div class="s">24h volume <span class="num" id="stat-volume" style="color:var(--white)">--</span></div>
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Wire monitors</span><span class="dots">····</span><span class="val">USDT · USDC · WBTC</span></div>
+      <div class="ledger-row"><span class="lbl">Threshold</span><span class="dots">····</span><span class="val">&gt; $100,000</span></div>
+      <div class="ledger-row"><span class="lbl">Refresh</span><span class="dots">····</span><span class="val">30 seconds</span></div>
+      <p class="para">Transfers of the stable and wrapped-BTC books above the quarter-tranche threshold, straight from mainnet logs. Deep profiling of any counterparty continues on the <a href="/profiler" style="color:var(--ink-bright)">Profiler</a> desk.</p>
+    </div>
+    <div class="ad-box"><div>
+      <div class="kicker">Premium Access</div>
+      <div class="ad-head">Priority Whale Alerts</div>
+      <p class="para">Wire hits pushed to Telegram the moment they print, before the feed even refreshes.</p>
+      <a class="buy" href="/premium" style="margin-top:10px">Subscribe $9.99/mo</a>
+    </div></div>
+  </div>
 </div>
-
-<div class="filter-bar">
-<button class="filter-btn active" data-filter="all">All</button>
-<button class="filter-btn" data-filter="USDT">USDT</button>
-<button class="filter-btn" data-filter="USDC">USDC</button>
-<button class="filter-btn" data-filter="WBTC">WBTC</button>
-</div>
-
-<div class="whale-feed" id="whale-feed">
-<div class="empty-state" id="loading-state"><span class="icon">\u23f3</span>Loading whale activity...</div>
-</div>
-
-<div style="text-align:center;padding:20px 0;font-size:9px;color:var(--text-dim);letter-spacing:1px;">
-Data from Ethereum mainnet via public RPC &middot; Updates every 30 seconds
-</div>
-
-<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
-</div>
-<div class="b-bar"><span><span class="dot"></span> whale tracker</span><span>v3.0</span></div>
 
 <script>
 (function(){
@@ -5390,7 +5308,7 @@ function render(data){
  statVolume.textContent=vol24?'$'+vol24.toLocaleString('en-US',{maximumFractionDigits:0}):'--';
 
  if(!moves.length){
-  feed.innerHTML='<div class="empty-state"><span class="icon">\U0001f648</span>No whale moves detected yet. Waiting for the next big splash.</div>';
+  feed.innerHTML='<div class="empty-state">the wire is silent — no whale moves yet.</div>';
   return;
  }
 
@@ -5417,7 +5335,7 @@ function render(data){
  });
 
  if(!count){
-  feed.innerHTML='<div class="empty-state"><span class="icon">\U0001f50d</span>No '+currentFilter+' moves found</div>';
+  feed.innerHTML='<div class="empty-state">No '+currentFilter+' moves found</div>';
   return;
  }
  feed.innerHTML=html;
@@ -5445,9 +5363,12 @@ document.querySelectorAll('.filter-btn').forEach(function(btn){
 fetchData();
 setInterval(fetchData,30000);
 })();
-</script>
-</body>
-</html>"""
+</script>""",
+    kicker="The Wire · Whale Dispatches",
+    page="B2",
+    strip_items=[("Feed", "on-chain transfers · threshold $100K", "dim")],
+    extra_css=SECTION_CSS,
+)
 
 
 @app.route("/whales")
@@ -5456,120 +5377,52 @@ def whale_page():
 
 
 # ── Yield Aggregator Page ─────────────────────────────────────────────
-YIELDS_HTML = """<!DOCTYPE html>
-<html lang="en">
-<head>
-""" + SHARED_HEAD + """
-<style>
-  .yield-grid{display:grid;grid-template-columns:1fr;gap:24px;margin-top:16px;}
-  .yield-section{border:1px solid var(--border);padding:16px;}
-  .yield-section h3{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);margin-bottom:12px;}
-  .yield-section h3 .count{color:var(--text-muted);font-weight:400;}
-  .y-table{width:100%;border-collapse:collapse;font-size:10px;}
-  .y-table th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:400;font-size:8px;}
-  .y-table td{padding:5px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
-  .y-table tr:hover td{background:rgba(255,255,255,.02);}
-  .y-table .apy-val{font-weight:700;font-size:11px;}
-  .y-table .apy-green{color:var(--green);}
-  .y-table .apy-yellow{color:#aaa;}
-  .y-table .apy-dim{color:var(--text-dim);}
-  .y-table .proj{text-transform:lowercase;color:var(--text);}
-  .y-table .chain{color:var(--text-dim);font-size:9px;}
-  .y-table .tvl{color:var(--text-dim);}
-  .y-table .il{font-size:8px;text-transform:uppercase;letter-spacing:1px;}
-  .y-table .il-no{color:var(--green);}
-  .y-table .il-yes{color:var(--red);}
-  .y-table .meta{color:var(--text-muted);font-size:8px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .y-filters{display:flex;gap:1px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:12px;}
-  .y-filt{padding:5px 14px;font-size:9px;text-transform:uppercase;letter-spacing:2px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:.15s;}
-  .y-filt:hover{color:var(--white);border-color:var(--white);}
-  .y-filt.active{color:var(--white);border-color:var(--white);background:var(--surface);}
-  .chain-filters{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;}
-  .chain-filt{padding:3px 10px;font-size:8px;text-transform:uppercase;letter-spacing:1px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:.15s;}
-  .chain-filt:hover{color:var(--text);border-color:var(--text-dim);}
-  .chain-filt.active{color:var(--white);border-color:var(--white);}
-  .y-status{font-size:9px;color:var(--text-muted);margin-bottom:16px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
-  .prem-teaser{border:1px dashed var(--text-muted);padding:12px 16px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
-  .prem-teaser .pt-label{font-size:8px;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim);}
-  .prem-teaser .pt-title{font-size:12px;font-weight:700;color:var(--white);}
-  .prem-teaser .pt-link{font-size:9px;color:var(--green);border:1px solid var(--green);padding:5px 12px;text-transform:uppercase;letter-spacing:2px;transition:.15s;}
-  .prem-teaser .pt-link:hover{background:var(--green);color:var(--bg);}
-  .y-loading{text-align:center;padding:40px 0;color:var(--text-dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;}
-  .y-loading .spinner{display:inline-block;width:8px;height:8px;background:var(--green);margin-right:8px;animation:blink 1s step-end infinite;}
-  .chain-block{margin-top:8px;}
-  .chain-block .ch-name{font-size:10px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
-  .chain-block .ch-name .ch-count{color:var(--text-muted);font-weight:400;}
-  .chain-block .ch-tvl{color:var(--dim);font-size:8px;}
-  .tbl-wrap{overflow-x:auto;}
-</style>
-</head>
-<body>
-<div class="sweep" aria-hidden="true"></div>
-<div class="noise-bg" aria-hidden="true"></div>
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="container" id="main">
-  <div class="top-bar">
-    <div class="brand">
-      <div class="prompt">><span class="cr"></span></div>
-      <div>
-        <div class="site-title">Dominion</div>
-        <div class="site-sub">Yield Aggregator</div>
-      </div>
+YIELDS_HTML = page_shell(
+    "Yield Aggregator",
+    nav_links(FRONT_NAV, here="Yields") + r"""
+<div class="cols" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Yields Ledger · Lending · Staking · Stable</span><span class="kicker">DefiLlama</span></div>
+    <div class="y-filters">
+      <button class="y-filt active" data-cat="all">All</button>
+      <button class="y-filt" data-cat="lending">Lending</button>
+      <button class="y-filt" data-cat="staking">Staking</button>
+      <button class="y-filt" data-cat="stablecoin">Stablecoin</button>
     </div>
-    <div class="top-nav">
-      <a href="/">Dashboard</a>
-      <a href="/yields" style="color:var(--white);border-color:var(--text-dim);">Yields</a>
-      <a href="/trending">Trending</a>
-      <a href="/whales">Whales</a>
-      <a href="/premium" style="color:var(--green);">Premium</a>
-      <a href="/profiler">Profiler</a>
-      <a href="/launches">Launches</a>
-      <a href="/ticker">Ticker</a>
-      <a href="/blog">Blog</a>
-      <a href="/docs">API</a>
+    <div class="chain-filters" id="chain-filters">
+      <button class="chain-filt active" data-chain="all">All Chains</button>
     </div>
-  </div>
-  <div class="status-line">
-    <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-    <span id="live-clock">--</span>
-    <span>YIELD AGGREGATOR // DEFI LLAMA</span>
-  </div>
-  <div class="y-filters">
-    <button class="y-filt active" data-cat="all">All</button>
-    <button class="y-filt" data-cat="lending">Lending</button>
-    <button class="y-filt" data-cat="staking">Staking</button>
-    <button class="y-filt" data-cat="stablecoin">Stablecoin</button>
-  </div>
-  <div class="chain-filters" id="chain-filters">
-    <button class="chain-filt active" data-chain="all">All Chains</button>
-  </div>
-  <div class="y-status">
-    <span><span id="pool-count">--</span> pools tracked</span>
-    <span id="y-update-time">--</span>
-  </div>
-  <div class="y-loading" id="y-loading"><span class="spinner"></span> Loading yields...</div>
-  <div id="yield-content" style="display:none;"></div>
-  <div class="prem-teaser">
-    <div>
-      <div class="pt-label">Premium Feature</div>
-      <div class="pt-title">Impermanent Loss Calculator</div>
-      <div style="font-size:9px;color:var(--text-dim);margin-top:4px;">Calculate IL for any liquidity pool pair — coming soon for premium subscribers.</div>
+    <div class="y-status">
+      <span><span id="pool-count">--</span> pools tracked</span>
+      <span id="live-clock">--</span>
+      <span id="y-update-time">--</span>
     </div>
-    <a href="/premium" class="pt-link">Upgrade →</a>
+    <div class="y-loading" id="y-loading"><span class="spinner"></span> Loading yields…</div>
+    <div id="yield-content" style="display:none;"></div>
   </div>
-  <hr>
-  <div class="divider">Affiliate</div>
-  <div style="font-size:9px;color:var(--text-dim);margin-bottom:20px;">
-    Trade with <a href="https://accounts.binance.com/register?ref=CEMASTER" style="color:var(--white);">Binance</a> &bull;
-    <a href="https://www.bybit.com/invite?ref=CEVIP" style="color:var(--white);">Bybit</a> &bull;
-    <a href="https://www.okx.com/join/CEVIP" style="color:var(--white);">OKX</a>
-  </div>
-  <div class="divider">Wallet</div>
-  <div style="font-size:9px;color:var(--text-dim);margin-bottom:20px;word-break:break-all;">
-    Support development: <span style="color:var(--text);font-weight:700;" onclick="navigator.clipboard.writeText(this.textContent)">0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</span>
-    <span style="font-size:8px;color:var(--text-muted);display:block;">click to copy</span>
+
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Notes</span></div>
+      <div class="ledger-row"><span class="lbl">Source</span><span class="dots">····</span><span class="val">DefiLlama pools</span></div>
+      <div class="ledger-row"><span class="lbl">Refresh</span><span class="dots">····</span><span class="val">5 minutes</span></div>
+      <div class="ledger-row"><span class="lbl">IL</span><span class="dots">····</span><span class="val">impermanent-loss risk</span></div>
+      <p class="para">APY figures quote the venue's own oracle at last touch. Rates above twenty are printed in green; treat the outliers as risk, not yield.</p>
+    </div>
+    <div class="ad-box"><div>
+      <div class="kicker">Premium Feature</div>
+      <div class="ad-head">Impermanent Loss Calculator</div>
+      <p class="para">The IL desk for any liquidity pair — carried in the premium ledger.</p>
+      <a class="buy" href="/premium" style="margin-top:10px">Upgrade →</a>
+    </div></div>
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Support Development</span></div>
+      <div class="ledger-row"><span class="lbl">EVM ADDRESS</span><span class="dots">····</span><span class="val mono daddr" title="click to copy" onclick="navigator.clipboard.writeText(this.textContent)" style="cursor:pointer;max-width:150px">0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</span></div>
+      <div class="ledger-row"><span class="lbl">BUREAU</span><span class="dots">····</span><span class="val"><a href="https://accounts.binance.com/register?ref=CEMASTER" target="_blank" rel="noopener" style="text-decoration:none">Binance</a> · <a href="https://www.bybit.com/invite?ref=CEVIP" target="_blank" rel="noopener" style="text-decoration:none">Bybit</a> · <a href="https://www.okx.com/join/CEVIP" target="_blank" rel="noopener" style="text-decoration:none">OKX</a></span></div>
+    </div>
   </div>
 </div>
+
 <script>
 (function(){function u(){var d=new Date();document.getElementById('live-clock').textContent=d.toUTCString().split(' ')[4]+' UTC'}u();setInterval(u,1000)})();
 </script>
@@ -5595,7 +5448,7 @@ function fmtIl(risk){
   return '<span class="il il-yes">yes</span>';
 }
 function renderTable(pools){
-  if(!pools.length) return '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:10px;">No pools match the selected filters.</div>';
+  if(!pools.length) return '<div class="empty-state">No pools match the selected filters.</div>';
   var h='<div class="tbl-wrap"><table class="y-table"><thead><tr><th>Project</th><th>Asset</th><th>Chain</th><th>APY</th><th>TVL</th><th>IL Risk</th></tr></thead><tbody>';
   for(var i=0;i<pools.length;i++){
     var p=pools[i];
@@ -5607,7 +5460,7 @@ function renderTable(pools){
 }
 function renderCategory(title, pools){
   if(!pools.length) return '';
-  return '<div class="yield-section"><h3>> '+title+' <span class="count">('+pools.length+')</span></h3>'+renderTable(pools)+'</div>';
+  return '<div class="ledger"><div class="t-head"><span class="kicker">'+title+' <span class="count">('+pools.length+')</span></span></div>'+renderTable(pools)+'</div>';
 }
 function render(){
   var pools=allPools;
@@ -5622,9 +5475,7 @@ function render(){
     var scp=allPools.filter(function(p){return p._cat==='stablecoin'});
     if(activeChain!=='all'){lp=lp.filter(function(p){return p.chain===activeChain});sp=sp.filter(function(p){return p.chain===activeChain});scp=scp.filter(function(p){return p.chain===activeChain});}
     html+=renderCategory('Top Lending Yields',lp);
-    html+='<div style="margin-top:16px;"></div>';
     html+=renderCategory('Top Staking Yields',sp);
-    html+='<div style="margin-top:16px;"></div>';
     html+=renderCategory('Stablecoin Lending Yields',scp);
   }else{
     html+=renderCategory('Yields',pools);
@@ -5658,7 +5509,7 @@ function init(data){
   document.getElementById('pool-count').textContent=allPools.length;
   render();
 }
-fetch('/api/yields').then(function(r){return r.json()}).then(function(d){init(d)}).catch(function(e){document.getElementById('y-loading').innerHTML='<span style=\\"color:var(--red);\\">Error: '+e.message+'</span>'});
+fetch('/api/yields').then(function(r){return r.json()}).then(function(d){init(d)}).catch(function(e){document.getElementById('y-loading').innerHTML='<span class="error">Error: '+e.message+'</span>'});
 document.querySelectorAll('.y-filt').forEach(function(btn){
   btn.addEventListener('click',function(){
     document.querySelectorAll('.y-filt').forEach(function(b){b.classList.remove('active')});
@@ -5669,89 +5520,49 @@ document.querySelectorAll('.y-filt').forEach(function(btn){
 });
 setInterval(function(){fetch('/api/yields').then(function(r){return r.json()}).then(function(d){init(d)}).catch(function(){})},300000);
 })();
-</script>
-</body>
-</html>"""
+</script>""",
+    kicker="The Yields Ledger",
+    page="B4",
+    strip_items=[("Yields", "DefiLlama pools · 5min refresh", "dim")],
+    extra_css=SECTION_CSS,
+)
 
 
-TRENDING_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trending This Hour — Dominion</title>
-""" + SHARED_HEAD + r"""
-<style>
-.coin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:16px 0}
-.coin-card{background:var(--surface);border:1px solid var(--border);padding:14px;cursor:pointer;transition:background .15s,border-color .15s;text-decoration:none;display:block}
-.coin-card:hover{background:var(--border);border-color:var(--text-dim)}
-.coin-card:target{border-color:var(--white);box-shadow:0 0 0 1px var(--white)}
-.coin-rank{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-.coin-name{font-size:13px;color:var(--white);font-weight:600}
-.coin-sym{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
-.coin-price{font-size:15px;color:var(--white);margin:6px 0 2px;font-weight:700;letter-spacing:-.5px}
-.coin-change{font-size:10px;letter-spacing:.5px}
-.coin-change.up{color:var(--green)}
-.coin-change.down{color:var(--red)}
-.coin-cap{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
-.updated{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
-.updated span{color:var(--white)}
-.filter-bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
-.filter-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:6px 14px;font-size:9px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;font-family:inherit;transition:all .1s}
-.filter-btn:hover,.filter-btn.active{border-color:var(--white);color:var(--white)}
-.stat-row{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap}
-.stat-item{font-size:9px;text-transform:uppercase;letter-spacing:1px}
-.stat-item .num{color:var(--white);font-weight:600}
-@media(max-width:480px){.coin-grid{grid-template-columns:1fr 1fr}.coin-card{padding:10px}}
-</style>
-</head>
-<body>
-<div class="noise-bg" aria-hidden="true"></div>
-<div class="sweep" aria-hidden="true"></div>
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="container" id="main">
-<div class="top-bar">
-<div class="brand">
-<div class="prompt">><span class="cr"></span></div>
-<div>
-<div class="site-title">Trending This Hour</div>
-<div class="site-sub">coingecko trending <span id="coin-count" style="color:var(--white);">--</span> coins</div>
-</div>
-</div>
-<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:200px;">
-<a href="/" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Dashboard</a>
-<a href="/widget" class="nav-link" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border);padding:6px 10px;color:var(--text-dim);text-decoration:none;">Widget</a>
-</div>
-</div>
+TRENDING_HTML = page_shell(
+    "Trending This Hour",
+    nav_links(FRONT_NAV, here="Trending") + r"""
+<div class="cols" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Buzz · Trending This Hour</span><span class="updated">Updated <span id="update-time">--</span></span></div>
+    <div class="filter-row">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="gainers">Gainers</button>
+      <button class="filter-btn" data-filter="losers">Losers</button>
+      <button class="filter-btn" data-filter="top10">Top 10</button>
+    </div>
+    <div class="coin-grid" id="coin-grid"></div>
+    <p class="src-note">Data from CoinGecko · Updates every 60 seconds. Coin entries are shareable — the copy carries the coin in its address hash.</p>
+  </div>
 
-<div class="status-line">
-<span><span class="dot"></span> Live — refreshing every 60s</span>
-<span class="updated">Updated <span id="update-time">--</span></span>
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Desk Totals</span><span class="kicker"><span id="coin-count">--</span> coins</span></div>
+      <div class="stat-row" style="margin-top:2px">
+        <div class="stat-item">trending <span class="num" id="stat-total">--</span></div>
+        <div class="stat-item">with prices <span class="num" id="stat-priced">--</span></div>
+        <div class="stat-item">24h up <span class="num up" id="stat-up">--</span></div>
+        <div class="stat-item">24h down <span class="num down" id="stat-down">--</span></div>
+      </div>
+      <p class="para">The day's most-searched names, ranked by CoinGecko's crowd radar, enriched with live quotes where the desk can get one. Sharpest movers rise to the top automatically.</p>
+    </div>
+    <div class="ad-box"><div>
+      <div class="kicker">Premium Access</div>
+      <div class="ad-head">Arbitrage Scanner</div>
+      <p class="para">Where a buzz coin differs across venues, the scanner prints the spread desk.</p>
+      <a class="buy" href="/premium" style="margin-top:10px">Subscribe $9.99/mo</a>
+    </div></div>
+  </div>
 </div>
-
-<div class="stat-row">
-<div class="stat-item">trending <span class="num" id="stat-total">--</span></div>
-<div class="stat-item">with prices <span class="num" id="stat-priced">--</span></div>
-<div class="stat-item">24h &uarr; <span class="num" id="stat-up" style="color:var(--green)">--</span></div>
-<div class="stat-item">24h &darr; <span class="num" id="stat-down" style="color:var(--red)">--</span></div>
-</div>
-
-<div class="filter-bar">
-<button class="filter-btn active" data-filter="all">All</button>
-<button class="filter-btn" data-filter="gainers">Gainers</button>
-<button class="filter-btn" data-filter="losers">Losers</button>
-<button class="filter-btn" data-filter="top10">Top 10</button>
-</div>
-
-<div class="coin-grid" id="coin-grid"></div>
-
-<div style="text-align:center;padding:20px 0;font-size:9px;color:var(--text-dim);letter-spacing:1px;">
-Data from CoinGecko &middot; Updates every 60 seconds &middot; Coin cards are shareable — copy the URL while highlighted
-</div>
-
-<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
-</div>
-<div class="b-bar"><span><span class="dot"></span> trending this hour</span><span>v2.4</span></div>
 
 <script>
 (function(){
@@ -5795,7 +5606,7 @@ function render(coins){
    html+='<div class="coin-name">'+c.name+' <span class="coin-sym">'+sym+'</span></div>';
    html+='<div class="coin-price">'+fmtPrice(p)+'</div>';
    if(ch!=null)html+='<div class="coin-change '+cls+'">'+(ch>0?'+':'')+ch.toFixed(2)+'% 24h</div>';
-   else html+='<div class="coin-change" style="color:var(--text-dim);">-- 24h</div>';
+   else html+='<div class="coin-change" style="color:var(--ink-dim);">-- 24h</div>';
    html+='<div class="coin-cap">Cap: '+fmtCap(c.market_cap)+'</div>';
    html+='</a>';
  }
@@ -5817,7 +5628,7 @@ function render(coins){
    var target=document.getElementById('cc-'+h);
    if(target){
      target.scrollIntoView({behavior:'smooth',block:'center'});
-     setTimeout(function(){target.style.boxShadow='0 0 0 2px var(--white)';setTimeout(function(){target.style.boxShadow=''},2000)},300);
+     setTimeout(function(){target.style.outline='2px solid var(--ink-bright)';setTimeout(function(){target.style.outline=''},2000)},300);
    }
  }
 }
@@ -5852,9 +5663,12 @@ window.addEventListener('hashchange',function(){
 fetchData();
 setInterval(fetchData,60000);
 })();
-</script>
-</body>
-</html>"""
+</script>""",
+    kicker="The Buzz · Trending Now",
+    page="B3",
+    strip_items=[("Radar", "CoinGecko trending · 60s refresh", "dim")],
+    extra_css=SECTION_CSS,
+)
 
 
 @app.route("/trending")

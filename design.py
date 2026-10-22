@@ -13,9 +13,9 @@ import html
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 __all__ = [
-    "NIGHT_CSS", "HALFTONE_DIV",
+    "NIGHT_CSS", "HALFTONE_DIV", "SECTION_CSS",
     "page_shell", "index_strip", "ledger", "tape_table", "wire",
-    "ad_box", "kicker", "headline", "deck", "folio", "TG",
+    "ad_box", "kicker", "headline", "deck", "folio", "nav_links", "TG",
 ]
 
 _E = html.escape
@@ -130,6 +130,101 @@ NIGHT_CSS = """<meta charset="UTF-8">
 </style>"""
 
 HALFTONE_DIV = '<div class="ht"><div class="vig"><div class="stain"></div></div></div>'
+
+# ============================================================
+# Section-page devices (Tasks 3+: whales, trending, yields, launches…)
+# ============================================================
+SECTION_CSS = """
+.featured-star{color:var(--ink-bright);font-size:14px;margin-right:4px}
+.src-note{font-size:9.5px;font-style:italic;color:var(--ink-dim);text-align:center;padding:14px 0 6px;border-top:1px solid var(--rule);margin-top:12px}
+.loading,.error{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);padding:22px 0;text-align:center}
+.error{color:var(--oxblood)}
+.filter-row{display:flex;gap:7px;flex-wrap:wrap;padding:9px 0 11px}
+.filter-btn,.y-filt,.chain-filt{background:transparent;border:1px solid var(--rule);color:var(--ink-dim);padding:5px 12px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
+.filter-btn:hover,.filter-btn.active,.y-filt:hover,.y-filt.active,.chain-filt:hover,.chain-filt.active{border-color:var(--rule-strong);color:var(--ink-bright)}
+.updated{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.14em;text-transform:uppercase}
+.updated span{color:var(--ink-bright)}
+.empty-state{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);text-align:center;padding:40px 0}
+/* — whale wire rows — */
+.stat-row{display:flex;margin:10px 0 0}
+.stat-row .stat-item{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);padding:7px 16px 7px 0;border-right:1px solid var(--rule);margin-right:16px}
+.stat-row .stat-item:last-child{border-right:none;margin-right:0}
+.stat-row .stat-item .num{color:var(--ink-bright);font-weight:600}
+.whale-feed{margin-top:8px}
+.whale-item{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:start;padding:11px 0;border-bottom:1px solid var(--rule);transition:background .15s}
+.whale-item:hover{background:rgba(233,223,198,.03)}
+.whale-amt{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;color:var(--ink-bright);white-space:nowrap}
+.whale-usd{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.06em;margin-top:2px}
+.whale-tag{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;border:1px solid currentColor;padding:1px 6px;display:inline-block;margin-bottom:5px}
+.whale-tag.usdt{color:var(--print-green)}
+.whale-tag.usdc{color:var(--ink)}
+.whale-tag.wbtc{color:var(--ink-bright)}
+.whale-addrs{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-dim);line-height:1.7;letter-spacing:.04em}
+.whale-addrs .label{font-size:8px;letter-spacing:.18em;text-transform:uppercase}
+.whale-addrs .addr{color:#cfc4a6}
+.whale-tx{font-family:'IBM Plex Mono',monospace;font-size:9px;text-align:right;white-space:nowrap;color:var(--ink-dim)}
+.whale-tx a{color:var(--ink-dim);text-decoration:none;border-bottom:1px dotted var(--rule-strong)}
+.whale-tx a:hover{color:var(--ink-bright)}
+.whale-time{font-size:8px;letter-spacing:.08em;margin-top:3px}
+/* — trending coin cells (no cards: ruled cells) — */
+.coin-grid:empty::after{content:'the tape is dark — upstream feed late.';display:block;padding:22px 0;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);border-bottom:1px solid var(--rule)}
+.daddr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;display:inline-block;vertical-align:bottom}
+.coin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));margin:10px 0 0;border-top:1px solid var(--rule)}
+.coin-card{display:block;padding:11px 13px;border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);text-decoration:none;color:inherit;outline:0 solid transparent;transition:background .15s}
+.coin-card:hover{background:rgba(233,223,198,.03)}
+.coin-card:target{outline:2px solid var(--rule-strong);outline-offset:-2px}
+.coin-rank{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:3px}
+.coin-name{font-family:'Fraunces',serif;font-style:italic;font-size:13px;font-weight:600;color:var(--ink-bright)}
+.coin-sym{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--ink-dim);letter-spacing:.12em;font-style:normal}
+.coin-price{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-bright);margin-top:4px}
+.coin-change{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;margin-top:2px}
+.coin-change.up{color:var(--print-green)}
+.coin-change.down{color:var(--oxblood)}
+.coin-cap{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-dim);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+/* — yields ledger — */
+.y-filters{display:flex;gap:7px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding:8px 0}
+.chain-filters{display:flex;gap:5px;flex-wrap:wrap;padding:8px 0}
+.y-status{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.1em;margin:10px 0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.y-table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.y-table th{text-align:left;padding:6px 8px 4px;border-bottom:1px solid var(--rule-strong);color:var(--ink-dim);text-transform:uppercase;letter-spacing:.14em;font-weight:500;font-size:8px}
+.y-table td{padding:5.5px 8px;border-bottom:1px solid var(--rule);color:#cfc4a6}
+.y-table tr:hover td{background:rgba(233,223,198,.03)}
+.y-table .apy-val{font-weight:600;color:var(--ink-bright)}
+.y-table .apy-green{color:var(--print-green)}
+.y-table .apy-yellow{color:var(--ink)}
+.y-table .apy-dim{color:var(--ink-dim)}
+.y-table .proj{font-family:'Fraunces',serif;font-style:italic;font-size:11.5px;text-transform:lowercase;color:var(--ink-bright)}
+.y-table .chain{color:var(--ink-dim)}
+.y-table .tvl{color:var(--ink-dim)}
+.y-table .il{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.16em;text-transform:uppercase}
+.y-table .il-no{color:var(--print-green)}
+.y-table .il-yes{color:var(--oxblood)}
+.y-table .meta{color:var(--ink-dim);font-size:8px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.y-loading{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);padding:26px 0;text-align:center}
+.y-loading .spinner{display:inline-block;width:7px;height:7px;background:var(--print-green);margin-right:8px;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.tbl-wrap{overflow-x:auto}
+/* — launch diary — */
+.launch-card{padding:13px 0 15px;border-bottom:1px solid var(--rule)}
+.launch-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px}
+.launch-name{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--ink-bright);letter-spacing:-.005em}
+.launch-symbol{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.16em;text-transform:uppercase}
+.launch-type{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--rule);padding:1px 7px;display:inline-block;margin-left:6px;vertical-align:2px}
+.countdown{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--ink-bright);font-variant-numeric:tabular-nums;min-width:130px;text-align:right}
+.countdown-unit{font-size:7px;color:var(--ink-dim);letter-spacing:.1em;text-transform:uppercase;margin-left:2px;font-weight:400}
+.countdown-label{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--ink-dim);letter-spacing:.08em;text-align:right;margin-top:2px}
+.launch-desc{font-size:11.3px;line-height:1.55;color:#cfc4a6;margin:8px 0 2px;max-width:52em}
+.launch-meta{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.08em;display:flex;gap:14px;flex-wrap:wrap}
+.launch-meta span{display:inline-flex;align-items:center;gap:4px}
+.launch-links{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+.exchange-link{border:1px solid var(--rule);padding:4px 11px;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);text-decoration:none;transition:.15s}
+.exchange-link:hover{border-color:var(--rule-strong);color:var(--ink-bright)}
+.status-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.16em;text-transform:uppercase;display:inline-block}
+.status-upcoming{color:var(--print-green)}
+.status-ongoing{color:var(--ink-bright);border-bottom:1px solid var(--rule-strong)}
+.status-ended{color:var(--ink-dim)}
+@media (max-width:700px){.whale-item{grid-template-columns:1fr;gap:8px}.whale-tx{text-align:left}.countdown{text-align:left}}
+"""
 
 
 # ============================================================
