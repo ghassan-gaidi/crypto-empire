@@ -398,33 +398,33 @@ def fetch_rss(url):
 SHARED_HEAD = """<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Noto+Sans+JP:wght@700;900&display=swap');
-  *{margin:0;padding:0;box-sizing:border-box;border-radius:0!important;-webkit-border-radius:0!important;}
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
   :root{
-    --bg:#050505;
-    --surface:#0a0a0a;
-    --surface2:#111;
-    --border:#333;
-    --text:#e0e0e0;
-    --text-dim:#888;
-    --text-muted:#555;
-    --green:#00ff41;
-    --green-dim:rgba(0,255,65,0.2);
-    --red:#ff003c;
-    --red-dim:rgba(255,0,60,0.2);
-    --accent:#ff003c;
-    --accent-glow:#ff003c;
-    --white:#f0f0f0;
-    --glow:0 0 6px rgba(0,255,65,.05);
-    --glow-green:0 0 6px rgba(0,255,65,.12);
-    --glow-red:0 0 6px rgba(255,0,60,.12);
+    --bg:#080b12;
+    --surface:#0d121c;
+    --surface2:#121927;
+    --border:rgba(148,163,184,.16);
+    --text:#d9e2f0;
+    --text-dim:#8b98aa;
+    --text-muted:#566274;
+    --green:#38d39f;
+    --green-dim:rgba(56,211,159,.14);
+    --red:#ff6b7d;
+    --red-dim:rgba(255,107,125,.14);
+    --accent:#7c8cff;
+    --accent-glow:#7c8cff;
+    --white:#f7f9fc;
+    --glow:0 12px 40px rgba(0,0,0,.18);
+    --glow-green:0 0 24px rgba(56,211,159,.14);
+    --glow-red:0 0 24px rgba(255,107,125,.14);
   }
   body{
-    font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
-    background:var(--bg);color:var(--text);font-size:12px;line-height:1.8;
+    font-family:'DM Sans',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);font-size:13px;line-height:1.65;
     min-height:100vh;position:relative;overflow-x:hidden;
-    background-image:linear-gradient(to right,rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.03) 1px,transparent 1px);
-    background-size:40px 40px;
+    background-image:radial-gradient(circle at 15% 0%,rgba(124,140,255,.09),transparent 34%),linear-gradient(to right,rgba(148,163,184,.025) 1px,transparent 1px),linear-gradient(to bottom,rgba(148,163,184,.025) 1px,transparent 1px);
+    background-size:auto,48px 48px,48px 48px;
     -webkit-font-smoothing:antialiased;
   }
   ::selection{background:var(--green);color:var(--bg);}
@@ -474,11 +474,12 @@ SHARED_HEAD = """<meta charset="UTF-8">
 
   /* ===== GLASS PANEL ===== */
   .glass-panel{
-    background:rgba(15,15,15,.6);
-    backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);
-    border:1px solid rgba(255,255,255,.08);
-    box-shadow:inset 0 0 20px rgba(0,255,65,.04);
+    background:linear-gradient(145deg,rgba(18,25,39,.86),rgba(10,14,23,.86));
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    border:1px solid var(--border);
+    border-radius:12px;
+    box-shadow:var(--glow);
   }
 
   /* ===== TECH BORDER ===== */
@@ -521,15 +522,15 @@ SHARED_HEAD = """<meta charset="UTF-8">
   /* ===== TOP BAR / HEADER ===== */
   .top-bar{
     display:flex;justify-content:space-between;align-items:center;
-    border-bottom:1px solid var(--border);padding:16px;margin-bottom:24px;
-    flex-wrap:wrap;gap:12px;
-    background:rgba(15,15,15,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--border);padding:14px 18px;margin-bottom:24px;
+    flex-wrap:wrap;gap:16px;border-radius:12px;
+    background:rgba(13,18,28,.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--glow);
   }
   .brand{display:flex;align-items:center;gap:14px;}
   .prompt{color:var(--green);font-size:16px;font-weight:700;display:flex;align-items:center;}
   .prompt .cr{display:inline-block;width:9px;height:15px;background:var(--green);margin-left:3px;animation:blink 1s step-end infinite;vertical-align:middle;}
   @keyframes blink{50%{opacity:0}}
-  .site-title{font-size:18px;font-weight:800;color:var(--white);letter-spacing:6px;text-transform:uppercase;}
+  .site-title{font-size:18px;font-weight:700;color:var(--white);letter-spacing:3px;text-transform:uppercase;}
   .site-sub{font-size:9px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-top:1px;}
   .top-nav{display:flex;gap:1px;flex-wrap:wrap;}
   .top-nav a{
@@ -572,7 +573,7 @@ SHARED_HEAD = """<meta charset="UTF-8">
   }
   .stat-item::before{top:-1px;left:-1px;border-right:none;border-bottom:none;}
   .stat-item::after{bottom:-1px;right:-1px;border-left:none;border-top:none;}
-  .stat-item:hover{background:rgba(255,255,255,.03);}
+  .stat-item:hover{background:rgba(124,140,255,.07);border-color:rgba(124,140,255,.42);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.18);}
   .stat-label{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;}
   .stat-value{font-size:22px;font-weight:700;color:var(--white);margin-top:4px;letter-spacing:-.5px;}
   .stat-sub{font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
@@ -580,7 +581,7 @@ SHARED_HEAD = """<meta charset="UTF-8">
   /* ===== GAS STATION ===== */
   .gas-card{
     background:rgba(15,15,15,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    border:1px solid var(--border);position:relative;padding:16px;margin-bottom:24px;
+    border:1px solid var(--border);position:relative;padding:18px;margin-bottom:24px;border-radius:12px;box-shadow:var(--glow);
   }
   .gas-card::before,.gas-card::after{
     content:'';position:absolute;width:8px;height:8px;border:1px solid var(--green);
