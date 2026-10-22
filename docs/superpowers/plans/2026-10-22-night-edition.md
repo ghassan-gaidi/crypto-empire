@@ -1,6 +1,6 @@
 # Dominion · Night Edition — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace all four design eras in the Dominion Flask app with the approved "Meridian
 Press · Night Edition" identity (dark broadsheet + muted cream halftone), across all pages,
@@ -66,7 +66,7 @@ this plan; token values, halftone recipe and hard rules live there verbatim).
 **Interfaces (produced for all later tasks):**
 ```python
 NIGHT_CSS: str                    # full token core + fonts import + halftone + device CSS
-def page_shell(title, body, *, kicker="", page="A1", edition="Night Edition", extra_css="") -> str
+def page_shell(title, body, *, kicker="", page="A1", edition="Night Edition", extra_css="", strip_items=None) -> str
 def index_strip(items) -> str     # items = [(label, value, tone)] tone in {"up","down","dim"}
 def ledger(rows) -> str           # rows = [(label, value, tone|None)]
 def tape_table(rows) -> str       # rows = [(name, last, chg, tone)]
@@ -77,7 +77,7 @@ HALFTONE_DIV: str                 # <div class="ht"> overlay markup
 TG: dict[str, str]                # print-style plaintext scaffolds for Telegram
 ```
 
-- [ ] **Step 1: Write failing tests** `tests/test_design.py`:
+- [x] **Step 1: Write failing tests** `tests/test_design.py`:
   `test_tokens_present` (NIGHT_CSS contains exact token strings above + both Google font
   names + `radial-gradient(circle at center` + `background-repeat:round` +
   `pointer-events:none`), `test_no_legacy_fonts` (not in NIGHT_CSS: `JetBrains Mono`,
@@ -88,14 +88,14 @@ TG: dict[str, str]                # print-style plaintext scaffolds for Telegram
   (`ledger([])` contains "the tape is dark"), `test_tape_table` (`▲` green span and `▼`
   oxblood span for tone up/down), `test_page_shell` (contains `<!DOCTYPE`, `-paper:#17130d`,
   masthead class, folio class). **Run:** `pytest tests/ -q` → expected FAIL (module missing).
-- [ ] **Step 2: Implement `design.py`** with the CSS from the spec §2.1–2.4 verbatim
+- [x] **Step 2: Implement `design.py`** with the CSS from the spec §2.1–2.4 verbatim
   (halftone values: cell 5.5px, dot 1.1px, `--ink:233,223,198`, `--da:.12`; vignette +
   corner stains on the overlay; body uses `--paper`) and the component functions above;
   escaping via `html.escape` on label/value/name/text args; page template =
   masthead + index_strip placeholder slot (script fills via data attr or server-side items
   arg) — decide: `page_shell` takes optional `strip_items` parameter (default None).
-- [ ] **Step 3: Run tests** `pytest tests/ -q` → PASS.
-- [ ] **Step 4: Commit**
+- [x] **Step 3: Run tests** `pytest tests/ -q` → PASS.
+- [x] **Step 4: Commit**
 
 ### Task 2: Flagship — Dashboard `/` becomes the Front Page
 
@@ -108,20 +108,20 @@ headline/deck, ad_box, folio, NIGHT_CSS, HALFTONE_DIV`; `index()` context vars
 (`top_coins`, `market_data`, `fear_greed`, `news`, `wallet`) unchanged; JS element IDs in
 INDEX_HTML: freeze list discovered in Step 1 via `grep -o 'id="[^"]+"' app.py`.
 
-- [ ] **Step 1: Record frozen IDs** — `grep -o "getElementById([^)]*)" app.py` before edit → saved to `/tmp/frozen_ids.txt`; unchanged after edit (Step 5 re-grep and diff).
-- [ ] **Step 2: Rewrite `INDEX_HTML`** as `page_shell` wrapper + composition: index strip
+- [x] **Step 1: Record frozen IDs** — `grep -o "getElementById([^)]*)" app.py` before edit → saved to `/tmp/frozen_ids.txt`; unchanged after edit (Step 5 re-grep and diff).
+- [x] **Step 2: Rewrite `INDEX_HTML`** as `page_shell` wrapper + composition: index strip
   (live majors from row 1 `top_coins`), lead story block with `headline`/`deck`
   (fear_greed + gas strings server-computed as before), dotted `ledger` (F&G, dominance
   computed, gas from `/api/gas` data already fetched — reuse existing fetches), `tape_table`
   from `market_data` (first 10), `wire` from whale cache (existing `/api/whales` fetch path
   in template context as today), footer ad_box + wallet donation folio text. Layout: three
   columns (`grid-template-columns:2.2fr 1.15fr 1.15fr`), collapse <900px.
-- [ ] **Step 3: Run app + curl + screenshots** — `FLASK_SECRET=x ADMIN_SECRET=y DATA_DIR=/tmp
+- [x] **Step 3: Run app + curl + screenshots** — `FLASK_SECRET=x ADMIN_SECRET=y DATA_DIR=/tmp
   python -m flask run` (or gunicorn); `curl -s -o /dev/null -w "%{http_code}" localhost:5000/`
   → 200 and body contains `--paper:#17130d`; browser screenshots at 1400px and ~820px →
   visually audit (halftone visible, no overlaps, strip scrolls on mobile).
-- [ ] **Step 4: Frozen-ID diff** — re-grep IDs, diff with `/tmp/frozen_ids.txt` → identical.
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Frozen-ID diff** — re-grep IDs, diff with `/tmp/frozen_ids.txt` → identical.
+- [x] **Step 5: Commit**
 
 ### Tasks 3–6: Page sweeps (same per-task shape)
 

@@ -18,6 +18,8 @@ from flask import Flask, render_template_string, jsonify, request, redirect
 from flask_cors import CORS
 import requests
 
+from design import page_shell, nav_links
+
 # ============================================================
 # Configuration
 # ============================================================
@@ -354,7 +356,7 @@ def render_sparkline(prices, width=80, height=24):
         x = round(i * step, 1)
         y = round(height - ((p - min_p) / rng * (height - 4) + 2), 1)
         pts.append(f"{x},{y}")
-    color = "var(--green)" if prices[-1] >= prices[0] else "var(--red)"
+    color = "var(--print-green)" if prices[-1] >= prices[0] else "var(--oxblood)"
     return f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}"><polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="1.5"/></svg>'
 
 def fetch_sync(url):
@@ -1000,332 +1002,266 @@ SHARED_HEAD = """<meta charset="UTF-8">
 # ============================================================
 # HTML Templates
 # ============================================================
-INDEX_HTML = """<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + """
-    <title>Dominion — Autonomous Crypto Intelligence</title>
-    <meta name="description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data for Ethereum, Bitcoin, Arbitrum, Polygon & Base.">
-    <meta name="keywords" content="crypto dashboard, wallet checker, gas tracker, Ethereum gas, Bitcoin price, crypto prices, portfolio tracker, blockchain tools">
-    <link rel="canonical" href="https://crypto-empire-ten.vercel.app/">
-    <meta property="og:title" content="Dominion — Autonomous Crypto Intelligence">
-    <meta property="og:description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data.">
-    <meta property="og:url" content="https://crypto-empire-ten.vercel.app/">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Dominion — Autonomous Crypto Intelligence">
-    <meta name="twitter:description" content="Free crypto dashboard. Live prices, gas tracker, wallet checker, Telegram bot @Crypt0Emp1reBot.">
-</head>
-<body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="noise-bg" aria-hidden="true"></div>
-    <div class="sweep" aria-hidden="true"></div>
+# ============================================================
+# Front Page (Night Edition) — composed by design.page_shell per request
+# ============================================================
+FRONT_NAV = [
+    ("Front", "/"), ("Market", "#market"), ("Gas", "#gas"), ("Wire", "#news"),
+    ("Trending", "/trending"), ("Whales", "/whales"), ("Launches", "/launches"),
+    ("Yields", "/yields"), ("Profiler", "/profiler"), ("Wallet", "/wallet-check"),
+    ("Ticker", "/ticker"), ("Blog", "/blog"), ("API", "/docs"),
+    ("Premium", "/premium"), ("Admin", "/admin"),
+]
 
-    <div class="container" id="main">
+FRONT_META = (
+    '<meta name="description" content="Free crypto dashboard with live prices, gas tracker, wallet balance checker, and market data for Ethereum, Bitcoin, Arbitrum, Polygon & Base.">'
+    '<meta name="keywords" content="crypto dashboard, wallet checker, gas tracker, Ethereum gas, Bitcoin price, crypto prices, portfolio tracker, blockchain tools">'
+    '<link rel="canonical" href="https://crypto-empire-ten.vercel.app/">'
+    '<meta property="og:title" content="Dominion — Autonomous Crypto Intelligence">'
+    '<meta property="og:description" content="Free crypto dashboard with live prices, gas tracker, wallet checker, and market data.">'
+    '<meta property="og:url" content="https://crypto-empire-ten.vercel.app/">'
+    '<meta property="og:type" content="website">'
+    '<meta name="twitter:card" content="summary_large_image">'
+    '<meta name="twitter:title" content="Dominion — Autonomous Crypto Intelligence">'
+    '<meta name="twitter:description" content="Free crypto dashboard. Live prices, gas tracker, wallet checker, Telegram bot @Crypt0Emp1reBot.">'
+)
 
-        <!-- ASCII Banner -->
-        <div class="ascii-banner"><span class="dim">╔══════════════════════════════════════╗
-║</span>  <span class="hl2">▓▓▓▓▓</span>  <span class="hl">CRYPTO EMPIRE</span>  <span class="hl2">▓▓▓▓▓</span>  <span class="dim">║
-║</span>  autonomous intelligence<span class="dim">               ║
-╚══════════════════════════════════════╝</span></div>
+FRONT_CSS = """
+.skip-link{position:absolute;left:-9999px;top:0}
+.skip-link:focus{left:8px;top:8px;z-index:60}
+.lead-block{padding-bottom:4px}
+.lead-head{font-size:29px;font-weight:600;letter-spacing:-.005em;line-height:1.12}
+.rank{color:var(--ink-dim);font-size:9px;padding-right:4px}
+.csym{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--ink-dim);letter-spacing:.08em}
+.chart-cell svg{vertical-align:middle}
+.tape-xl td{padding:6px 0}
+.gas-gwei{color:var(--ink-bright)}
+.gas-gwei.low{color:var(--print-green)}
+.gas-gwei.med{color:var(--ink)}
+.gas-gwei.high{color:var(--oxblood)}
+.gas-item{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:6px 0;border-bottom:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#cfc4a6}
+.gas-item:last-child{border-bottom:none}
+.gas-chain{font-family:'Fraunces',serif;font-style:italic;font-size:12px;color:var(--ink-bright);white-space:nowrap}
+.ad-head{font-size:15px;font-weight:560;margin-top:4px;color:var(--ink-bright)}
+.ledger-inputs{display:grid;grid-template-columns:1fr 1.2fr 96px 1fr;gap:7px;margin-top:9px}
+.ledger-inputs input,.ledger-inputs select{background:transparent;border:none;border-bottom:1px solid var(--rule-strong);color:var(--ink-bright);font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:6px 2px;min-width:0;width:100%}
+.ledger-inputs input:focus,.ledger-inputs select:focus{outline:none;border-bottom-color:var(--ink-bright)}
+.ledger-inputs input::placeholder{color:var(--ink-dim)}
+.news-list{list-style:none}
+.news-list li{padding:8px 0;border-bottom:1px solid var(--rule)}
+.news-list a{font-family:'Fraunces',serif;font-size:12px;line-height:1.42;color:#cfc4a6;text-decoration:none}
+.news-list a:hover{color:var(--ink-bright)}
+.n-date{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.12em;color:var(--ink-dim);margin-top:3px;text-transform:uppercase}
+.wire-wrap a{color:#cfc4a6;text-decoration:none}
+.wire-wrap a:hover{color:var(--ink-bright)}
+.notices{list-style:none;margin-top:4px}
+.notices li{padding:7px 0;border-bottom:1px solid var(--rule);font-size:11.3px;line-height:1.5;color:#cfc4a6}
+.notices li b{display:block;font-family:'Fraunces',serif;font-style:italic;font-size:12px;font-weight:560;color:var(--ink-bright)}
+.office-links{display:flex;gap:8px;margin-top:12px}
+.office-links .buy{background:transparent;color:var(--ink-bright);border:1px solid var(--rule-strong)}
+.office-links .buy:visited{color:var(--ink-bright)}
+.bureau{margin-top:8px;font-size:9px;letter-spacing:.05em;line-height:1.8;color:var(--ink-dim)}
+.bureau b{display:block;color:var(--ink-bright);letter-spacing:.24em;font-weight:500;margin-top:4px}
+.bureau a{color:#cfc4a6;text-decoration:none;white-space:nowrap}
+.bureau a:hover{color:var(--ink-bright)}
+.sponsor-slot{cursor:pointer;border-bottom:1px dotted var(--rule-strong)}
+.sponsor-slot:hover{color:var(--ink-bright)}
+.dcopy{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--ink-dim);cursor:pointer;border:1px solid var(--rule);padding:2px 6px;white-space:nowrap}
+.dcopy:hover{color:var(--ink-bright);border-color:var(--rule-strong)}
+.daddr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;font-weight:500;letter-spacing:.03em}
+.bot-strip{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;align-items:center;padding:9px 24px 11px;border-top:1px solid var(--rule-strong);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+.bot-strip a{color:var(--ink-dim);text-decoration:none}
+.bot-strip a:hover{color:var(--ink-bright)}
+.bot-strip .sp{color:var(--rule-strong)}
+.toast{position:fixed;bottom:54px;left:50%;transform:translateX(-50%);background:var(--ink-bright);color:var(--paper);padding:8px 14px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;display:none;opacity:0;transition:opacity .3s;z-index:50}
+.toast.show{display:block;opacity:1}
+@media (max-width:900px){
+  .lead-head{font-size:23px}
+  .ledger-inputs{grid-template-columns:1fr 1fr}
+  .chart-cell{display:none}
+  .daddr{max-width:120px}
+}
+"""
 
-        <!-- Top Bar -->
-        <div class="top-bar">
-            <div class="brand">
-                <div class="prompt">><span class="cr"></span></div>
-                <div>
-                    <div class="site-title">Dominion</div>
-                    <div class="site-sub">Live Crypto Intelligence</div>
-                </div>
-            </div>
-            <div class="top-nav">
-                <a href="#market">Market</a>
-                <a href="#gas">Gas</a>
-                <a href="#news">News</a>
-                <a href="/trending">Trending</a>
-                <a href="/whales">Whales</a>
-                <span class="nav-divider"></span>
-                <a href="/profiler">Profiler</a>
-                <a href="/launches">Launches</a>
-                <a href="/yields">Yields</a>
-                <a href="/ticker">Ticker</a>
-                <span class="nav-divider"></span>
-                <a href="/blog">Blog</a>
-                <a href="/docs">API</a>
-                <a href="/wallet-check">Wallet</a>
-                <a href="/advertise">Advertise</a>
-                <span class="nav-divider"></span>
-                <a href="/premium" class="premium-nav">Premium</a>
-                <a href="/admin" style="color:var(--text-dim);font-size:9px;">Admin</a>
-            </div>
-        </div>
+FRONT_BODY = """
+<div class="cols" id="main">
 
-        <!-- Status Line -->
-        <div class="status-line">
-            <span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-            <span id="live-clock">--</span>
-            <span>NODES: 4/4 &nbsp;//&nbsp; ENCRYPTION: AES-256</span>
-            <span>v1.0</span>
-        </div>
-
-        <!-- Top coins bar -->
-        <div class="term-box">
-            <div class="term-box-hd">MARKET SNAPSHOT <span id="live-clock2" style="font-size:7px;color:var(--text-muted);"></span></div>
-            <div class="term-box-bd no-pad">
-            <div class="stat-row" style="border:none;margin-bottom:0;">
-                {% for coin_id, data in top_coins.items() %}
-                <div class="stat-item">
-                    <div class="stat-label">{{ coin_id|upper }}</div>
-                    <div class="stat-value">${{ "%.2f"|format(data.usd) if data.usd < 1000 else "%.0f"|format(data.usd) }}</div>
-                    <div class="stat-sub {{ 'up' if data.usd_24h_change >= 0 else 'down' }}">24h: {{ "%.2f"|format(data.usd_24h_change) }}%</div>
-                </div>
-                {% endfor %}
-                {% if fear_greed %}
-                <div class="stat-item">
-                    <div class="stat-label">FEAR & GREED</div>
-                    <div class="stat-value" style="color:{{ 'var(--green)' if fear_greed.value > 50 else 'var(--red)' }};">{{ fear_greed.value }}</div>
-                    <div class="stat-sub" style="color:var(--text-dim);">{{ fear_greed.classification|upper }}</div>
-                </div>
-                {% endif %}
-                <div class="stat-item" id="tvl-card" style="display:none;">
-                    <div class="stat-label">ETH TVL</div>
-                    <div class="stat-value" id="tvl-value">--</div>
-                    <div class="stat-sub">DefiLlama</div>
-                </div>
-            </div>
-            </div>
-        </div>
-
-        <!-- Affiliate Strip -->
-        <div class="aff-strip">
-            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> EXCHANGES <span class="gl">╗</span></div>
-            <div class="aff-links">
-                <a class="aff-link" href="https://www.binance.com/en/register?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Binance</a>
-                <a class="aff-link" href="https://www.coinbase.com/join/CRYPTOEMPIRE" target="_blank" rel="noopener">Coinbase</a>
-                <a class="aff-link" href="https://exchange.kraken.com/register?referrer=CRYPTOEMPIRE" target="_blank" rel="noopener">Kraken</a>
-                <a class="aff-link" href="https://www.bybit.com/en/sign-up?affiliate_id=CRYPTOEMPIRE" target="_blank" rel="noopener">Bybit</a>
-                <a class="aff-link" href="https://www.okx.com/join/CRYPTOEMPIRE" target="_blank" rel="noopener">OKX</a>
-                <a class="aff-link" href="https://www.kucoin.com/ucenter/signup?rcode=CRYPTOEMPIRE" target="_blank" rel="noopener">KuCoin</a>
-                <a class="aff-link" href="https://www.gate.io/signup/CRYPTOEMPIRE" target="_blank" rel="noopener">Gate.io</a>
-                <a class="aff-link" href="https://app.uniswap.org/?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Uniswap</a>
-            </div>
-        </div>
-        <div class="aff-strip">
-            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> TOOLS <span class="gl">╗</span></div>
-            <div class="aff-links">
-                <a class="aff-link" href="https://shop.ledger.com/?r=CRYPTOEMPIRE" target="_blank" rel="noopener">Ledger</a>
-                <a class="aff-link" href="https://crypto.com/exch/CRYPTOEMPIRE" target="_blank" rel="noopener">Crypto.com</a>
-                <a class="aff-link" href="https://www.trezor.io/affiliate/CRYPTOEMPIRE" target="_blank" rel="noopener">Trezor</a>
-            </div>
-        </div>
-
-        <div class="divider-accent">GAS FEES</div>
-
-        <!-- Gas tracker -->
-        <div class="gas-card">
-            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> GAS_STATION (GWEI) <span class="gl">╗</span></div>
-            <div class="gas-row" id="gas-grid" style="border:none;margin-bottom:0;">
-                <div class="gas-item"><div class="gas-chain">Ethereum</div><div class="gas-gwei" id="gas-eth">--</div></div>
-                <div class="gas-item"><div class="gas-chain">Polygon</div><div class="gas-gwei" id="gas-poly">--</div></div>
-                <div class="gas-item"><div class="gas-chain">Arbitrum</div><div class="gas-gwei" id="gas-arb">--</div></div>
-                <div class="gas-item"><div class="gas-chain">Base</div><div class="gas-gwei" id="gas-base">--</div></div>
-            </div>
-        </div>
-
-        <div class="divider-accent">MARKET DATA</div>
-
-        <!-- Market Table -->
-        <div class="term-box" id="market">
-            <div class="term-box-hd">TOP 20 CRYPTOCURRENCIES <span style="font-size:7px;color:var(--text-muted);">CoinGecko</span></div>
-            <div class="term-box-bd no-pad">
-            <div class="tbl" style="border:none;margin-bottom:0;">
-                <table>
-                    <thead>
-                        <tr><th>#</th><th>Name</th><th>Price</th><th>24h</th><th>7d</th><th>Chart</th><th>Market Cap</th><th>Volume 24h</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for coin in market_data %}
-                        <tr>
-                            <td class="rank">{{ coin.market_cap_rank }}</td>
-                            <td><span class="cname">{{ coin.name }}</span> <span class="csym">{{ coin.symbol|upper }}</span></td>
-                            <td>${{ "%.2f"|format(coin.current_price) if coin.current_price < 1000 else "%.0f"|format(coin.current_price) }}</td>
-                            <td class="{{ 'up' if coin.price_change_percentage_24h >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_24h) }}%</td>
-                            <td class="{{ 'up' if coin.price_change_percentage_7d_in_currency >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_7d_in_currency) }}%</td>
-                            <td>{{ coin.sparkline_svg|safe }}</td>
-                            <td class="mc">${{ "{:,.0f}".format(coin.market_cap) }}</td>
-                            <td class="vol">${{ "{:,.0f}".format(coin.total_volume) }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            </div>
-        </div>
-
-        <div class="divider-accent">SPONSORED</div>
-
-        <!-- Sponsored Coin Spotlight (paid placement) -->
-        <a id="sponsored-link" href="#" target="_blank" rel="noopener" style="text-decoration:none;color:unset;display:block;">
-        <div class="sponsor-box">
-            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> SPONSORED SPOTLIGHT <span class="gl">╗</span> <span id="sponsored-name" style="color:var(--green);">--</span></div>
-            <div class="aff-links">
-                <span id="sponsored-price" style="font-size:11px;color:var(--white);font-weight:700;">--</span>
-                <span id="sponsored-change" style="font-size:9px;">--</span>
-                <span class="aff-link sponsor-slot" onclick="event.stopPropagation();window.open('/advertise','_blank')">Your project here →</span>
-            </div>
-        </div>
-        </a>
-
-        <div class="divider-accent">DEX ACTIVITY</div>
-
-        <!-- DEX Volume -->
-        <div class="term-box">
-            <div class="term-box-hd">DEX VOLUME <span style="font-size:7px;color:var(--text-muted);">DefiLlama</span></div>
-            <div class="term-box-bd no-pad">
-            <div class="tbl" style="border:none;margin-bottom:0;" id="dex-section">
-                <table>
-                    <thead><tr><th>#</th><th>DEX</th><th>Volume 24h</th><th>Volume 7d</th><th>24h Change</th><th>Chains</th></tr></thead>
-                    <tbody id="dex-tbody"></tbody>
-                </table>
-            </div>
-            </div>
-        </div>
-
-        <div class="divider-accent">TRENDS</div>
-
-        <div id="banner-mid" style="display:none;margin-bottom:16px;"></div>
-
-        <!-- Trending Coins -->
-        <div class="term-box" id="trending">
-            <div class="term-box-hd">TRENDING COINS <span style="font-size:7px;color:var(--text-muted);">CoinGecko</span></div>
-            <div class="term-box-bd no-pad">
-            <div class="gas-row" id="trending-grid" style="border:none;margin-bottom:0;"></div>
-            </div>
-        </div>
-
-        <div class="divider-accent">MOVERS</div>
-
-        <!-- Market Movers -->
-        <div class="term-box" id="movers">
-            <div class="term-box-hd">MARKET MOVERS <span style="font-size:7px;color:var(--text-muted);">24h gainers & losers</span></div>
-            <div class="term-box-bd no-pad">
-            <div class="gas-row" id="movers-grid" style="border:none;margin-bottom:0;">
-                <div class="gas-item" style="grid-column:1/-1;"><div style="font-size:9px;color:var(--text-dim);">LOADING...</div></div>
-            </div>
-            </div>
-        </div>
-
-        <div class="divider-accent">NEWSFEED</div>
-
-        <!-- News -->
-        <div class="term-box" id="news">
-            <div class="section-label" style="margin-bottom:12px;margin-top:0;"><span class="gl">╔</span> CRYPTO NEWS <span class="gl">╗</span></div>
-            <div class="term-box-bd no-pad">
-            <div class="tbl" style="border:none;margin-bottom:0;">
-                <ul class="news-list">
-                    {% for item in news %}
-                    <li>
-                        <a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.title }}</a>
-                        <div class="n-date">{{ item.date[:22] if item.date else '' }}</div>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            </div>
-        </div>
-
-        <div class="divider-accent">PLATFORM</div>
-
-        <!-- Features -->
-        <div class="s-title" id="features">FEATURES</div>
-        <div class="feat-grid">
-            <div class="feat-item"><div class="feat-icon">[01]</div><h4>Real-Time Data</h4><p>Live prices, gas, and market caps for top coins</p></div>
-            <div class="feat-item"><div class="feat-icon">[02]</div><h4>Arbitrage Scanner</h4><p>Cross-DEX price disparities in real-time</p></div>
-            <div class="feat-item"><div class="feat-icon">[03]</div><h4>Gas Optimization</h4><p>Multi-chain gas tracker to minimize costs</p></div>
-            <div class="feat-item"><div class="feat-icon">[04]</div><h4>Telegram Bot</h4><p>Live data via <a href="https://t.me/Crypt0Emp1reBot" target="_blank" style="color:var(--white);">@Crypt0Emp1reBot</a></p></div>
-            <div class="feat-item"><div class="feat-icon">[05]</div><h4>Self-Custodial</h4><p>Your keys, your coins. No exchange risk</p></div>
-            <div class="feat-item"><div class="feat-icon">[06]</div><h4>Premium API</h4><p>10K requests/day + arbitrage signals</p></div>
-        </div>
-
-        <!-- Alert Signup (Lead Gen) -->
-        <div class="prem-box" id="alerts">
-            <h3>// PRICE ALERTS (BETA)</h3>
-            <p>Get notified when a coin hits your target price.<br>Enter coin symbol + target. We'll message you on Telegram.</p>
-            <div style="max-width:480px;margin:0 auto;text-align:left;">
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-                    <input type="text" id="alert-coin" placeholder="Coin (e.g. BTC)" aria-label="Coin symbol" class="input" style="flex:1;min-width:80px;text-transform:uppercase;letter-spacing:1px;">
-                    <input type="text" id="alert-price" inputmode="decimal" placeholder="Target price (e.g. 100000)" aria-label="Target price in USD" class="input" style="flex:1;min-width:100px;">
-                    <select id="alert-dir" aria-label="Alert direction" class="input" style="flex:0 0 110px;">
-                        <option value="above">▲ Above</option>
-                        <option value="below">▼ Below</option>
-                    </select>
-                    <input type="text" id="alert-tg" placeholder="Your Telegram @username" aria-label="Telegram username" class="input" style="flex:1;min-width:120px;">
-                </div>
-                <button onclick="submitAlert()" class="btn" style="width:100%;">Set Alert</button>
-                <div id="alert-msg" role="status" aria-live="polite" style="text-align:center;font-size:9px;color:var(--text-dim);margin-top:6px;"></div>
-            </div>
-        </div>
-
-        <!-- Telegram CTA -->
-        <div class="prem-box">
-            <h3>// TELEGRAM_BOT</h3>
-            <p>Live crypto data at your fingertips. No signup, no API keys.</p>
-            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-                <a href="https://t.me/Crypt0Emp1reBot" target="_blank" class="btn">@Crypt0Emp1reBot</a>
-                <a href="https://t.me/Crypt0Emp1reBot?startgroup=start" target="_blank" class="btn btn-primary">+ Add to Group</a>
-            </div>
-            <br><span style="display:inline-block;border:1px dashed var(--text-muted);padding:8px 16px;margin-top:14px;font-size:11px;color:var(--green);font-family:monospace;user-select:all;">Send /btc /eth /sol in any group</span>
-        </div>
-
-        <!-- Premium Section -->
-        <div class="prem-box c-accent-border" id="premium" style="border-color:var(--accent)!important;">
-            <h3>PREMIUM ACCESS</h3>
-            <p>Whale alerts &bull; Unlimited portfolio wallets &bull; Priority alerts &bull; Ad-free</p>
-            <p style="font-size:10px;color:var(--text-dim);margin-top:8px;">10K API requests/day + arbitrage signals + priority support included.</p>
-            <div style="margin-top:14px;">
-                <a href="/premium" class="btn c-accent-bg" style="text-decoration:none;color:var(--white);border-color:var(--accent);background:var(--accent);">Subscribe $9.99/mo</a>
-            </div>
-            <p style="font-size:8px;color:var(--text-dim);margin-top:8px;">Powered by Polar.sh &bull; Cancel anytime</p>
-        </div>
-
-        <div style="text-align:center;margin-bottom:20px;">
-            <a href="/docs" class="btn">⟐ API Docs</a>
-            <a href="/wallet-check" class="btn">⟐ Wallet Checker</a>
-        </div>
-
-        <!-- Donation Section -->
-        <div class="donate-box">
-            <h4>Support Development</h4>
-            <p style="font-size:9px;color:var(--text-dim);margin-bottom:8px;">
-                All tools are free. If this helps you, consider a donation.
-            </p>
-            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">ETH / BSC / POLYGON / ARBITRUM / BASE</div>
-            <div class="donate-row">
-                <span class="daddr" id="eth-addr">0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef</span>
-                <span class="dcopy" onclick="copyAddr('eth-addr',this)">COPY</span>
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:6px 0 4px;">BITCOIN</div>
-            <div class="donate-row">
-                <span class="daddr" id="btc-addr">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</span>
-                <span class="dcopy" onclick="copyAddr('btc-addr',this)">COPY</span>
-            </div>
-        </div>
-
-        <footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ENCRYPTION: AES-256</span></div><div class="info"><span>PING: 14ms</span><span>GAS: 22 GWEI</span><span>BLOCK: 18442911</span></div></footer>
+  <!-- ============ Broad column ============ -->
+  <div class="col">
+    <div class="lead-block">
+      <div class="kicker">Morning Ledger{% if fear_greed %} · Fear &amp; Greed {{ fear_greed.value }} · {{ fear_greed.classification }}{% else %} · sentiment reading pending{% endif %}</div>
+      <h2 class="headline lead-head">{% if fear_greed and fear_greed.value >= 55 %}Appetite hums evenly along the tape — breadth holding above the midline{% elif fear_greed and fear_greed.value <= 45 %}Frosted nerves below the midline — the desk reads restraint, not panic{% else %}The desk opens on an even read: no froth, no frost{% endif %}</h2>
+      <p class="deck">Live majors lead this page; the gas ledger and the exchange houses price the plumbing beneath. Whale dispatches arrive on the wire below.</p>
+      <div class="byle"><span>Markets Bench · Dominion</span><span class="mono" id="live-clock">--</span></div>
+      <p class="para">Prices refresh on their own cadence, exactly as the exchanges stamp them. Nothing on this front page is a solicitation. Dollar figures quote CoinGecko unless a dispatch says otherwise.</p>
     </div>
 
-    <div class="toast" id="copy-toast">ADDRESS COPIED</div>
-
-    <!-- Bottom Status Bar -->
-    <div class="b-bar">
-        <span><span class="dot"></span> ONLINE</span>
-        <span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-        <span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-        <span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-        <span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-        <span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+    <div id="market" class="ledger" style="border-top:none;">
+      <div class="t-head"><span class="kicker">The Tape · Top 20</span><span class="kicker">USD · CoinGecko</span></div>
+      <table class="tape-table tape-xl">
+        <thead><tr><th>#</th><th>Instrument</th><th class="r">Last</th><th class="r">24h</th><th class="r">7d</th><th class="r">Mkt Cap</th><th class="r chart-cell">7d Chart</th></tr></thead>
+        <tbody>
+          {% for coin in market_data %}
+          <tr>
+            <td class="rank">{{ coin.market_cap_rank }}</td>
+            <td class="ser">{{ coin.name }} <span class="csym">{{ coin.symbol|upper }}</span></td>
+            <td class="r">${{ "%.2f"|format(coin.current_price) if coin.current_price < 1000 else "%.0f"|format(coin.current_price) }}</td>
+            <td class="r {{ 'up' if coin.price_change_percentage_24h >= 0 else 'down' }}">{{ "▲" if coin.price_change_percentage_24h >= 0 else "▼" }} {{ "%.2f"|format(coin.price_change_percentage_24h if coin.price_change_percentage_24h >= 0 else -coin.price_change_percentage_24h) }}%</td>
+            <td class="r {{ 'up' if coin.price_change_percentage_7d_in_currency >= 0 else 'down' }}">{{ "%.2f"|format(coin.price_change_percentage_7d_in_currency) }}%</td>
+            <td class="r">${{ "{:,.0f}".format(coin.market_cap) }}</td>
+            <td class="r chart-cell">{{ coin.sparkline_svg|safe }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7"><p class="foot-note">the tape is dark — upstream feed late. Refresh presently.</p></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
-    <div class="toast" id="toast">COPIED</div>
+    <div class="ledger" style="border-top:none;">
+      <div class="t-head"><span class="kicker">Exchange Houses · DEX Volume</span><span class="kicker">DefiLlama</span></div>
+      <table class="tape-table">
+        <thead><tr><th>#</th><th>House</th><th class="r">Vol 24h</th><th class="r">Vol 7d</th><th class="r">24h</th><th class="r">Chains</th></tr></thead>
+        <tbody id="dex-tbody"></tbody>
+      </table>
+      <div id="dex-section" style="display:none;"></div>
+    </div>
+
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">The Buzz · Trending Now</span><span class="kicker">CoinGecko</span></div>
+      <div id="trending-grid"></div>
+    </div>
+
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Movers · 24h Gainers &amp; Losers</span></div>
+      <div id="movers-grid"></div>
+    </div>
+  </div>
+
+  <!-- ============ Second column ============ -->
+  <div class="col">
+    <div id="gas" class="ledger" style="border-top:none;">
+      <div class="t-head"><span class="kicker">Gas Station</span><span class="kicker">Gwei</span></div>
+      <div id="gas-grid">
+        <div class="ledger-row"><span class="lbl">Ethereum</span><span class="dots">····</span><span class="val gas-gwei" id="gas-eth">--</span></div>
+        <div class="ledger-row"><span class="lbl">Polygon</span><span class="dots">····</span><span class="val gas-gwei" id="gas-poly">--</span></div>
+        <div class="ledger-row"><span class="lbl">Arbitrum</span><span class="dots">····</span><span class="val gas-gwei" id="gas-arb">--</span></div>
+        <div class="ledger-row"><span class="lbl">Base</span><span class="dots">····</span><span class="val gas-gwei" id="gas-base">--</span></div>
+      </div>
+      <div id="tvl-card" style="display:none;margin-top:6px;"><span class="lbl mono">ETH TVL</span> <span>····</span> <span style="color:var(--ink-bright);font-weight:600;" id="tvl-value">--</span></div>
+      <p class="foot-note">Low绿灯 under 5 gwei; above 30, the desk walks, doesn't send.</p>
+    </div>
+
+    <div id="news" class="ledger">
+      <div class="t-head"><span class="kicker">The Wire · Dispatches</span><span class="kicker">Cointelegraph</span></div>
+      <div class="wire-wrap">
+        {% for item in news %}
+        <div class="wire-item">
+          <span class="wire-t">{{ item.date[:22] if item.date else '' }}</span>
+          <div class="wire-x"><a href="{{ item.link }}" target="_blank" rel="noopener">{{ item.title }}</a></div>
+        </div>
+        {% else %}
+        <p class="foot-note">the wire is silent.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="banner-mid" style="display:none;margin-top:12px;"></div>
+
+    <div class="ad-box"><div>
+      <div class="kicker">Release</div>
+      <div class="ad-head">The Telegram Terminal</div>
+      <div class="kicker" style="margin-top:3px">Live intelligence · no signup · no keys</div>
+      <p class="para">The same wire, delivered hand-to-hand. Quote any major mid-conversation.</p>
+      <div style="margin-top:10px;">
+        <a class="buy" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">Open @Crypt0Emp1reBot</a>
+        <a class="buy office" style="background:transparent;color:var(--ink-bright);border:1px solid var(--rule-strong);margin-left:6px" href="https://t.me/Crypt0Emp1reBot?startgroup=start" target="_blank">+ Add to Group</a>
+      </div>
+      <p class="foot-note">Send /btc /eth /sol in any group you keep.</p>
+    </div></div>
+  </div>
+
+  <!-- ============ Third column ============ -->
+  <div class="col">
+    <a id="sponsored-link" href="#" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:block;">
+      <div class="ad-box"><div>
+        <div class="kicker">Sponsored Spotlight · Advertisement</div>
+        <div class="ad-head" id="sponsored-name">--</div>
+        <div style="margin-top:4px"><span class="mono" id="sponsored-price">--</span> <span class="mono" id="sponsored-change">--</span></div>
+        <span class="kicker sponsor-slot" onclick="event.stopPropagation();window.open('/advertise','_blank')" style="display:inline-block;margin-top:9px">Your project here →</span>
+      </div></div>
+    </a>
+
+    <div id="premium" class="ad-box"><div>
+      <div class="kicker">Premium Access</div>
+      <div class="ad-head">The Full Ledger</div>
+      <p class="para">Whale alerts · unlimited portfolio wallets · priority alerts · ad-free · 10K API requests a day with arbitrage signals.</p>
+      <a class="buy" href="/premium" style="margin-top:10px">Subscribe $9.99/mo</a>
+      <p class="foot-note">Powered by Polar.sh · cancel anytime.</p>
+    </div></div>
+
+    <div id="alerts" class="ad-box"><div>
+      <div class="kicker">Price Alerts · Beta</div>
+      <p class="para">A coin touches your target, the desk wires your Telegram.</p>
+      <div class="ledger-inputs">
+        <input type="text" id="alert-coin" placeholder="Coin · BTC" aria-label="Coin symbol">
+        <input type="text" id="alert-price" inputmode="decimal" placeholder="Target · USD" aria-label="Target price in USD">
+        <select id="alert-dir" aria-label="Alert direction">
+          <option value="above">▲ Above</option>
+          <option value="below">▼ Below</option>
+        </select>
+        <input type="text" id="alert-tg" placeholder="@yourname" aria-label="Telegram username">
+      </div>
+      <button onclick="submitAlert()" class="buy" style="width:100%;margin-top:9px">Set Alert</button>
+      <div id="alert-msg" role="status" aria-live="polite" class="foot-note" style="margin-top:6px"></div>
+    </div></div>
+
+    <div class="office-links">
+      <a class="buy" href="/docs">API Docs</a>
+      <a class="buy" style="background:transparent;color:var(--ink-bright);border:1px solid var(--rule-strong)" href="/wallet-check">Wallet Checker</a>
+    </div>
+
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Notices · The Platform</span></div>
+      <ul class="notices">
+        <li><b>Real-Time Data</b>Live prices, gas, and market caps for top coins.</li>
+        <li><b>Arbitrage Scanner</b>Cross-DEX price disparities in real time.</li>
+        <li><b>Gas Optimization</b>Multi-chain tracker to minimize costs.</li>
+        <li><b>Telegram Bot</b>Live data via @Crypt0Emp1reBot, free.</li>
+        <li><b>Self-Custodial</b>Your keys, your coins. No exchange risk.</li>
+        <li><b>Premium API</b>10K requests/day + arbitrage signals.</li>
+      </ul>
+    </div>
+
+    <div class="bureau mono">
+      <b>EXCHANGE BUREAU</b>
+      <a href="https://www.binance.com/en/register?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Binance</a> / <a href="https://www.coinbase.com/join/CRYPTOEMPIRE" target="_blank" rel="noopener">Coinbase</a> / <a href="https://exchange.kraken.com/register?referrer=CRYPTOEMPIRE" target="_blank" rel="noopener">Kraken</a> / <a href="https://www.bybit.com/en/sign-up?affiliate_id=CRYPTOEMPIRE" target="_blank" rel="noopener">Bybit</a> / <a href="https://www.okx.com/join/CRYPTOEMPIRE" target="_blank" rel="noopener">OKX</a> / <a href="https://www.kucoin.com/ucenter/signup?rcode=CRYPTOEMPIRE" target="_blank" rel="noopener">KuCoin</a> / <a href="https://www.gate.io/signup/CRYPTOEMPIRE" target="_blank" rel="noopener">Gate.io</a> / <a href="https://app.uniswap.org/?ref=CRYPTOEMPIRE" target="_blank" rel="noopener">Uniswap</a>
+      <b>COLD STORAGE &amp; TOOLS</b>
+      <a href="https://shop.ledger.com/?r=CRYPTOEMPIRE" target="_blank" rel="noopener">Ledger</a> / <a href="https://crypto.com/exch/CRYPTOEMPIRE" target="_blank" rel="noopener">Crypto.com</a> / <a href="https://www.trezor.io/affiliate/CRYPTOEMPIRE" target="_blank" rel="noopener">Trezor</a>
+    </div>
+
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Support Development</span></div>
+      <p class="para" style="margin-top:2px">All tools are free. If this helps you, consider a donation.</p>
+      <div class="ledger-row"><span class="lbl">ETH·BSC·POLY·ARB·BASE</span><span class="dots">····</span><span class="val mono daddr" id="eth-addr" title="{{ wallet }}">{{ wallet }}</span><span class="dcopy" onclick="copyAddr('eth-addr',this)">copy</span></div>
+      <div class="ledger-row"><span class="lbl">BITCOIN</span><span class="dots">····</span><span class="val mono daddr" id="btc-addr">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</span><span class="dcopy" onclick="copyAddr('btc-addr',this)">copy</span></div>
+      <p class="foot-note">One address serves every EVM chain listed above.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="bot-strip mono">
+  <span>ONLINE</span><span class="sp">|</span>
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
+</div>
+
+<div class="toast" id="copy-toast">Address copied</div>
+<div class="toast" id="toast">Copied</div>
 
     <script>
         // ===== TOAST =====
@@ -1418,7 +1354,7 @@ INDEX_HTML = """<!DOCTYPE html>
                 var html='';
                 for(var i=0;i<Math.min(data.trending.length,10);i++){
                     var c=data.trending[i];
-                    html+='<div class="gas-item"><div class="gas-chain" style="font-size:11px;">'+c.name+'</div><div class="gas-gwei" style="font-size:16px;color:var(--text-dim);">'+(c.symbol||'').toUpperCase()+'</div><div style="font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Rank '+(c.market_cap_rank||'--')+'</div></div>';
+                    html+='<div class="gas-item"><div class="gas-chain" style="font-size:11px;">'+c.name+'</div><div class="gas-gwei" style="font-size:16px;color:var(--ink-dim);">'+(c.symbol||'').toUpperCase()+'</div><div style="font-size:8px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">Rank '+(c.market_cap_rank||'--')+'</div></div>';
                 }
                 grid.innerHTML=html;
             }catch(e){console.warn('fetchTrending error:',e)}
@@ -1462,20 +1398,20 @@ INDEX_HTML = """<!DOCTYPE html>
                 var html='';
                 var gainers=data.top_gainers.slice(0,5);
                 var losers=data.top_losers.slice(0,5);
-                html+='<div style="grid-column:1/-1;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding:4px 8px;margin-bottom:4px;">TOP GAINERS</div>';
+                html+='<div style="grid-column:1/-1;font-size:8px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--rule);padding:4px 8px;margin-bottom:4px;">TOP GAINERS</div>';
                 for(var i=0;i<gainers.length;i++){
                     var c=gainers[i];
                     html+='<div class="gas-item" style="text-align:left;display:flex;justify-content:space-between;align-items:center;">' +
                         '<div><div class="gas-chain" style="font-size:10px;">'+(c.symbol||c.name).toUpperCase()+'</div>' +
-                        '<div style="font-size:8px;color:var(--text-dim);">$'+(c.price||'--')+'</div></div>' +
+                        '<div style="font-size:8px;color:var(--ink-dim);">$'+(c.price||'--')+'</div></div>' +
                         '<div style="text-align:right;"><div class="up" style="font-size:13px;font-weight:700;">+'+(c.change||0).toFixed(2)+'%</div></div></div>';
                 }
-                html+='<div style="grid-column:1/-1;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding:4px 8px;margin-bottom:4px;margin-top:8px;">TOP LOSERS</div>';
+                html+='<div style="grid-column:1/-1;font-size:8px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--rule);padding:4px 8px;margin-bottom:4px;margin-top:8px;">TOP LOSERS</div>';
                 for(var i=0;i<losers.length;i++){
                     var c=losers[i];
                     html+='<div class="gas-item" style="text-align:left;display:flex;justify-content:space-between;align-items:center;">' +
                         '<div><div class="gas-chain" style="font-size:10px;">'+(c.symbol||c.name).toUpperCase()+'</div>' +
-                        '<div style="font-size:8px;color:var(--text-dim);">$'+(c.price||'--')+'</div></div>' +
+                        '<div style="font-size:8px;color:var(--ink-dim);">$'+(c.price||'--')+'</div></div>' +
                         '<div style="text-align:right;"><div class="down" style="font-size:13px;font-weight:700;">'+(c.change||0).toFixed(2)+'%</div></div></div>';
                 }
                 grid.innerHTML=html;
@@ -1507,11 +1443,11 @@ INDEX_HTML = """<!DOCTYPE html>
                 var topEl=document.getElementById('banner-top');
                 var midEl=document.getElementById('banner-mid');
                 if(topEl&&ads.banner_top){
-                    topEl.innerHTML='<a href="'+ads.banner_top.link+'" target="_blank" rel="noopener" style="display:block;padding:8px 12px;border:1px dashed var(--border);font-size:10px;text-align:center;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;text-decoration:none;">ADVERTISEMENT — '+ads.banner_top.name+'</a>';
+                    topEl.innerHTML='<a href="'+ads.banner_top.link+'" target="_blank" rel="noopener" style="display:block;padding:8px 12px;border:1px dashed var(--rule);font-size:10px;text-align:center;color:var(--ink-dim);letter-spacing:1px;text-transform:uppercase;text-decoration:none;">ADVERTISEMENT — '+ads.banner_top.name+'</a>';
                     topEl.style.display='block';
                 }else if(topEl){topEl.style.display='none';}
                 if(midEl&&ads.banner_mid){
-                    midEl.innerHTML='<a href="'+ads.banner_mid.link+'" target="_blank" rel="noopener" style="display:block;padding:8px 12px;border:1px dashed var(--border);font-size:10px;text-align:center;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;text-decoration:none;">ADVERTISEMENT — '+ads.banner_mid.name+'</a>';
+                    midEl.innerHTML='<a href="'+ads.banner_mid.link+'" target="_blank" rel="noopener" style="display:block;padding:8px 12px;border:1px dashed var(--rule);font-size:10px;text-align:center;color:var(--ink-dim);letter-spacing:1px;text-transform:uppercase;text-decoration:none;">ADVERTISEMENT — '+ads.banner_mid.name+'</a>';
                     midEl.style.display='block';
                 }else if(midEl){midEl.style.display='none';}
             }catch(e){console.warn('fetchBanners error:',e)}
@@ -1563,8 +1499,25 @@ INDEX_HTML = """<!DOCTYPE html>
             .catch(function(){msg.textContent='Error setting alert';});
         }
     </script>
-</body>
-</html>"""
+
+"""
+
+
+def _front_strip(top_coins, fear_greed):
+    """Index-strip items for the front page header tape."""
+    sym = {"bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL"}
+    items = []
+    for coin_id in ("bitcoin", "ethereum", "solana"):
+        d = top_coins.get(coin_id)
+        if not d:
+            continue
+        usd = d.get("usd") or 0
+        chg = d.get("usd_24h_change") or 0
+        price = f"${usd:,.2f}" if usd < 1000 else f"${usd:,.0f}"
+        items.append((sym[coin_id], price, "up" if chg >= 0 else "down"))
+    if fear_greed:
+        items.append(("F&G", f"{fear_greed['value']} · {fear_greed['classification']}", "dim"))
+    return items or None
 
 # ============================================================
 # Premium API Key Middleware + lightweight abuse rate limiting
@@ -1654,7 +1607,15 @@ def index():
     news = fetch_rss("https://cointelegraph.com/rss")
 
     return render_template_string(
-        INDEX_HTML,
+        page_shell(
+            "Dominion — Autonomous Crypto Intelligence",
+            nav_links(FRONT_NAV) + FRONT_BODY,
+            kicker="On-Chain Intelligence · Live",
+            page="A1",
+            strip_items=_front_strip(top_coins, fear_greed),
+            extra_css=FRONT_CSS,
+            head_extra=FRONT_META,
+        ),
         top_coins=top_coins,
         market_data=market_data,
         fear_greed=fear_greed,

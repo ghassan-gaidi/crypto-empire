@@ -63,6 +63,13 @@ NIGHT_CSS = """<meta charset="UTF-8">
   .index-strip{display:flex;gap:22px;align-items:center;justify-content:center;padding:7px 24px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:10.5px;white-space:nowrap;overflow-x:auto}
   .index-strip .tk-dim{color:var(--ink-dim)}
   .index-strip b{color:var(--ink-bright)}
+  /* --- nav strip (site-wide section index) --- */
+  .nav-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;padding:9px 24px;border-bottom:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase}
+  .nav-strip a{color:var(--ink-dim);text-decoration:none;white-space:nowrap}
+  .nav-strip a:hover{color:var(--ink-bright)}
+  .nav-strip .nav-here{color:var(--ink-bright);border-bottom:1px solid var(--rule-strong)}
+  .skip-link{position:absolute;left:-9999px;top:0}
+  .skip-link:focus{left:8px;top:8px;background:var(--ink-bright);color:var(--paper);padding:6px 10px;z-index:60}
   /* --- columns --- */
   .cols{display:grid;grid-template-columns:2.2fr 1.15fr 1.15fr;min-height:0}
   .cols .col{padding:14px 16px 16px;border-right:1px dotted var(--rule-strong);min-width:0}
@@ -231,13 +238,27 @@ def folio(page: str = "A1") -> str:
     )
 
 
+def nav_links(items, here: Optional[str] = None) -> str:
+    """Site-wide mono nav strip. items = [(label, href)]; `here` marks the
+    active label with an underscored rule."""
+    links = []
+    for label, href in items:
+        cls = ' class="nav-here"' if here is not None and label == here else ""
+        links.append(
+            f'<a{cls} href="{_E(href, quote=True)}">{_E(label)}</a>'
+        )
+    return '<nav class="nav-strip">' + "".join(links) + "</nav>"
+
+
 def page_shell(title: str, body: str, *, kicker: str = "", page: str = "A1",
                edition: str = "Night Edition", extra_css: str = "",
-               strip_items: Optional[Sequence[Tuple[str, str, str]]] = None) -> str:
+               strip_items: Optional[Sequence[Tuple[str, str, str]]] = None,
+               head_extra: str = "") -> str:
     lot = _E(kicker) if kicker else "On-Chain Intelligence"
     return (
         "<!DOCTYPE html>\n"
         f'<html lang="en"><head><title>{_E(title)} · Dominion</title>'
+        + head_extra
         + NIGHT_CSS
         + (f"<style>{extra_css}</style>" if extra_css else "")
         + "</head><body><div class=\"sheet\">"
@@ -246,9 +267,7 @@ def page_shell(title: str, body: str, *, kicker: str = "", page: str = "A1",
         + '<div class="edition-bar"><span>Crypto Intelligence Bureau · Berlin</span>'
         + f"<span>{_E(edition)}</span><span>Dominion</span></div>"
         + index_strip(strip_items)
-        + "<div class=\"cols\">"
         + body
-        + "</div>"
         + folio(page)
         + HALFTONE_DIV
         + "</div></body></html>"

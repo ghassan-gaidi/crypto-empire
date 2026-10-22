@@ -109,3 +109,21 @@ def test_page_shell():
 def test_page_shell_escaping():
     out = design.page_shell('<script>x</script>', "body")
     assert "<script>x</script>" not in out
+
+
+def test_nav_links():
+    out = design.nav_links([("Market", "#market"), ("<b>x</b>", "/x")])
+    assert "nav-strip" in out
+    assert "#market" in out
+    assert "&lt;b&gt;x&lt;/b&gt;" in out
+    assert "<b>" not in out
+
+def test_head_extra():
+    out = design.page_shell("T", "B", head_extra='<meta name="x" content="y">')
+    assert '<meta name="x" content="y">' in out
+    # metas land in <head>, not <body>
+    assert out.index('<meta name="x"') < out.index("</head>")
+
+def test_no_head_extra_by_default():
+    out = design.page_shell("T", "B")
+    assert 'name="x"' not in out
