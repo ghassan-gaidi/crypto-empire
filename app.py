@@ -749,8 +749,33 @@ SHARED_HEAD = """<meta charset="UTF-8">
   .footer-col .daddr{font-size:9px;padding:5px 10px;}
   .footer-col .dcopy{font-size:7px;padding:5px 10px;}
   .footer-bottom{text-align:center;padding:12px 0;font-size:8px;color:var(--text-muted);border-top:1px solid var(--border);}
+
+  /* ===== REFINED PRODUCT LAYER ===== */
+  :root{
+    --bg:#070b12;--surface:#0d131d;--surface2:#121b29;--border:rgba(164,181,205,.16);
+    --text:#dce6f2;--text-dim:#91a0b5;--text-muted:#5c6b80;--green:#53e6ad;
+    --green-dim:rgba(83,230,173,.12);--red:#ff7186;--accent:#93a5ff;--white:#f7fbff;
+    --glow:0 20px 60px rgba(0,0,0,.22);
+  }
+  html{scroll-behavior:smooth;}
+  body{font-size:13px;line-height:1.7;background-image:radial-gradient(ellipse at 50% -10%,rgba(83,230,173,.08),transparent 38%),radial-gradient(ellipse at 100% 20%,rgba(147,165,255,.08),transparent 32%),linear-gradient(to right,rgba(164,181,205,.025) 1px,transparent 1px),linear-gradient(to bottom,rgba(164,181,205,.025) 1px,transparent 1px);background-size:auto,auto,56px 56px,56px 56px;}
+  body::before{opacity:.07;}
+  .noise-bg{opacity:.025;}
+  .container{max-width:1440px;padding:28px clamp(16px,3vw,42px) 96px;}
+  .top-bar{padding:16px 20px;margin-bottom:28px;border-radius:16px;background:linear-gradient(135deg,rgba(16,25,39,.92),rgba(9,14,23,.82));box-shadow:0 16px 44px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.035);}
+  .brand{gap:16px;}.site-title{font-size:17px;letter-spacing:2.5px;}.site-sub{letter-spacing:2.2px;}
+  .top-nav{gap:4px;}.top-nav a{border-radius:8px;padding:8px 12px;letter-spacing:1.5px;}.top-nav a:hover{background:rgba(255,255,255,.045);transform:translateY(-1px);}
+  .status-line{padding:8px 2px;margin-bottom:30px;border-bottom-color:rgba(164,181,205,.12);}
+  .section-label,.s-title{letter-spacing:2.4px;}.s-title{font-size:10px;margin-bottom:14px;}
+  .stat-row{gap:12px;margin-bottom:28px;}.stat-item{padding:18px 18px;border-radius:12px;background:linear-gradient(145deg,rgba(18,28,43,.92),rgba(10,15,24,.9));box-shadow:inset 0 1px rgba(255,255,255,.035);overflow:hidden;}.stat-item::after,.stat-item::before{width:8px;height:8px;}.stat-value{font-size:25px;letter-spacing:-1px;}.stat-label{font-size:9px;letter-spacing:1.6px;}.stat-sub{font-size:9px;}
+  .glass-panel,.gas-card,.tbl,.prem-box{border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.025);}
+  .gas-card{padding:20px;margin-bottom:28px;background:linear-gradient(145deg,rgba(18,28,43,.8),rgba(10,15,24,.72));}.gas-item{padding:10px 0;border-bottom-color:rgba(164,181,205,.1);}
+  .tbl{margin-bottom:28px;background:linear-gradient(145deg,rgba(18,28,43,.8),rgba(10,15,24,.72));}.tbl table{min-width:680px;}th,td{padding:13px 16px;border-bottom-color:rgba(164,181,205,.1);}th{font-size:9px;letter-spacing:1.7px;}tr:hover td{background:rgba(83,230,173,.045);}
+  .feat-grid,.footer-grid{gap:1px;border-radius:14px;overflow:hidden;}.feat-item,.footer-col{padding:20px 16px;background:rgba(13,19,29,.82);}.feat-item:hover{background:rgba(83,230,173,.05);transform:translateY(-2px);}.feat-icon{font-size:14px;}
+  .aff-strip,.sponsor-box,.donate-box{border-radius:12px;background:rgba(13,19,29,.82);padding:13px 18px;}.aff-link,.sponsor-slot,.dcopy{border-radius:7px;}.prem-box{padding:28px;background:linear-gradient(145deg,rgba(33,18,28,.62),rgba(13,15,24,.78));}
+  a,button,.top-nav a,.stat-item,.feat-item,.aff-link,.sponsor-slot,.dcopy{transition:color .18s ease,background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease;}
   @media(max-width:700px){
-    .footer-grid{grid-template-columns:1fr;}
+    .footer-grid{grid-template-columns:1fr;}.container{padding:18px 12px 76px;}.top-bar{align-items:flex-start;padding:14px;}.top-nav{width:100%;}.top-nav a{flex:1;text-align:center;padding:9px 6px;font-size:8px;}.status-line{font-size:8px;}.stat-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}.stat-item{padding:14px 12px;}.stat-value{font-size:21px;}.tbl{margin-left:-1px;margin-right:-1px;}th,td{padding:11px 12px;}.feat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   }
 
   /* ===== NAV DIVIDER / GROUP ===== */
