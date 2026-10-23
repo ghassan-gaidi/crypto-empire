@@ -2126,7 +2126,7 @@ API_KEYS_HTML = page_shell(
 
     <div class="sec-title">Using Your Key</div>
     <p class="para">Use the premium API key via the <code style="font-family:'IBM Plex Mono',monospace;color:var(--ink-bright)">X-API-Key</code> header, or the <code style="font-family:'IBM Plex Mono',monospace;color:var(--ink-bright)">?api_key=</code> query parameter.</p>
-    <div class="code-block"><code>curl -H "X-API-Key: your_key_here" \
+    <div class="code-block"><code>curl -H "X-API-Key: $PREMIUM_API_KEY" \
   https://crypto-empire-ten.vercel.app/api/price/bitcoin</code></div>
 
     <div class="sec-title">Signing Up</div>

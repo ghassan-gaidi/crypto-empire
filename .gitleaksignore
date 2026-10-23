@@ -1,0 +1,11 @@
+# Fingerprinted gitleaks findings — 2026-10-23 Night Edition branch review.
+# All five are placeholder/documentation false positives or secrets already
+# purged from the working tree but still present in git HISTORY. The real
+# token (polar_oat_…) lives in an old commit of scripts/polar_setup.sh and
+# MUST be rotated at polar.sh — .gitleaksignore does not remove it from
+# history, it only stops the CI red flag. Prefer a history purge + rotation.
+878fa8410b26f06d91e5889929c38794c8a2ada9:app.py:curl-auth-header:2758
+09044514f2141092d5209594e8446f9e661f9d1b:scripts/polar_setup.sh:generic-api-key:4
+a1fbc9612e5870e0863daa2e5bc04e852185a3b1:app.py:curl-auth-header:1097
+de1d1ced560fa8173427462ee14fe06b6ed7ea16:app.py:generic-api-key:30
+2a6bb5d8185c50e01090ffdf3079b241d05b3a26:app.py.bak:generic-api-key:31
