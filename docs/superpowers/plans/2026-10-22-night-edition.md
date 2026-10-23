@@ -190,6 +190,8 @@ leaders, ❦, ▲/▼, masthead-first blocks, folio footers), `bot.py` (`/price`
 
 ---
 
+**STATUS: complete — all 11 tasks done (redesign/night-edition de41a8f)**
+
 ## Execution notes
 
 - Tasks 3–6 look identical mechanically; if a page's HTML constant is >1 page of markup,
