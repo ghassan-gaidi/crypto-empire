@@ -18,7 +18,7 @@ from flask import Flask, render_template_string, jsonify, request, redirect
 from flask_cors import CORS
 import requests
 
-from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS, MONET_CSS, LONGFORM_CSS
+from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS, MONET_CSS, LONGFORM_CSS, ADM_CSS
 
 # ============================================================
 # Configuration
@@ -2027,100 +2027,67 @@ def api_admin_stats():
     })
 
 
-ADMIN_DASHBOARD_HTML = r"""<!DOCTYPE html>
-<html lang="en">
-<head>""" + SHARED_HEAD + r"""
-    <title>Admin — Dominion</title>
-    <meta name="robots" content="noindex, nofollow">
-<style>
-body{background:var(--bg);}
-.container{max-width:1000px;margin:0 auto;padding:24px 20px 80px;position:relative;}
-.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0;}
-.g-stat{border:1px solid var(--border);padding:16px;background:var(--surface);}
-.g-stat .lbl{font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;}
-.g-stat .val{font-size:22px;color:var(--white);font-weight:600;}
-.g-stat .sub{font-size:9px;color:var(--text-dim);margin-top:4px;}
-.adm-section{margin:28px 0 12px;font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:3px;border-bottom:1px solid var(--border);padding-bottom:6px;}
-.adm-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:10px;}
-.adm-table th{padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;font-size:8px;}
-.adm-table td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text);}
-.adm-table tr:hover td{background:var(--surface);}
-.key{font-size:9px;color:var(--green);}
-.empty{color:var(--text-dim);font-size:10px;padding:12px 0;}
-.badge{display:inline-block;padding:1px 6px;font-size:8px;border:1px solid var(--border);margin-left:4px;}
-.badge.active{border-color:var(--green);color:var(--green);}
-.badge.expired{border-color:var(--red);color:var(--red);}
-</style>
-</head>
-<body>
-<div class="noise-bg" aria-hidden="true"></div>
-<div class="sweep" aria-hidden="true"></div>
-<a class="skip-link" href="#main">Skip to content</a>
+ADMIN_DASHBOARD_HTML = page_shell(
+    "Admin",
+    nav_links(FRONT_NAV, here="Admin") + r"""
+<div class="cols folio-grid" id="main">
+  <div class="col">
+    <div class="t-head"><span class="kicker">The Bureau · Crypto Empire Ops</span><span class="updated" id="live-clock">--</span></div>
+    <p class="deck">Key metrics at a glance — protected desk. Access travels with the <code style="font-family:'IBM Plex Mono',monospace;color:var(--ink-bright)">?key=</code> parameter.</p>
 
-<div class="container" id="main">
+    <div id="admin-content" style="margin-top:6px;">
+    <div class="g2" id="stat-cards">
+      <div class="g-stat"><div class="lbl">PREMIUM ACTIVE</div><div class="val" id="s-premium">--</div><div class="sub" id="s-premium-sub"></div></div>
+      <div class="g-stat"><div class="lbl">REFERRALS</div><div class="val" id="s-refs">--</div><div class="sub" id="s-refs-sub"></div></div>
+      <div class="g-stat"><div class="lbl">PRICE ALERTS</div><div class="val" id="s-alerts">--</div><div class="sub">active subscriptions</div></div>
+      <div class="g-stat"><div class="lbl">WHALE MOVES</div><div class="val" id="s-whales">--</div><div class="sub" id="s-whales-sub"></div></div>
+      <div class="g-stat"><div class="lbl">PORTFOLIOS</div><div class="val" id="s-portfolios">--</div><div class="sub">tracked portfolios</div></div>
+      <div class="g-stat"><div class="lbl">AD SLOTS FILLED</div><div class="val" id="s-ads">--</div><div class="sub" id="s-ads-sub"></div></div>
+    </div>
 
-<div class="top-bar">
-<div class="brand">
-<div class="prompt">><span class="cr"></span></div>
-<div>
-<div class="site-title">Admin</div>
-<div class="site-sub">crypto empire ops</div>
-</div>
-</div>
-<div class="top-nav">
-<a href="/">Dashboard</a>
-<a href="/admin" style="color:var(--white);">Admin</a>
-<a href="/advertise">Advertise</a>
-<a href="/premium">Premium</a>
-</div>
-</div>
+    <div class="adm-section">Active Premium Subscribers</div>
+    <div id="subs-table"><div class="empty">Loading...</div></div>
 
-<div class="status-line">
-<span><span class="dot"></span> SYS_STATUS: <span class="ok" style="color:var(--green);">OPTIMAL</span></span>
-<span id="live-clock">--</span>
-<span>ADMIN PANEL</span>
-</div>
+    <div class="adm-section">Top Referrers</div>
+    <div id="refs-table"><div class="empty">Loading...</div></div>
 
-<div class="t-h1" style="margin-top:24px;">> Admin Dashboard</div>
-<p style="font-size:10px;color:var(--text-dim);margin:0 0 4px;">Key metrics at a glance. Protected endpoint.</p>
+    <div class="adm-section">Ad Slot Status</div>
+    <div id="ads-table"><div class="empty">Loading...</div></div>
 
-<div id="admin-content" style="margin-top:12px;">
-<div class="g2" id="stat-cards">
-<div class="g-stat"><div class="lbl">PREMIUM ACTIVE</div><div class="val" id="s-premium">--</div><div class="sub" id="s-premium-sub"></div></div>
-<div class="g-stat"><div class="lbl">REFERRALS</div><div class="val" id="s-refs">--</div><div class="sub" id="s-refs-sub"></div></div>
-<div class="g-stat"><div class="lbl">PRICE ALERTS</div><div class="val" id="s-alerts">--</div><div class="sub">active subscriptions</div></div>
-<div class="g-stat"><div class="lbl">WHALE MOVES</div><div class="val" id="s-whales">--</div><div class="sub" id="s-whales-sub"></div></div>
-<div class="g-stat"><div class="lbl">PORTFOLIOS</div><div class="val" id="s-portfolios">--</div><div class="sub">tracked portfolios</div></div>
-<div class="g-stat"><div class="lbl">AD SLOTS FILLED</div><div class="val" id="s-ads">--</div><div class="sub" id="s-ads-sub"></div></div>
+    <div class="adm-section">Quick Actions</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+    <button class="btn btn-sm" onclick="refresh()">&#10227; Refresh Data</button>
+    <a class="btn btn-sm" href="#" onclick="event.preventDefault();fetch('/api/premium/subscribers',{headers:{'X-Admin-Key':(window.__ADMIN_KEY__||prompt('Enter admin key:'))}}).then(r=>r.json()).then(j=>alert(JSON.stringify(j).slice(0,2000))).catch(e=>alert('failed: '+e))">List All Subs (API)</a>
+    <a class="btn btn-sm" href="/api/whales?limit=5" target="_blank">Latest Whales</a>
+    </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="ledger">
+      <div class="t-head"><span class="kicker">Bureau Notes</span><span class="kicker">restricted</span></div>
+      <div class="ledger-row"><span class="lbl">Endpoint</span><span class="dots">····</span><span class="val">admin key header</span></div>
+      <div class="ledger-row"><span class="lbl">Data</span><span class="dots">····</span><span class="val">live · sqlite + json</span></div>
+      <div class="ledger-row"><span class="lbl">Version</span><span class="dots">····</span><span class="val">v1.0</span></div>
+      <p class="para">The tape above reconciles premium subscriptions, referral codes, price alerts, whale-cache counts, folios, and ad-slot fill — assembled from the same files the public desk reads.</p>
+    </div>
+
+    <div class="ad-box"><div>
+      <div class="kicker">Release</div>
+      <div class="ad-head">The Telegram Terminal</div>
+      <p class="para">Desk chatter and whale dispatches go out through the bot, not the bureau.</p>
+      <a class="buy" href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="margin-top:10px">Open @Crypt0Emp1reBot</a>
+    </div></div>
+  </div>
 </div>
 
-<div class="adm-section">Active Premium Subscribers</div>
-<div id="subs-table"><div class="empty">Loading...</div></div>
-
-<div class="adm-section">Top Referrers</div>
-<div id="refs-table"><div class="empty">Loading...</div></div>
-
-<div class="adm-section">Ad Slot Status</div>
-<div id="ads-table"><div class="empty">Loading...</div></div>
-
-<div class="adm-section">Quick Actions</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-<button class="btn btn-sm" onclick="refresh()">⟳ Refresh Data</button>
-<a class="btn btn-sm" href="#" onclick="event.preventDefault();fetch('/api/premium/subscribers',{headers:{'X-Admin-Key':(window.__ADMIN_KEY__||prompt('Enter admin key:'))}}).then(r=>r.json()).then(j=>alert(JSON.stringify(j).slice(0,2000))).catch(e=>alert('failed: '+e))">List All Subs (API)</a>
-<a class="btn btn-sm" href="/api/whales?limit=5" target="_blank">Latest Whales</a>
-</div>
-</div>
-
-<footer><div class="sys"><span>SYS_STATUS: <span class="ok">OPTIMAL</span></span> <span>// ACCESS: RESTRICTED</span></div><div class="info"><span>ADMIN: v1.0</span><span>DATA: LIVE</span></div></footer>
-</div>
-
-<div class="b-bar">
-<span><span class="dot"></span> ADMIN</span>
-<span><span class="sp">|</span> <span id="live-clock2">--</span></span>
-<span><span class="sp">|</span> BTC&nbsp;$<span id="btc-foot">--</span></span>
-<span><span class="sp">|</span> ETH&nbsp;$<span id="eth-foot">--</span></span>
-<span><span class="sp">|</span> <a href="/docs" style="color:var(--text-dim);">API</a></span>
-<span><span class="sp">|</span> <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener" style="color:var(--text-dim);">BOT</a></span>
+<div class="bot-strip mono">
+  <span>ADMIN</span><span class="sp">|</span>
+  <span id="live-clock2">--</span><span class="sp">|</span>
+  <span>BTC $<span id="btc-foot">--</span></span><span class="sp">|</span>
+  <span>ETH $<span id="eth-foot">--</span></span><span class="sp">|</span>
+  <a href="/docs">API</a><span class="sp">|</span>
+  <a href="https://t.me/Crypt0Emp1reBot" target="_blank" rel="noopener">BOT</a>
 </div>
 
 <script>
@@ -2150,14 +2117,18 @@ document.getElementById('refs-table').innerHTML=refHtml;
 var adsHtml='<table class="adm-table"><thead><tr><th>Slot</th><th>Content</th></tr></thead><tbody>';
 for(var slot in d.ads.filled_slots){adsHtml+='<tr><td>'+slot+'</td><td>'+d.ads.filled_slots[slot]+'</td></tr>';}
 var emptySlots=d.ads.total_slots-Object.keys(d.ads.filled_slots).length;
-if(emptySlots>0){adsHtml+='<tr><td style="color:var(--text-dim);">+ '+emptySlots+' empty slots</td><td class="empty">—</td></tr>';}
+if(emptySlots>0){adsHtml+='<tr><td style="color:var(--ink-dim);">+ '+emptySlots+' empty slots</td><td class="empty">—</td></tr>';}
 adsHtml+='</tbody></table>';
 document.getElementById('ads-table').innerHTML=adsHtml;
-}).catch(function(){document.getElementById('stat-cards').innerHTML='<div style="color:var(--red);font-size:11px;">Failed to load admin data. Check X-Admin-Key.</div>';});
+}).catch(function(){document.getElementById('stat-cards').innerHTML='<div style="color:var(--oxblood);font-size:11px;">Failed to load admin data. Check X-Admin-Key.</div>';});
 })();
-</script>
-</body>
-</html>"""
+</script>""",
+    kicker="The Bureau",
+    page="W6",
+    strip_items=[("Bureau", "ops desk · restricted", "dim")],
+    extra_css=SECTION_CSS + FOLIO_CSS + ADM_CSS,
+    head_extra='<meta name="robots" content="noindex, nofollow">',
+)
 
 
 @app.route("/admin")

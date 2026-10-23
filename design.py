@@ -267,6 +267,29 @@ LONGFORM_CSS = """
 """
 
 # ============================================================
+# Admin bureau devices (Task 7)
+# ============================================================
+ADM_CSS = """
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;border-top:1px solid var(--rule);border-left:1px solid var(--rule);margin:14px 0}
+.g-stat{padding:12px 14px 14px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.g-stat .lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
+.g-stat .val{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:var(--ink-bright);margin-top:4px}
+.g-stat .sub{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--ink-dim);margin-top:3px}
+.adm-section{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-bright);border-bottom:2.5px solid var(--ink-bright);padding-bottom:5px;margin:26px 0 8px}
+.adm-table{width:100%;border-collapse:collapse;margin:4px 0;font-size:10px;font-family:'IBM Plex Mono',monospace}
+.adm-table th{padding:5px 6px;text-align:left;border-bottom:1px solid var(--rule-strong);color:var(--ink-dim);text-transform:uppercase;letter-spacing:.14em;font-size:8px;font-weight:400}
+.adm-table td{padding:5px 6px;border-bottom:1px solid var(--rule);color:#cfc4a6}
+.key{font-size:9px;color:var(--print-green)}
+.empty{color:var(--ink-dim);font-size:10px;padding:10px 0;font-style:italic;font-family:'Fraunces',serif}
+.badge{display:inline-block;padding:1px 6px;font-size:8px;border:1px solid var(--rule-strong);margin-left:4px;font-family:'IBM Plex Mono',monospace;color:var(--ink)}
+.badge.active{border-color:var(--print-green);color:var(--print-green)}
+.badge.expired{border-color:var(--oxblood);color:var(--oxblood)}
+.btn{display:inline-block;border:1px solid var(--rule-strong);background:transparent;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;padding:7px 14px;text-decoration:none;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--ink-bright);color:var(--ink-bright)}
+.btn-sm{padding:5px 10px;font-size:8px}
+"""
+
+# ============================================================
 # Section-page devices (Tasks 3+: whales, trending, yields, launches…)
 # ============================================================
 SECTION_CSS = """
