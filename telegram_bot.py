@@ -8,6 +8,15 @@ import logging
 from html import unescape
 import requests
 
+from design import TG  # Night print devices (masthead / rule / leader / bullet / foot)
+
+import time
+
+
+def _when():
+    """UTC folio timestamp for wire footers."""
+    return time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
@@ -145,8 +154,8 @@ def edit_message(chat_id, message_id, text):
         pass
 
 def send_loading(chat_id, header):
-    """Send a loading placeholder, return message_id (or None if failed)."""
-    resp = send_message(chat_id, f">{header}\n{'═' * 18}\n\n  ⟳ Loading...")
+    """Send a masthead-first loading placeholder, return message_id (or None if failed)."""
+    resp = send_message(chat_id, f"{fmt_header(header)}\n\n⟳ setting the type…")
     if resp and resp.get("ok"):
         return resp["result"]["message_id"]
     return None
@@ -165,13 +174,34 @@ def edit_or_send(chat_id, message_id, text):
     send_message(chat_id, text)
 
 # ---------------------------------------------------------------------------
-# Formatting shortcuts
+# Night print devices — masthead-first blocks, rule bars, dotted leaders,
+# ❧ bullets, ▲/▼ tones, folio footers. Plain text only.
 # ---------------------------------------------------------------------------
-HEADER = "═" * 18
-SEP = "─" * 18
+SEP = TG["rule"]
 
 def fmt_header(title):
-    return f"> {title}\n{HEADER}"
+    """Masthead-first page head: 'DOMINION — PAGE' + rule bar."""
+    return f"{TG['masthead'].format(page=title)}\n{TG['rule']}"
+
+def wire_foot(page, when=""):
+    """Folio footer: ❦ page · /help for the index when."""
+    when = (when or "").strip()
+    return TG["foot"].format(page=page, when=when).rstrip()
+
+def leader_row(label, value):
+    """Dotted-leader ledger row."""
+    return f"{label} {TG['leader']} {value}"
+
+def bullet(text):
+    """Press-bullet line."""
+    return f"{TG['bullet']} {text}"
+
+def wire_block(page, rows, when=""):
+    """Assemble a wire telegram: masthead → rows → folio footer."""
+    lines = [fmt_header(page), ""]
+    lines += [r for r in rows if r]
+    lines += ["", wire_foot(page, when)]
+    return "\n".join(lines)
 
 def fmt_change(chg):
     if chg is None:
@@ -219,15 +249,11 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         if referrer_code and str(chat_id) not in referrer_code:
             app.record_referral(referrer_code, chat_id)
 
-    # ASCII art banner
+    # Night masthead block
     banner = (
-        "┌───────────────────────────┐\n"
-        "│   CRYPTO EMPIRE  v3.7     │\n"
-        "│   ──────────────────────  │\n"
-        "│   56+ coin shortcuts      │\n"
-        "│   @Crypt0Emp1reBot       │\n"
-        "└───────────────────────────┘\n\n"
-        "Live crypto data at your fingertips.\n\n"
+        f"{TG['masthead'].format(page='CRYPTO EMPIRE v3.7')}\n"
+        f"{TG['rule']}\n\n"
+        f"Live crypto data at your fingertips.\n\n"
     )
     intro = banner
     if chat_type == "group":
@@ -238,34 +264,34 @@ def cmd_start(chat_id, args=None, chat_type="private"):
 
     cmds = (
         "Commands:\n"
-        "  📊 /price <coin>     — Price & 24h change\n"
-        "  🪙 /btc /eth /sol    — Shortcuts for 55+ coins\n"
-        "  ⛽ /gas              — Gas prices (ETH/Poly/Arb/Base)\n"
-        "  😨 /fear             — Fear & Greed Index\n"
-        "  🔥 /trending         — Top trending coins\n"
-        "  🚀 /launches         — Upcoming token TGEs & IDOs\n"
-        "  📰 /news             — Latest crypto headlines\n"
-        "  👛 /wallet <addr>    — Multi-chain balance check\n"
-        "  💱 /dexs             — Top DEXes by volume\n"
-        "  🏦 /tvl              — Ethereum TVL\n"
-        "  📉 /sparkline <coin> — 7d ASCII price chart\n"
-        "  🐋 /whales           — On-chain whale moves >$100K\n"
-        "  📈 /movers           — Top 24h gainers & losers\n"
-        "  💰 /yields           — Top DeFi yield/APR pools\n"
-        "  🔍 /profiler <addr>  — Wallet profiler (ETH + tokens)\n"
-        "  🏆 /top              — Top coins by market cap\n"
-        "  🔄 /convert <amt> <f> <t> — Crypto converter\n"
-        "  🌐 /global          — Global market overview\n"
-        "  📂 /categories      — Top crypto categories\n"
-        "  🔔 /alerts           — List / create / delete alerts\n"
+        "  /price <coin>     — Price & 24h change\n"
+        "  /btc /eth /sol    — Shortcuts for 55+ coins\n"
+        "  /gas              — Gas prices (ETH/Poly/Arb/Base)\n"
+        "  /fear             — Fear & Greed Index\n"
+        "  /trending         — Top trending coins\n"
+        "  /launches         — Upcoming token TGEs & IDOs\n"
+        "  /news             — Latest crypto headlines\n"
+        "  /wallet <addr>    — Multi-chain balance check\n"
+        "  /dexs             — Top DEXes by volume\n"
+        "  /tvl              — Ethereum TVL\n"
+        "  /sparkline <coin> — 7d price chart\n"
+        "  /whales           — On-chain whale moves >$100K\n"
+        "  /movers           — Top 24h gainers & losers\n"
+        "  /yields           — Top DeFi yield/APR pools\n"
+        "  /profiler <addr>  — Wallet profiler (ETH + tokens)\n"
+        "  /top              — Top coins by market cap\n"
+        "  /convert <amt> <f> <t> — Crypto converter\n"
+        "  /global           — Global market overview\n"
+        "  /categories       — Top crypto categories\n"
+        "  /alerts           — List / create / delete alerts\n"
         "       e.g. /alerts BTC above 100000\n"
-        "  ⭐ /watchlist        — Your coin watchlist (/add, /rm)\n"
-        "  💼 /portfolio <id>   — Shareable portfolio value\n"
-        "  ⭐ /premium          — Unlock premium features\n"
-        "  ⚙️  /manage           — Manage subscription\n"
-        "  🔗 /referral         — Referral link & rewards\n"
-        "  ☕ /donate           — Support development\n"
-        "  ❓ /help             — This message\n\n"
+        "  /watchlist        — Your coin watchlist (/add, /rm)\n"
+        "  /portfolio <id>   — Shareable portfolio value\n"
+        "  /premium          — Unlock premium features\n"
+        "  /manage           — Manage subscription\n"
+        "  /referral         — Referral link & rewards\n"
+        "  /donate           — Support development\n"
+        "  /help             — This message\n\n"
         "Built autonomously — github.com/ghassan-gaidi/crypto-empire"
     )
 
@@ -274,7 +300,7 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         code = app.get_or_create_ref_code(chat_id)
         bot_username = os.environ.get("BOT_USERNAME", "Crypt0Emp1reBot")
         cmds += (
-            f"\n\n💎 Referral Program — Earn Free Premium!\n"
+            f"\n\n❧ Referral Program — Earn Free Premium!\n"
             f"Invite friends to add me to their groups.\n"
             f"3 referrals = 1 free month of Premium!\n\n"
             f"Your referral link:\n"
@@ -290,7 +316,9 @@ def cmd_start(chat_id, args=None, chat_type="private"):
         )
 
     if ref_code:
-        cmds += "\n\n✅ Referral recorded! Thanks for spreading the word."
+        cmds += "\n\n❧ Referral recorded! Thanks for spreading the word."
+
+    cmds += "\n\n" + wire_foot("START", _when())
 
     send_message(chat_id, intro + cmds)
 
@@ -307,13 +335,15 @@ def cmd_price(chat_id, args):
         chg = d.get("usd_24h_change")
         mc = d.get("usd_market_cap", 0)
         vol = d.get("usd_24h_vol", 0)
-        msg = (
-            f"  {coin.upper()}\n"
-            f"  {HEADER}\n\n"
-            f"  Price  │ {fmt_price(usd)}\n"
-            f"  24h    │ {fmt_change(chg)}\n"
-            f"  M.Cap  │ {fmt_market_cap(mc)}\n"
-            f"  Vol    │ {fmt_market_cap(vol)}"
+        msg = wire_block(
+            coin.upper(),
+            [
+                leader_row("price", fmt_price(usd)),
+                leader_row("24h", fmt_change(chg)),
+                leader_row("m.cap", fmt_market_cap(mc)),
+                leader_row("24h vol", fmt_market_cap(vol)),
+            ],
+            when=_when(),
         )
     else:
         msg = f"Coin '{coin}' not found. Try /price bitcoin."
@@ -335,17 +365,20 @@ def cmd_gas(chat_id, args=None):
     lines = [fmt_header("GAS TRACKER")]
     if eth_price:
         lines.append(f"\n{eth_price.strip()}")
+    rows = []
     for name, url in chains.items():
         try:
             r = requests.post(url, json={"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}, timeout=5)
             res = r.json()
             if "result" in res:
                 gwei = int(res["result"], 16) / 1e9
-                lines.append(f"{name:<10} {gwei:.1f} gwei")
+                rows.append(leader_row(f"{name:<10}", f"{gwei:.1f} gwei"))
             else:
-                lines.append(f"{name:<10} error")
+                rows.append(leader_row(f"{name:<10}", "error"))
         except Exception:
-            lines.append(f"{name:<10} error")
+            rows.append(leader_row(f"{name:<10}", "error"))
+    lines += rows
+    lines += ["", wire_foot("GAS TRACKER", _when())]
     send_message(chat_id, "\n".join(lines))
 
 def cmd_fear(chat_id, args=None):
@@ -355,8 +388,12 @@ def cmd_fear(chat_id, args=None):
         d = data["data"][0]
         val = d.get("value", "?")
         cls = d.get("value_classification", "N/A")
-        arrow = "📈" if int(val) > 50 else "📉" if int(val) < 25 else "➕"
-        msg = f"{fmt_header('FEAR & GREED')}\n\nValue: {val}/100\nState: {cls.upper()} {arrow}"
+        tone = TG["up"] if int(val) > 50 else TG["down"] if int(val) < 25 else "—"
+        msg = wire_block(
+            "FEAR & GREED",
+            [leader_row("value", f"{val}/100"), leader_row("state", f"{cls.upper()} {tone}")],
+            when=_when(),
+        )
     else:
         msg = "Fear & Greed unavailable"
     send_message(chat_id, msg)
@@ -372,10 +409,11 @@ def cmd_trending(chat_id, args=None):
             name = item.get("name", "?")
             sym = (item.get("symbol") or "").upper()
             rank = item.get("market_cap_rank") or "--"
-            lines.append(f"{i:2}. {name} ({sym}) — Rank #{rank}")
+            lines.append(bullet(f"{name} ({sym}) — Rank #{rank}"))
+        lines += ["", wire_foot("TRENDING", _when())]
         msg = "\n".join(lines)
     else:
-        msg = "Trending unavailable"
+        msg = TG["silent"]
     send_message(chat_id, msg)
 
 def cmd_launches(chat_id, args=None):
@@ -389,10 +427,11 @@ def cmd_launches(chat_id, args=None):
         if upcoming:
             for l in upcoming:
                 dd = l.get("days_until", "?")
-                lines.append(f"\n📅 {l['name']} (${l['symbol']})")
+                lines.append(bullet(f"{l['name']} (${l['symbol']})"))
                 lines.append(f"   {l['type']} — {dd} days · {l['chain']}")
         else:
             lines.append("\nNo upcoming launches right now.")
+        lines += ["", wire_foot("LAUNCHES", _when())]
         msg = "\n".join(lines)
     else:
         msg = "Launch calendar unavailable. See https://crypto-empire-ten.vercel.app/launches"
@@ -405,12 +444,13 @@ def cmd_news(chat_id, args=None):
     if items:
         lines = [fmt_header("CRYPTO NEWS")]
         for item in items[:5]:
-            lines.append(f"\n• {item['title']}")
+            lines.append(f"\n{bullet(item['title'])}")
             if item.get('date'):
                 lines.append(f"  {item['date'][:16]}")
+        lines += ["", wire_foot("NEWS", _when())]
         msg = "\n".join(lines)
     else:
-        msg = "News unavailable"
+        msg = TG["silent"]
     send_message(chat_id, msg)
 
 def cmd_wallet(chat_id, args):
@@ -444,13 +484,12 @@ def cmd_wallet(chat_id, args):
                 usd = bal * price
                 total += usd
                 bal_s = f"{bal:.4f}" if bal >= 0.001 else f"{bal:.8f}"
-                lines.append(f"\n{name:<10} {bal_s}  ${usd:,.2f}")
+                lines.append(leader_row(f"{name:<10}", f"{bal_s}  ${usd:,.2f}"))
             else:
-                lines.append(f"\n{name:<10} error")
+                lines.append(leader_row(f"{name:<10}", "error"))
         except Exception:
-            lines.append(f"\n{name:<10} error")
-    lines.append(f"\n{SEP}")
-    lines.append(f"TOTAL: ${total:,.2f}")
+            lines.append(leader_row(f"{name:<10}", "error"))
+    lines += ["", SEP, leader_row("total", f"${total:,.2f}"), "", wire_foot("WALLET", _when())]
     send_message(chat_id, "\n".join(lines))
 
 def cmd_tvl(chat_id, args=None):
@@ -459,7 +498,11 @@ def cmd_tvl(chat_id, args=None):
     if data and len(data) > 0:
         latest = data[-1]
         tvl_b = latest.get("tvl", 0) / 1e9
-        msg = f"{fmt_header('ETH TVL')}\n\n${tvl_b:.2f}B\nSource: DeFiLlama"
+        msg = wire_block(
+            "ETH TVL",
+            [leader_row("tvl", f"${tvl_b:.2f}B"), leader_row("source", "DeFiLlama")],
+            when=_when(),
+        )
     else:
         msg = "TVL unavailable"
     send_message(chat_id, msg)
@@ -477,10 +520,11 @@ def cmd_dexs(chat_id, args=None):
             vol_s = f"${vol/1e6:.1f}M" if vol >= 1e6 else f"${vol/1e3:.0f}K"
             chg = d.get("change_1d", 0) or 0
             arrow = "▲" if chg >= 0 else "▼"
-            lines.append(f"{i:2}. {name:<20} {vol_s:>10} {arrow}{chg:+.1f}%")
+            lines.append(bullet(f"{name} — {vol_s} {arrow}{chg:+.1f}%"))
+        lines += ["", wire_foot("DEXES", _when())]
         msg = "\n".join(lines)
     else:
-        msg = "DEX data unavailable"
+        msg = TG["silent"]
     send_message(chat_id, msg)
 
 def cmd_whales(chat_id, args=None):
@@ -493,14 +537,19 @@ def cmd_whales(chat_id, args=None):
         for m in data["moves"]:
             usd = f"${m['usdValue']:,.0f}" if m.get("usdValue") else f"{m['value']:,.2f}"
             addr_s = f"{m['to'][:6]}...{m['to'][-4:]}"
-            lines.append(f"\n🐋 {usd} {m['token']}")
+            lines.append("\n" + bullet(f"{usd} {m['token']}"))
             lines.append(f"   → {addr_s}  · {m['txHash'][:8]}...")
-        lines.append(f"\n{SEP}")
-        lines.append(f"Updated: {data['lastUpdated'][:19]} UTC")
-        lines.append("Tracked: USDT/USDC/WBTC · crypto-empire-ten.vercel.app/whales")
+        lines += [
+            "",
+            SEP,
+            leader_row("updated", f"{data['lastUpdated'][:19]} UTC"),
+            leader_row("tracked", "USDT/USDC/WBTC"),
+            "",
+            wire_foot("WHALES", _when()),
+        ]
         msg = "\n".join(lines)
     else:
-        msg = "No whale moves found right now."
+        msg = TG["silent"]
     edit_or_send(chat_id, msg_id, msg)
 
 def cmd_premium(chat_id, args=None):
@@ -508,20 +557,21 @@ def cmd_premium(chat_id, args=None):
     msg = (
         f"{fmt_header('CRYPTO EMPIRE PREMIUM')}\n\n"
         "Unlock premium features:\n\n"
-        "• Telegram whale alerts — real-time $100K+ push\n"
-        "• Multi-wallet portfolio — track 6+ ETH addresses\n"
-        "• Priority price alerts — instant threshold notifications\n"
-        "• Premium sentiment indicators — buy/sell signals\n"
-        "• Ad-free across all pages\n"
-        "• Support development\n\n"
-        "👉 Subscribe:\n"
+        f"{bullet('Telegram whale alerts — real-time $100K+ push')}\n"
+        f"{bullet('Multi-wallet portfolio — track 6+ ETH addresses')}\n"
+        f"{bullet('Priority price alerts — instant threshold notifications')}\n"
+        f"{bullet('Premium sentiment indicators — buy/sell signals')}\n"
+        f"{bullet('Ad-free across all pages')}\n"
+        f"{bullet('Support development')}\n\n"
+        "Subscribe:\n"
         "https://buy.polar.sh/polar_cl_6tzQXPw5VwincKlZdlyR2aM9XGePVbhfzWCb13P42ox\n\n"
         "Price: $9.99/month — Cancel anytime\n"
         "Powered by Polar.sh\n\n"
         "Already subscribed? Manage at:\n"
         "https://crypto-empire-ten.vercel.app/premium\n\n"
-        "☕ Like the bot? Donate ETH:\n"
-        "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef"
+        "Like the bot? Donate ETH:\n"
+        "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef\n\n"
+        + wire_foot("PREMIUM", _when())
     )
     send_message(chat_id, msg)
 
@@ -532,7 +582,8 @@ def cmd_manage(chat_id, args=None):
         f"{fmt_header('MANAGE SUBSCRIPTION')}\n\n"
         "Open the web portal to view, upgrade, or cancel:\n\n"
         f"{url}\n\n"
-        "Note: Your Telegram ID links your subscription."
+        "Note: Your Telegram ID links your subscription.\n\n"
+        + wire_foot("MANAGE", _when())
     )
     send_message(chat_id, msg)
 
@@ -550,7 +601,7 @@ def cmd_referral(chat_id, args=None):
         f"Your referrals: {refs}\n"
         f"Premium months earned: {rewards}\n"
         f"Next reward in: {next_reward} more referrals\n\n"
-        "🎁 3 referrals = 1 free month of Premium\n\n"
+        "3 referrals = 1 free month of Premium\n\n"
         "Your unique referral link:\n"
         f"https://t.me/{bot_username}?start=ref_{code}\n\n"
         "Add me to your group:\n"
@@ -560,6 +611,7 @@ def cmd_referral(chat_id, args=None):
         msg += "Already subscribed? Share your link and earn free months!"
     else:
         msg += "You're premium already — each reward extends your subscription by 1 month."
+    msg += "\n\n" + wire_foot("REFERRAL", _when())
     send_message(chat_id, msg)
 
 def cmd_donate(chat_id, args=None):
@@ -571,7 +623,8 @@ def cmd_donate(chat_id, args=None):
         "0x29021dd5306D7b3b6608a2bc8276D33c1200C7Ef\n\n"
         "BITCOIN:\n"
         "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\n\n"
-        "Every donation keeps the bot running. Thank you."
+        "Every donation keeps the bot running. Thank you.\n\n"
+        + wire_foot("DONATE", _when())
     )
     send_message(chat_id, msg)
 
@@ -602,7 +655,7 @@ def cmd_sparkline(chat_id, args):
             chart = "\n".join(rows)
             arrow = " ▲" if sample[-1] >= sample[0] else " ▼"
             price_s = fmt_price(sample[-1])
-            msg = f"{fmt_header(f'{coin.upper()} 7d{arrow}')}\n{'─' * 20}\n{chart}\n{'─' * 20}\n{price_s}"
+            msg = f"{fmt_header(f'{coin.upper()} 7d{arrow}')}\n{TG['rule']}\n{chart}\n{TG['rule']}\n{price_s}"
         else:
             msg = f"No sparkline data for {coin}"
     else:
@@ -622,21 +675,22 @@ def cmd_movers(chat_id, args=None):
         g = data["top_gainers"][:5]
         l = data["top_losers"][:5]
         lines = [fmt_header("MARKET MOVERS (24h)")]
-        lines.append("\n🏆 TOP GAINERS")
+        lines.append(f"\n▲ TOP GAINERS")
         for c in g:
             sym = (c.get("symbol") or "").upper()
             chg = c.get("change", 0) or 0
             p = c.get("price", "?")
-            lines.append(f"  {sym:<6} ▲ {chg:.2f}%  ${p}")
-        lines.append("\n💩 TOP LOSERS")
+            lines.append(bullet(f"{sym} ▲ {chg:.2f}%  ${p}"))
+        lines.append(f"\n▼ TOP LOSERS")
         for c in l:
             sym = (c.get("symbol") or "").upper()
             chg = c.get("change", 0) or 0
             p = c.get("price", "?")
-            lines.append(f"  {sym:<6} ▼ {abs(chg):.2f}%  ${p}")
+            lines.append(bullet(f"{sym} ▼ {abs(chg):.2f}%  ${p}"))
+        lines += ["", wire_foot("MOVERS", _when())]
         msg = "\n".join(lines)
     else:
-        msg = "Movers unavailable right now."
+        msg = TG["silent"]
     edit_or_send(chat_id, msg_id, msg)
 
 def cmd_yields(chat_id, args=None):
@@ -649,19 +703,18 @@ def cmd_yields(chat_id, args=None):
         for cat in ["lending", "stablecoin"]:
             pools = data.get(cat, [])[:3]
             if pools:
-                lines.append(f"\n═══ {cat.upper()} ═══")
+                lines.append(f"\n{cat.upper()}")
                 for p in pools:
                     apy = p.get("apy", 0) or 0
                     sym = p.get("symbol", "?")
                     chain = p.get("chain", "?")
                     tvl = p.get("tvlUsd", 0) or 0
                     tvl_s = f"${tvl/1e6:.1f}M" if tvl >= 1e6 else f"${tvl/1e3:.0f}K"
-                    lines.append(f"  {sym:<8} {apy:.2f}% | {chain} | {tvl_s}")
-        lines.append(f"\n{SEP}")
-        lines.append("crypto-empire-ten.vercel.app/yields")
+                    lines.append(bullet(f"{sym} {apy:.2f}% — {chain} · {tvl_s}"))
+        lines += ["", SEP, "crypto-empire-ten.vercel.app/yields", "", wire_foot("YIELDS", _when())]
         msg = "\n".join(lines)
     else:
-        msg = "Yields unavailable."
+        msg = TG["silent"]
     edit_or_send(chat_id, msg_id, msg)
 
 def cmd_profiler(chat_id, args):
@@ -686,8 +739,8 @@ def cmd_profiler(chat_id, args):
             "",
             f"{addr[:10]}...{addr[-6:]}",
             "",
-            f"ETH:  {eth_bal}  ${usd_val:,.2f}",
-            f"TXs:  {tx_count}",
+            leader_row("eth", f"{eth_bal}  ${usd_val:,.2f}"),
+            leader_row("txs", f"{tx_count}"),
         ]
         if tokens:
             lines.append(f"\nTOKENS:")
@@ -695,7 +748,8 @@ def cmd_profiler(chat_id, args):
                 sym = t.get("symbol", "?")
                 bal = t.get("balance", "0")
                 val = t.get("usdValue", 0) or 0
-                lines.append(f"  {sym:<8} {bal}  ${val:,.2f}")
+                lines.append(bullet(f"{sym} {bal}  ${val:,.2f}"))
+        lines += ["", wire_foot("PROFILER", _when())]
         msg = "\n".join(lines)
     else:
         msg = f"Profiler unavailable for {addr[:10]}..."
@@ -717,10 +771,11 @@ def cmd_top(chat_id, args=None):
             mc = c.get("market_cap", 0) or 0
             arrow = "▲" if chg >= 0 else "▼"
             p_s = f"${p:,.2f}" if p >= 1 else f"${p:.8f}" if p else "N/A"
-            lines.append(f"{i:2}. {sym:<6} {p_s}  {arrow}{abs(chg):.2f}%")
+            lines.append(leader_row(f"{i:2}. {sym:<6}", f"{p_s}  {arrow}{abs(chg):.2f}%"))
+        lines += ["", wire_foot("TOP", _when())]
         msg = "\n".join(lines)
     else:
-        msg = "Top coins unavailable."
+        msg = TG["silent"]
     edit_or_send(chat_id, msg_id, msg)
 
 def cmd_convert(chat_id, args):
@@ -805,8 +860,8 @@ def cmd_watchlist(chat_id, args=None):
     if not coins:
         send_message(chat_id, (
             f"{fmt_header('WATCHLIST')}\n\n"
-            "Empty. Add coins:\n"
-            "`/add btc`  `/add eth,sol`\n\n"
+            "Empty — the wire is dark until something is pinned.\n"
+            "Add coins: /add btc, /add eth,sol\n\n"
             "Tip: /btc /eth /sol work too."
         ))
         return
@@ -826,14 +881,14 @@ def cmd_watchlist(chat_id, args=None):
             continue
         arrow = "▲" if (chg or 0) >= 0 else "▼"
         lines.append(f"\n{cid.upper():<12} {fmt_price(p)}  {arrow}{abs(chg or 0):.2f}%")
-    lines.append("\n`/add <coin>` add · `/rm <coin>` remove")
+    lines.append("\n/add <coin> add · /rm <coin> remove")
     edit_or_send(chat_id, msg_id, "\n".join(lines))
 
 
 def cmd_add(chat_id, args):
     """Add coin(s) to your watchlist: /add btc  or  /add eth,sol,link"""
     if not args:
-        send_message(chat_id, "Usage: `/add <coin>`  or  `/add eth,sol,link`")
+        send_message(chat_id, "Usage: /add <coin>  or  /add eth,sol,link")
         return
     app = _get_app()
     requested = [c.strip().lower() for a in args for c in a.split(",") if c.strip()]
@@ -851,30 +906,31 @@ def cmd_add(chat_id, args):
     unknown = [s for s in requested if SYMBOL_TO_ID.get(s, s) not in resolved]
     parts = [fmt_header("WATCHLIST")]
     if added:
-        parts.append(f"\n✅ Added: {', '.join(c.upper() for c in added)}")
+        parts.append(f"\n❧ Added: {', '.join(c.upper() for c in added)}")
     else:
         parts.append("\nNothing new (already tracked or unknown).")
     if unknown:
-        parts.append(f"\n⚠️ Unknown: {', '.join(unknown)}")
+        parts.append(f"\n— Unknown: {', '.join(unknown)}")
     parts.append(f"\nTotal: {len(coins)} coins. See /watchlist")
+    parts += ["", wire_foot("WATCHLIST", _when())]
     send_message(chat_id, "\n".join(parts))
 
 
 def cmd_rm(chat_id, args):
     """Remove coin(s) from your watchlist: /rm btc  or  /rm all"""
     if not args:
-        send_message(chat_id, "Usage: `/rm <coin>`  or  `/rm all`")
+        send_message(chat_id, "Usage: /rm <coin>  or  /rm all")
         return
     coins = _watchlist_get(chat_id)
     if args[0].lower() in ("all", "clear"):
         _watchlist_set(chat_id, [])
-        send_message(chat_id, f"{fmt_header('WATCHLIST')}\n\n🗑️ Cleared. Add with /add")
+        send_message(chat_id, f"{fmt_header('WATCHLIST')}\n\nCleared. Add with /add\n\n" + wire_foot("WATCHLIST", _when()))
         return
     wanted = {SYMBOL_TO_ID.get(c.strip().lower(), c.strip().lower())
               for a in args for c in a.split(",")}
     kept = [c for c in coins if c not in wanted]
     _watchlist_set(chat_id, kept)
-    send_message(chat_id, f"{fmt_header('WATCHLIST')}\n\nRemoved {len(coins) - len(kept)}. {len(kept)} left. See /watchlist")
+    send_message(chat_id, f"{fmt_header('WATCHLIST')}\n\nRemoved {len(coins) - len(kept)}. {len(kept)} left. See /watchlist\n\n" + wire_foot("WATCHLIST", _when()))
 
 
 def cmd_portfolio(chat_id, args):
@@ -886,10 +942,11 @@ def cmd_portfolio(chat_id, args):
     if not args:
         send_message(chat_id, (
             f"{fmt_header('PORTFOLIO')}\n\n"
-            "Usage: `/portfolio <id>`\n"
+            "Usage: /portfolio <id>\n"
             "Create a shareable portfolio on the dashboard:\n"
             "https://crypto-empire-ten.vercel.app/portfolio\n\n"
-            "Up to 5 wallets free, unlimited with Premium."
+            "Up to 5 wallets free, unlimited with Premium.\n\n"
+            + wire_foot("PORTFOLIO", _when())
         ))
         return
     pid = args[0].strip().lower()
@@ -900,15 +957,16 @@ def cmd_portfolio(chat_id, args):
     except Exception:
         data = {}
     if not data or data.get("error"):
-        send_message(chat_id, f"{fmt_header('PORTFOLIO')}\n\n⚠️ Portfolio `{pid}` not found.")
+        send_message(chat_id, f"{fmt_header('PORTFOLIO')}\n\n— Portfolio {pid} not found.\n\n" + wire_foot("PORTFOLIO", _when()))
         return
     total = data.get("total_usd", 0) or 0
     wallets = data.get("wallets", [])
     lines = [fmt_header(f"PORTFOLIO — {data.get('name', pid)}"),
-             f"\n💰 Total: ${total:,.2f} across {len(wallets)} wallet(s)"]
+             leader_row("total", f"${total:,.2f}"),
+             leader_row("wallets", f"{len(wallets)}")]
     for w in wallets[:5]:
-        lines.append(f"\n`{w.get('address','')[:10]}…`  ${w.get('total_usd', 0):,.2f}")
-    lines.append(f"\nFull view: {base}/portfolio/{pid}")
+        lines.append(bullet(f"{w.get('address','')[:10]}…  ${w.get('total_usd', 0):,.2f}"))
+    lines += ["", f"Full view: {base}/portfolio/{pid}", "", wire_foot("PORTFOLIO", _when())]
     send_message(chat_id, "\n".join(lines))
 
 
@@ -928,13 +986,13 @@ def cmd_alerts(chat_id, args=None):
         try:
             rid = int(args[1])
         except ValueError:
-            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nUsage: /alerts del <id>\nSee IDs with /alerts")
+            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nUsage: /alerts del <id>\nSee IDs with /alerts\n\n" + wire_foot("ALERTS", _when()))
             return
         try:
             r = requests.delete(f"{base}/api/alerts",
                                 params={"chat_id": str(chat_id), "rowid": rid}, timeout=10)
             ok = r.ok and r.json().get("deleted")
-            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n{'✅ Alert deleted.' if ok else '⚠️ No alert with that ID.'}")
+            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n{'❧ Alert deleted.' if ok else '— No alert with that ID.'}\n\n" + wire_foot("ALERTS", _when()))
         except Exception as e:
             send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nError deleting alert: {e}")
         return
@@ -948,7 +1006,7 @@ def cmd_alerts(chat_id, args=None):
             if target <= 0:
                 raise ValueError
         except ValueError:
-            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nUsage: /alerts BTC above 100000")
+            send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nUsage: /alerts BTC above 100000\n\n" + wire_foot("ALERTS", _when()))
             return
         try:
             r = requests.post(f"{base}/api/alerts",
@@ -957,9 +1015,9 @@ def cmd_alerts(chat_id, args=None):
                               timeout=10)
             data = r.json() if r.ok else {}
             if r.ok and data.get("status") == "ok":
-                send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n✅ {data.get('message')}\nI'll DM you when it triggers.")
+                send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n❧ {data.get('message')}\nI'll DM you when it triggers.\n\n" + wire_foot("ALERTS", _when()))
             else:
-                send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n⚠️ {data.get('error', 'Could not save alert.')}")
+                send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\n— {data.get('error', 'Could not save alert.')}\n\n" + wire_foot("ALERTS", _when()))
         except Exception as e:
             send_message(chat_id, f"{fmt_header('PRICE ALERTS')}\n\nError saving alert: {e}")
         return
@@ -973,20 +1031,21 @@ def cmd_alerts(chat_id, args=None):
     if not rows:
         msg = (
             f"{fmt_header('PRICE ALERTS')}\n\n"
-            "No active alerts.\n\n"
+            "No active alerts — the wire is quiet.\n\n"
             "Create one:\n"
-            "`/alerts BTC above 100000`\n"
-            "`/alerts ETH below 2000`\n\n"
+            "/alerts BTC above 100000\n"
+            "/alerts ETH below 2000\n\n"
             "Or set alerts on the dashboard:\n"
             "https://crypto-empire-ten.vercel.app/#alerts\n\n"
-            "Premium users get priority alert delivery."
+            "Premium users get priority alert delivery.\n\n"
+            + wire_foot("ALERTS", _when())
         )
     else:
         lines = [fmt_header(f"YOUR ALERTS ({len(rows)})")]
         for row in rows[:10]:
             arrow = "▲" if (row.get("direction") or "above") == "above" else "▼"
-            lines.append(f"\n#{row.get('rowid')}  {row.get('coin')} {arrow} ${row.get('target'):,.2f}")
-        lines.append("\nDelete: `/alerts del <id>`")
+            lines.append(leader_row(f"#{row.get('rowid')} {row.get('coin')} {arrow}", f"${row.get('target'):,.2f}"))
+        lines += ["", "Delete: /alerts del <id>", "", wire_foot("ALERTS", _when())]
         msg = "\n".join(lines)
     send_message(chat_id, msg)
 
@@ -1017,19 +1076,21 @@ def cmd_global(chat_id, args=None):
         lines = [
             fmt_header("GLOBAL MARKET"),
             "",
-            f"Active coins: {active}",
-            f"Exchanges:    {exchanges}",
+            leader_row("active coins", f"{active}"),
+            leader_row("exchanges", f"{exchanges}"),
             "",
-            f"Market Cap:   {fmt_b(total_mc)}",
-            f"24h Volume:   {fmt_b(total_vol)}",
-            f"24h Change:   {arrow}{abs(mc_chg):.2f}%",
+            leader_row("market cap", fmt_b(total_mc)),
+            leader_row("24h volume", fmt_b(total_vol)),
+            leader_row("24h change", f"{arrow}{abs(mc_chg):.2f}%"),
             "",
-            f"BTC Dominance: {btc_dom:.1f}%",
-            f"ETH Dominance: {eth_dom:.1f}%",
+            leader_row("btc dom.", f"{btc_dom:.1f}%"),
+            leader_row("eth dom.", f"{eth_dom:.1f}%"),
+            "",
+            wire_foot("GLOBAL", _when()),
         ]
         msg = "\n".join(lines)
     else:
-        msg = "Global market data unavailable."
+        msg = TG["silent"]
     edit_or_send(chat_id, msg_id, msg)
 
 def cmd_categories(chat_id, args=None):
@@ -1052,10 +1113,11 @@ def cmd_categories(chat_id, args=None):
             else:
                 mc_s = f"${mc:,.0f}"
             arrow = "▲" if chg >= 0 else "▼"
-            lines.append(f"{i:2}. {name:<20} {mc_s:>8}  {arrow}{abs(chg):.1f}%")
+            lines.append(bullet(f"{i:2}. {name} — {mc_s} {arrow}{abs(chg):.1f}%"))
+        lines += ["", wire_foot("CATEGORIES", _when())]
         msg = "\n".join(lines)
     else:
-        msg = "Categories data unavailable."
+        msg = TG["silent"]
     edit_or_send(chat_id, msg_id, msg)
 
 # ---------------------------------------------------------------------------
@@ -1079,16 +1141,16 @@ def handle_my_chat_member(data):
         # Bot was added to group
         bot_username = os.environ.get("BOT_USERNAME", "Crypt0Emp1reBot")
         welcome = (
-            f"🤖 *Dominion Bot added to {group_title}*\n\n"
+            f"{fmt_header('BOT ADDED TO ' + group_title.upper())}\n\n"
             f"Type /btc, /eth, /sol or any coin ticker for instant prices.\n"
             f"Use /help to see all commands.\n\n"
             f"More at crypto-empire-ten.vercel.app\n\n"
-            f"💎 *Earn Free Premium*\n"
+            f"Earn Free Premium\n"
             f"Share this link with friends to earn rewards:\n"
             f"https://t.me/{bot_username}?start=ref_your_code\n"
             f"3 referrals = 1 free month!"
         )
-        send_message(chat_id, welcome, parse_mode="Markdown")
+        send_message(chat_id, welcome)
         log.info(f"Bot added to group: {group_title} ({chat_id})")
 
     elif new_status == "left" and old_status == "member":

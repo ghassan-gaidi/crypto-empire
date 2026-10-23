@@ -169,11 +169,11 @@ palette (dark/crimson) replaced with paper/ink.
 **Files:** Modify `telegram_bot.py` (message builders use `TG` scaffolds: rule bars, dotted
 leaders, ❦, ▲/▼, masthead-first blocks, folio footers), `bot.py` (`/price`, `/gas`,
 `/whales`, `/start`, `/help` same scaffolds for parity).
-- [ ] **Step 1:** unit tests: `tests/test_tg_style.py` — `TG` scaffolds importable, formatted
+- [x] **Step 1:** unit tests: `tests/test_tg_style.py` — `TG` scaffolds importable, formatted
   messages contain rule lines and no markdown-HTML (Telegram `parse_mode` respected).
-- [ ] **Step 2:** implement; run `python -c "import telegram_bot"` (no token needed w/ guard) +
+- [x] **Step 2:** implement; run `python -c "import telegram_bot"` (no token needed w/ guard) +
   pytest PASS.
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ### Task 11: Final sweep, README, press kit
 

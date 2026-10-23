@@ -25,6 +25,8 @@ except ImportError:
     sys.exit(1)
 
 import aiohttp
+
+from design import TG  # Night print devices (masthead / rule / leader / bullet / foot)
 import requests
 
 # ============================================================
@@ -154,20 +156,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db_conn.close()
 
     welcome = f"""
-⚡ *Dominion Bot* ⚡
+*{TG['masthead'].format(page='CRYPTO EMPIRE')}*
+{TG['rule']}
 
 Your autonomous crypto intelligence hub. Track prices, get alerts, discover opportunities.
 
-🔹 /price <coin> - Check price (e.g. /price bitcoin)
-🔹 /trending - Trending coins
-🔹 /gas - Check gas prices across chains
-🔹 /watchlist - Manage your watchlist
-🔹 /add <coin> - Add to watchlist
-🔹 /portfolio - Track your portfolio
-🔹 /premium - Unlock premium features
-🔹 /help - All commands
+❧ /price <coin> - Check price (e.g. /price bitcoin)
+❧ /trending - Trending coins
+❧ /gas - Check gas prices across chains
+❧ /watchlist - Manage your watchlist
+❧ /add <coin> - Add to watchlist
+❧ /portfolio - Track your portfolio
+❧ /premium - Unlock premium features
+❧ /help - All commands
 
-💎 *Premium*: Real-time alerts, arbitrage signals, portfolio auto-tracking
+*Premium*: Real-time alerts, arbitrage signals, portfolio auto-tracking
 """
     keyboard = [
         [InlineKeyboardButton("💰 Premium Plans", callback_data="premium")],
@@ -194,16 +197,18 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         change = data.get("usd_24h_change", 0)
         mcap = data.get("usd_market_cap", 0)
 
-        change_emoji = "📈" if change >= 0 else "📉"
+        arrow = "▲" if change >= 0 else "▼"
         price_str = f"${price:,.2f}" if price < 1000 else f"${price:,.0f}"
         change_str = f"{change:+.2f}%"
         mcap_str = f"${mcap/1e9:.2f}B" if mcap > 1e9 else f"${mcap/1e6:.2f}M"
 
         response = f"""
-{change_emoji} *{coin_id.upper()}*
-Price: {price_str}
-24h: {change_str} 
-Market Cap: {mcap_str}
+*{TG['masthead'].format(page=coin_id.upper())}*
+{TG['rule']}
+
+{TG['leader']} {arrow} {change_str}
+Price {TG['leader']} {price_str}
+M.cap {TG['leader']} {mcap_str}
 """
         await update.message.reply_text(response, parse_mode="Markdown")
     else:
@@ -216,17 +221,17 @@ async def trending_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coins = await fetch_trending()
 
     if coins:
-        response = "*🔥 Trending Coins*\n\n"
+        response = f"*{TG['masthead'].format(page='TRENDING COINS')}*\n{TG['rule']}\n\n"
         for i, coin in enumerate(coins[:10], 1):
             item = coin.get("item", {})
             name = item.get("name", "Unknown")
             symbol = item.get("symbol", "???")
             price_btc = item.get("price_btc", 0)
-            response += f"{i}. *{name}* ({symbol.upper()})\n"
+            response += f"❧ {i}. {name} ({symbol.upper()})\n"
 
         await update.message.reply_text(response, parse_mode="Markdown")
     else:
-        await update.message.reply_text("❌ Could not fetch trending coins.")
+        await update.message.reply_text(TG["silent"])
 
 
 async def gas_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -239,7 +244,7 @@ async def gas_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "polygon": "https://api.polygonscan.com/api?module=gastracker&action=gasoracle"
     }
 
-    response = "*⛽ Gas Prices*\n\n"
+    response = f"*{TG['masthead'].format(page='GAS PRICES')}*\n{TG['rule']}\n\n"
     async with aiohttp.ClientSession() as session:
         for name, url in chains.items():
             try:
@@ -249,15 +254,15 @@ async def gas_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         result = data["result"]
                         if "gas" in result:
                             gas = int(result["gas"]) / 10
-                            response += f"• *{name.title()}*: {gas:.1f} gwei ({result.get('UsdPrice', '?')}$)\n"
+                            response += f"❧ {name.title()} {TG['leader']} {gas:.1f} gwei ({result.get('UsdPrice', '?')}$)\n"
                         else:
-                            response += f"• *{name.title()}*: data unavailable\n"
+                            response += f"❧ {name.title()} {TG['leader']} data unavailable\n"
                     else:
-                        response += f"• *{name.title()}*: API error\n"
+                        response += f"❧ {name.title()} {TG['leader']} API error\n"
             except Exception as e:
-                response += f"• *{name.title()}*: error\n"
+                response += f"❧ {name.title()} {TG['leader']} error\n"
 
-    response += "\n_L2s use 10-100x less_ 💰"
+    response += "\n— L2s use 10-100x less"
     await update.message.reply_text(response, parse_mode="Markdown")
 
 
@@ -392,8 +397,9 @@ async def portfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show help"""
-    help_text = """
-*🤖 Dominion Bot Commands*
+    help_text = f"""
+*{TG['masthead'].format(page='COMMANDS')}*
+{TG['rule']}
 
 *Prices & Market*
 /price <coin> - Check coin price
@@ -414,6 +420,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 *Other*
 /start - Start the bot
 /help - This message
+
+❦ Dominion · /help for the index
 """
     await update.message.reply_text(help_text, parse_mode="Markdown")
 
