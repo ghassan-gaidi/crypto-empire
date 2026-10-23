@@ -290,6 +290,59 @@ ADM_CSS = """
 """
 
 # ============================================================
+# Embed strips (Task 8: iframe widget + scrolling ticker —
+# standalone CSS, never page_shell; ink chrome on any host)
+# ============================================================
+EMBED_WIDGET_CSS = """<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap');
+  :root{--bg:#17130d;--surface:#1e1912;--border:#40382c;--text:#cfc4a6;--text-dim:#968b70;--text-muted:#40382c;--green:#8fcea5;--red:#d4635a;--white:#f2ead4;}
+  body{font-family:'IBM Plex Mono','Courier New',monospace;background:var(--bg);color:var(--text);font-size:11px;line-height:1.6;min-height:auto;}
+  body.light{--bg:#efe7d2;--surface:#e6dcc4;--border:#c9bfa4;--text:#4a4234;--text-dim:#8a7f66;--text-muted:#c9bfa4;--green:#2e6b3a;--red:#a2342b;--white:#17130d;}
+  .w{max-width:360px;margin:0 auto;padding:10px;}
+  .hdr{text-align:center;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:8px;display:flex;justify-content:space-between;}
+  .hdr span{color:var(--green);}
+  .p-row{display:flex;gap:4px;margin-bottom:6px;}
+  .p-card{flex:1;border:1px solid var(--border);padding:6px 8px;background:var(--surface);text-align:center;}
+  .p-sym{font-size:7px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);}
+  .p-val{font-size:14px;font-weight:700;color:var(--white);margin:2px 0;}
+  .p-chg{font-size:8px;text-transform:uppercase;letter-spacing:1px;}
+  .up{color:var(--green);}.down{color:var(--red);}
+  .m-section{margin-top:8px;}
+  .m-title{font-size:7px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:4px;}
+  .m-row{display:flex;justify-content:space-between;padding:3px 6px;font-size:10px;border-bottom:1px solid var(--border);transition:.1s;}
+  .m-row:hover{background:rgba(233,223,198,.04);}
+  .m-name{color:var(--white);}
+  .m-sym{color:var(--text-muted);font-size:8px;margin-left:4px;}
+  .m-pr{color:var(--text-dim);}
+  .ftr{text-align:center;font-size:6px;color:var(--text-muted);margin-top:8px;text-transform:uppercase;letter-spacing:1px;}
+  .ftr a{color:var(--text-dim);text-decoration:none;}
+  .ldr{text-align:center;padding:20px;color:var(--text-dim);font-size:9px;text-transform:uppercase;letter-spacing:2px;}
+  .ldr .sp{display:inline-block;width:6px;height:6px;background:var(--green);margin-right:6px;animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0}}
+  .err{text-align:center;padding:14px;color:var(--red);font-size:9px;text-transform:uppercase;letter-spacing:1px;}
+  .nul{text-align:center;padding:10px;color:var(--text-dim);font-size:9px;}
+</style>"""
+
+EMBED_TICKER_CSS = """<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap');
+  :root{--bg:#17130d;--border:#40382c;--text:#cfc4a6;--text-dim:#968b70;--text-muted:#40382c;--green:#8fcea5;--red:#d4635a;--white:#f2ead4;}
+  body{font-family:'IBM Plex Mono',monospace}
+  body.light{--bg:#efe7d2;--border:#c9bfa4;--text:#4a4234;--text-dim:#8a7f66;--text-muted:#c9bfa4;--green:#2e6b3a;--red:#a2342b;--white:#17130d;}
+  .ticker-wrap{overflow:hidden;width:100%;height:36px;background:var(--bg);border:1px solid var(--border);border-left:none;border-right:none;position:relative}
+  .ticker-track{display:flex;white-space:nowrap;will-change:transform}
+  .ticker-track.paused{animation-play-state:paused!important}
+  .ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 18px;height:34px;font-size:11px;letter-spacing:.5px;border-right:1px solid var(--border)}
+  .ticker-sym{color:var(--white);font-weight:500}
+  .ticker-price{color:var(--text)}
+  .ticker-chg{font-weight:500;font-size:10px}
+  .ticker-chg.up{color:var(--green)}
+  .ticker-chg.down{color:var(--red)}
+  .ticker-chg.neutral{color:var(--text-dim)}
+  .ticker-sep{color:var(--text-muted);padding:0 8px;font-size:8px}
+</style>"""
+
+# ============================================================
 # Section-page devices (Tasks 3+: whales, trending, yields, launches…)
 # ============================================================
 SECTION_CSS = """

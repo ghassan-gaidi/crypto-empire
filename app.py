@@ -18,7 +18,7 @@ from flask import Flask, render_template_string, jsonify, request, redirect
 from flask_cors import CORS
 import requests
 
-from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS, MONET_CSS, LONGFORM_CSS, ADM_CSS
+from design import page_shell, nav_links, SECTION_CSS, FOLIO_CSS, MONET_CSS, LONGFORM_CSS, ADM_CSS, EMBED_WIDGET_CSS, EMBED_TICKER_CSS
 
 # ============================================================
 # Configuration
@@ -4666,36 +4666,7 @@ Sitemap: https://crypto-empire-ten.vercel.app/sitemap.xml
 # Embeddable Widget
 # ============================================================
 
-WIDGET_CSS = """<style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
-  :root{--bg:#000;--surface:#050505;--border:#181818;--text:#b0b0b0;--text-dim:#555;--text-muted:#282828;--green:#0f0;--red:#f00;--white:#fff;}
-  body{font-family:'JetBrains Mono','Fira Code','Courier New',monospace;background:var(--bg);color:var(--text);font-size:11px;line-height:1.6;min-height:auto;}
-  body.light{--bg:#fff;--surface:#f5f5f5;--border:#ddd;--text:#333;--text-dim:#888;--text-muted:#ccc;--green:#008000;--red:#d00;--white:#000;}
-  .w{max-width:360px;margin:0 auto;padding:10px;}
-  .hdr{text-align:center;font-size:8px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:8px;display:flex;justify-content:space-between;}
-  .hdr span{color:var(--green);}
-  .p-row{display:flex;gap:4px;margin-bottom:6px;}
-  .p-card{flex:1;border:1px solid var(--border);padding:6px 8px;background:var(--surface);text-align:center;}
-  .p-sym{font-size:7px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);}
-  .p-val{font-size:14px;font-weight:700;color:var(--white);margin:2px 0;}
-  .p-chg{font-size:8px;text-transform:uppercase;letter-spacing:1px;}
-  .up{color:var(--green);}.down{color:var(--red);}
-  .m-section{margin-top:8px;}
-  .m-title{font-size:7px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:4px;}
-  .m-row{display:flex;justify-content:space-between;padding:3px 6px;font-size:10px;border-bottom:1px solid var(--border);transition:.1s;}
-  .m-row:hover{background:rgba(255,255,255,.02);}
-  .m-name{color:var(--white);}
-  .m-sym{color:var(--text-muted);font-size:8px;margin-left:4px;}
-  .m-pr{color:var(--text-dim);}
-  .ftr{text-align:center;font-size:6px;color:var(--text-muted);margin-top:8px;text-transform:uppercase;letter-spacing:1px;}
-  .ftr a{color:var(--text-dim);text-decoration:none;}
-  .ldr{text-align:center;padding:20px;color:var(--text-dim);font-size:9px;text-transform:uppercase;letter-spacing:2px;}
-  .ldr .sp{display:inline-block;width:6px;height:6px;background:var(--green);margin-right:6px;animation:blink 1s step-end infinite;}
-  @keyframes blink{50%{opacity:0}}
-  .err{text-align:center;padding:14px;color:var(--red);font-size:9px;text-transform:uppercase;letter-spacing:1px;}
-  .nul{text-align:center;padding:10px;color:var(--text-dim);font-size:9px;}
-</style>"""
+WIDGET_CSS = EMBED_WIDGET_CSS
 
 WIDGET_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -4869,26 +4840,10 @@ TICKER_HTML = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Market Ticker — Dominion</title>
-""" + SHARED_HEAD + r"""
+""" + EMBED_TICKER_CSS + r"""
 <style>
 /* Ticker-specific overrides — compact, no-nav */
 body{overflow:hidden;background:transparent;min-height:auto}
-.container{max-width:none;padding:0;margin:0}
-/* Remove CRT scanlines for ticker — cleaner on embed */
-body::after,body::before,.sweep,.grid-bg{display:none}
-.ticker-wrap{overflow:hidden;width:100%;height:36px;background:var(--bg);border:1px solid var(--border);border-left:none;border-right:none;position:relative}
-.ticker-track{display:flex;white-space:nowrap;will-change:transform}
-.ticker-track.paused{animation-play-state:paused!important}
-.ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 18px;height:34px;font-size:11px;letter-spacing:.5px;border-right:1px solid var(--border)}
-.ticker-sym{color:var(--white);font-weight:700}
-.ticker-price{color:var(--text)}
-.ticker-chg{font-weight:500;font-size:10px}
-.ticker-chg.up{color:var(--green)}
-.ticker-chg.down{color:var(--red)}
-.ticker-chg.neutral{color:var(--text-dim)}
-.ticker-sep{color:var(--text-muted);padding:0 8px;font-size:8px}
-/* Dark theme default, light override */
-body.light{--bg:#fff;--surface:#f5f5f5;--border:#ddd;--text:#444;--text-dim:#999;--white:#000;--green:#060;--red:#c00}
 </style>
 </head>
 <body>
