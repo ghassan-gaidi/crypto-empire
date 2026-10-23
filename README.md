@@ -1,12 +1,13 @@
-# ⛰️ Dominion — Autonomous Crypto Intelligence
+# ⛰️ Dominion — Autonomous Crypto Intelligence · Night Edition
 
-> **Live market dashboard + Telegram bot with 50+ commands, whale tracking, and premium monetization.**
+> **Live market dashboard + Telegram bot with 50+ commands, whale tracking, and premium monetization — set as a night-print newspaper.**
 
 [![Live](https://img.shields.io/badge/live-crypto--empire--ten.vercel.app-black)](https://crypto-empire-ten.vercel.app)
 [![Bot](https://img.shields.io/badge/TG-%40Crypt0Emp1reBot-26A5E4)](https://t.me/Crypt0Emp1reBot)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000)](https://flask.palletsprojects.com)
-[![Polar](https://img.shields.io/badge/premium-Polar.sh-DC2626)](https://polar.sh)
+[![Polar](https://img.shields.io/badge/premium-Polar.sh-17130D)](https://polar.sh)
+[![Design](https://img.shields.io/badge/design-Night%20Edition-17130D)](#-the-night-edition-design)
 
 ---
 
@@ -16,6 +17,26 @@ Dominion is a **two-in-one crypto intelligence system**:
 
 1. **🌐 Web Dashboard** — Live prices, gas tracker, whale moves, DEX volumes, portfolio tracking, yield aggregation, token launch calendar — all at `crypto-empire-ten.vercel.app`
 2. **🤖 Telegram Bot** — 50+ commands via `@Crypt0Emp1reBot` — price lookups, gas checks, wallet profiling, whale alerts, and more
+
+---
+
+## 📷 The Pages (Night Edition)
+
+| ![Front page](docs/screenshots/front.png) |
+|:---:|
+| **The Front Page** — masthead, tape, the wire, dispatches |
+
+| ![Premium ledger](docs/screenshots/premium.png) | ![Whale tracker](docs/screenshots/whales.png) |
+|:---:|:---:|
+| **The Full Ledger** (`/premium`) | **Whale Dispatches** (`/whales`) |
+
+| ![API docs](docs/screenshots/docs.png) | ![Ticker strip](docs/screenshots/ticker.png) |
+|:---:|:---:|
+| **Endpoint Tape** (`/docs`) | **Ticker Strip** (`/ticker`, embeddable) |
+
+| ![Mobile front](docs/screenshots/front-mobile.png) |
+|:---:|
+| **Mobile** — single-column folio flow |
 
 ---
 
@@ -115,7 +136,21 @@ Dominion is a **two-in-one crypto intelligence system**:
 | **Database** | SQLite (price cache, alerts, subscriptions) |
 | **Deploy** | Vercel (web) + Systemd daemon (TG bot) |
 | **CI** | 4 GitHub Actions workflows (monitor, whales, alerts, distribution) |
-| **Design** | Void dark (#08080E) + Crimson (#DC2626), Space Grotesk + JetBrains Mono, sharp 4px corners |
+| **Design** | **Night Edition** — night-print paper `#17130d`, Fraunces (headlines) + IBM Plex Mono (data), oxblood `#d4635a` / print-green `#8fcea5` accents, halftone & stain overlays, folios + dotted-leader ledger rows; zero cards, zero radii, zero gradients |
+
+---
+
+## 🖤 The Night Edition Design
+
+The interface is art-directed as a **late-night broadsheet set on a printing press**, not a SaaS dashboard:
+
+- **Mastheads, not navigation bars** — every page opens with a tracked-caps `DOMINION` masthead, kicker rule pairs, and a folio line (`DOMINION · DAY 2xx · page E3`) exactly where a newspaper puts its edition marks.
+- **Ledger rows, not cards** — data is set with dotted-leader rows (`label ···· value`), column rules, and cross rules; no cards, border-radius, box-shadows, or gradients anywhere.
+- **Two typefaces only** — `Fraunces` (UPM-2000 optical display serif) for headlines and deks, `IBM Plex Mono` for every number, table, ticker, and label.
+- **A restrained ink palette** — night paper `#17130d`, warm ink `#e9dfc6`, with exactly two accent inks: oxblood for losses/CTAs and print-green for gains/live states.
+- **Press furniture** — halftone-dot overlay, vignette, paper stains, ivory-tape labels, and a fixed rule system (`--rule` / `--rule-strong`) borrowed from paste-up printing.
+- **The Telegram bot is set the same way** — wires open masthead-first (`DOMINION — PRICE`), close with a `❦` folio footer, and use ❧ bullets, ▲/▼ tones, and dotted leaders in plain text.
+- **No JS UI framework** — the whole design system lives in one Python file (`design.py`) and consumes dynamic data; every page ships server-side rendered.
 
 ---
 
@@ -147,6 +182,6 @@ Free tier: 100 req/day · Premium: 10K req/day
 
 ## 🧠 Skills Demonstrated
 
-`Python` `Flask` `REST API Design` `Telegram Bot (50+ commands)` `CoinGecko API` `DeFiLlama` `On-chain RPC` `Whale Tracking` `Polar.sh Integration` `SQLite` `Vercel Deployment` `Systemd Daemon` `GitHub Actions` `Brutalist Design`
+`Python` `Flask` `REST API Design` `Telegram Bot (50+ commands)` `CoinGecko API` `DeFiLlama` `On-chain RPC` `Whale Tracking` `Polar.sh Integration` `SQLite` `Vercel Deployment` `Systemd Daemon` `GitHub Actions` `Print-Editorial Design (Night Edition)`
 
 > *Build your own Bloomberg Terminal for crypto — then sell access.*
