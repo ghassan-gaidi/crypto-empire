@@ -135,7 +135,7 @@ Dominion is a **two-in-one crypto intelligence system**:
 | **Payments** | Polar.sh ($9.99/mo) — full webhook verification |
 | **Database** | SQLite (price cache, alerts, subscriptions) |
 | **Deploy** | Vercel (web) + Systemd daemon (TG bot) |
-| **CI** | 4 GitHub Actions workflows (monitor, whales, alerts, distribution) |
+| **CI** | 5 GitHub Actions workflows (monitor, whale-tracker, check-alerts, distribution, secret-scan) |
 | **Design** | **Night Edition** — night-print paper `#17130d`, Fraunces (headlines) + IBM Plex Mono (data), oxblood `#d4635a` / print-green `#8fcea5` accents, halftone & stain overlays, folios + dotted-leader ledger rows; zero cards, zero radii, zero gradients |
 
 ---
@@ -176,7 +176,7 @@ Free tier: 100 req/day · Premium: 10K req/day
 - **Deploy:** Live at crypto-empire-ten.vercel.app
 - **Bot:** `@Crypt0Emp1reBot` — always on
 - **Revenue:** $0 (no subscribers yet)
-- **Monitoring:** 4 GH Actions workflows keep everything running
+- **Monitoring:** 5 GH Actions workflows keep everything running
 
 ---
 
